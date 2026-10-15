@@ -1,0 +1,6 @@
+# Large data and mesh files
+*.h5
+*.xdmf
+
+# Specific old cases folder
+Cases/3d_turbulent_channel_flow/old/

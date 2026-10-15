@@ -1,0 +1,981 @@
+Collecting data...
+RHEA (v9.0.0): START SIMULATION
+Time iteration 0: time = 0.00000e+00 [s], time-step = 7.82282e-06 [s], wall-clock time = 3.02255e-04 [h]
+Time advancement completed -> iteration = 10, time = 7.59535e-05 [s]
+RHEA (v9.0.0): END SIMULATION
+Generating '/scratch/tmp/47254954/nsys-upc027946/nsys-report-d5f0.qdstrm'
+[1/8] [0%                          ] rhea_profile_rank_0.nsys-rep[1/8] [0%                          ] rhea_profile_rank_0.nsys-rep[1/8] [5%                          ] rhea_profile_rank_0.nsys-rep[1/8] [5%                          ] rhea_profile_rank_0.nsys-rep[1/8] [8%                          ] rhea_profile_rank_0.nsys-rep[1/8] [11%                         ] rhea_profile_rank_0.nsys-rep[1/8] [14%                         ] rhea_profile_rank_0.nsys-rep[1/8] [=17%                        ] rhea_profile_rank_0.nsys-rep[1/8] [==20%                       ] rhea_profile_rank_0.nsys-rep[1/8] [===23%                      ] rhea_profile_rank_0.nsys-rep[1/8] [====26%                     ] rhea_profile_rank_0.nsys-rep[1/8] [=====29%                    ] rhea_profile_rank_0.nsys-rep[1/8] [=====32%                    ] rhea_profile_rank_0.nsys-rep[1/8] [======35%                   ] rhea_profile_rank_0.nsys-rep[1/8] [=======38%                  ] rhea_profile_rank_0.nsys-rep[1/8] [========41%                 ] rhea_profile_rank_0.nsys-rep[1/8] [=========44%                ] rhea_profile_rank_0.nsys-rep[1/8] [==========47%               ] rhea_profile_rank_0.nsys-rep[1/8] [===========51%              ] rhea_profile_rank_0.nsys-rep[1/8] [========================100%] rhea_profile_rank_0.nsys-rep[1/8] [========================100%] rhea_profile_rank_0.nsys-rep
+[2/8] [0%                          ] rhea_profile_rank_0.sqlite[2/8] [1%                          ] rhea_profile_rank_0.sqlite[2/8] [2%                          ] rhea_profile_rank_0.sqlite[2/8] [3%                          ] rhea_profile_rank_0.sqlite[2/8] [4%                          ] rhea_profile_rank_0.sqlite[2/8] [5%                          ] rhea_profile_rank_0.sqlite[2/8] [6%                          ] rhea_profile_rank_0.sqlite[2/8] [7%                          ] rhea_profile_rank_0.sqlite[2/8] [8%                          ] rhea_profile_rank_0.sqlite[2/8] [9%                          ] rhea_profile_rank_0.sqlite[2/8] [10%                         ] rhea_profile_rank_0.sqlite[2/8] [11%                         ] rhea_profile_rank_0.sqlite[2/8] [12%                         ] rhea_profile_rank_0.sqlite[2/8] [13%                         ] rhea_profile_rank_0.sqlite[2/8] [14%                         ] rhea_profile_rank_0.sqlite[2/8] [=15%                        ] rhea_profile_rank_0.sqlite[2/8] [=16%                        ] rhea_profile_rank_0.sqlite[2/8] [=17%                        ] rhea_profile_rank_0.sqlite[2/8] [==18%                       ] rhea_profile_rank_0.sqlite[2/8] [==19%                       ] rhea_profile_rank_0.sqlite[2/8] [==20%                       ] rhea_profile_rank_0.sqlite[2/8] [==21%                       ] rhea_profile_rank_0.sqlite[2/8] [===22%                      ] rhea_profile_rank_0.sqlite[2/8] [===23%                      ] rhea_profile_rank_0.sqlite[2/8] [===24%                      ] rhea_profile_rank_0.sqlite[2/8] [====25%                     ] rhea_profile_rank_0.sqlite[2/8] [====26%                     ] rhea_profile_rank_0.sqlite[2/8] [====27%                     ] rhea_profile_rank_0.sqlite[2/8] [====28%                     ] rhea_profile_rank_0.sqlite[2/8] [=====29%                    ] rhea_profile_rank_0.sqlite[2/8] [=====30%                    ] rhea_profile_rank_0.sqlite[2/8] [=====31%                    ] rhea_profile_rank_0.sqlite[2/8] [=====32%                    ] rhea_profile_rank_0.sqlite[2/8] [======33%                   ] rhea_profile_rank_0.sqlite[2/8] [======34%                   ] rhea_profile_rank_0.sqlite[2/8] [======35%                   ] rhea_profile_rank_0.sqlite[2/8] [=======36%                  ] rhea_profile_rank_0.sqlite[2/8] [=======37%                  ] rhea_profile_rank_0.sqlite[2/8] [=======38%                  ] rhea_profile_rank_0.sqlite[2/8] [=======39%                  ] rhea_profile_rank_0.sqlite[2/8] [========40%                 ] rhea_profile_rank_0.sqlite[2/8] [========41%                 ] rhea_profile_rank_0.sqlite[2/8] [========42%                 ] rhea_profile_rank_0.sqlite[2/8] [=========43%                ] rhea_profile_rank_0.sqlite[2/8] [=========44%                ] rhea_profile_rank_0.sqlite[2/8] [=========45%                ] rhea_profile_rank_0.sqlite[2/8] [=========46%                ] rhea_profile_rank_0.sqlite[2/8] [==========47%               ] rhea_profile_rank_0.sqlite[2/8] [==========48%               ] rhea_profile_rank_0.sqlite[2/8] [==========49%               ] rhea_profile_rank_0.sqlite[2/8] [===========50%              ] rhea_profile_rank_0.sqlite[2/8] [===========51%              ] rhea_profile_rank_0.sqlite[2/8] [===========52%              ] rhea_profile_rank_0.sqlite[2/8] [===========53%              ] rhea_profile_rank_0.sqlite[2/8] [============54%             ] rhea_profile_rank_0.sqlite[2/8] [============55%             ] rhea_profile_rank_0.sqlite[2/8] [============56%             ] rhea_profile_rank_0.sqlite[2/8] [============57%             ] rhea_profile_rank_0.sqlite[2/8] [=============58%            ] rhea_profile_rank_0.sqlite[2/8] [=============59%            ] rhea_profile_rank_0.sqlite[2/8] [=============60%            ] rhea_profile_rank_0.sqlite[2/8] [==============61%           ] rhea_profile_rank_0.sqlite[2/8] [==============62%           ] rhea_profile_rank_0.sqlite[2/8] [==============63%           ] rhea_profile_rank_0.sqlite[2/8] [==============64%           ] rhea_profile_rank_0.sqlite[2/8] [===============65%          ] rhea_profile_rank_0.sqlite[2/8] [===============66%          ] rhea_profile_rank_0.sqlite[2/8] [===============67%          ] rhea_profile_rank_0.sqlite[2/8] [================68%         ] rhea_profile_rank_0.sqlite[2/8] [================69%         ] rhea_profile_rank_0.sqlite[2/8] [================70%         ] rhea_profile_rank_0.sqlite[2/8] [================71%         ] rhea_profile_rank_0.sqlite[2/8] [=================72%        ] rhea_profile_rank_0.sqlite[2/8] [=================73%        ] rhea_profile_rank_0.sqlite[2/8] [=================74%        ] rhea_profile_rank_0.sqlite[2/8] [==================75%       ] rhea_profile_rank_0.sqlite[2/8] [==================76%       ] rhea_profile_rank_0.sqlite[2/8] [==================77%       ] rhea_profile_rank_0.sqlite[2/8] [==================78%       ] rhea_profile_rank_0.sqlite[2/8] [===================79%      ] rhea_profile_rank_0.sqlite[2/8] [===================80%      ] rhea_profile_rank_0.sqlite[2/8] [===================81%      ] rhea_profile_rank_0.sqlite[2/8] [===================82%      ] rhea_profile_rank_0.sqlite[2/8] [====================83%     ] rhea_profile_rank_0.sqlite[2/8] [====================84%     ] rhea_profile_rank_0.sqlite[2/8] [====================85%     ] rhea_profile_rank_0.sqlite[2/8] [=====================86%    ] rhea_profile_rank_0.sqlite[2/8] [=====================87%    ] rhea_profile_rank_0.sqlite[2/8] [=====================88%    ] rhea_profile_rank_0.sqlite[2/8] [=====================89%    ] rhea_profile_rank_0.sqlite[2/8] [======================90%   ] rhea_profile_rank_0.sqlite[2/8] [======================91%   ] rhea_profile_rank_0.sqlite[2/8] [======================92%   ] rhea_profile_rank_0.sqlite[2/8] [=======================93%  ] rhea_profile_rank_0.sqlite[2/8] [=======================94%  ] rhea_profile_rank_0.sqlite[2/8] [=======================95%  ] rhea_profile_rank_0.sqlite[2/8] [=======================96%  ] rhea_profile_rank_0.sqlite[2/8] [========================97% ] rhea_profile_rank_0.sqlite[2/8] [========================98% ] rhea_profile_rank_0.sqlite[2/8] [========================99% ] rhea_profile_rank_0.sqlite[2/8] [========================100%] rhea_profile_rank_0.sqlite[2/8] [========================100%] rhea_profile_rank_0.sqlite
+[3/8] Executing 'nvtx_sum' stats report
+
+ Time (%)  Total Time (ns)  Instances    Avg (ns)      Med (ns)     Min (ns)    Max (ns)   StdDev (ns)   Style                         Range                       
+ --------  ---------------  ---------  ------------  ------------  ----------  ----------  -----------  -------  --------------------------------------------------
+     49.1       4977486860          1  4977486860.0  4977486860.0  4977486860  4977486860          0.0  PushPop  :execute                                          
+     23.3       2360617171          1  2360617171.0  2360617171.0  2360617171  2360617171          0.0  PushPop  :time_iteration_loop                              
+     18.9       1914139863         10   191413986.3         863.5         751  1914127395  605299791.9  PushPop  :output_solver_state                              
+      4.4        443046229         10    44304622.9    34468260.5    31944935    83500575   20717194.0  PushPop  :rk_iteration_loop                                
+      3.4        345361982         30    11512066.1     7886067.0     7202086    58407773   12703785.6  PushPop  :time_advance_conserved_variables                 
+      0.4         39769192         30     1325639.7     1224853.5     1149676     4400458     581489.7  PushPop  :update_boundaries                                
+      0.2         18771427         30      625714.2      624416.0      621760      637759       3806.5  PushPop  :calculate_viscous_fluxes                         
+      0.2         18102905         30      603430.2      602259.0      598336      619480       4168.8  PushPop  :calculate_inviscid_fluxes                        
+      0.1         15075480         30      502516.0      499530.5      489197      546432      11352.5  PushPop  :calculate_thermodynamics_from_primitive_variables
+      0.0          2534308         30       84476.9       83355.5       80936       96497       3411.7  PushPop  :conserved_to_primitive_variables                 
+      0.0          2059203         10      205920.3      203393.5      200884      218873       5693.9  PushPop  :calculate_time_step                              
+      0.0          1974571         30       65819.0       54037.0       51933      393645      61947.6  PushPop  :calculate_source_terms                           
+      0.0          1223927         10      122392.7      121435.0      120211      126715       2192.6  PushPop  :update_previous_state_conserved_variables        
+      0.0          1186991         30       39566.4       34999.5       29514      161523      23362.3  PushPop  :calculate_thermophysical_properties              
+      0.0            26610         30         887.0         311.5         240        8199       1791.0  PushPop  :immersed_boundary_method                         
+      0.0            20188         10        2018.8         339.0         237       10048       3639.9  PushPop  :update_time_averaged_quantities                  
+      0.0            11880         10        1188.0         424.5         360        4337       1636.6  PushPop  :time_advance_point_particles                     
+      0.0            10619         10        1061.9         399.0         322        7072       2112.3  PushPop  :temporal_hook_function                           
+
+[4/8] Executing 'cuda_api_sum' stats report
+
+ Time (%)  Total Time (ns)  Num Calls   Avg (ns)    Med (ns)   Min (ns)  Max (ns)   StdDev (ns)              Name             
+ --------  ---------------  ---------  ----------  ----------  --------  ---------  -----------  -----------------------------
+     32.1        595538159         32  18610567.5  18767645.5  17349328   21449121     797567.9  cuMemHostAlloc               
+     23.6        436838981        263   1660984.7     16422.0      9902    6069295    2283652.1  cuMemcpyDtoHAsync_v2         
+     11.1        205605087          9  22845009.7      9545.0      3693  112515330   39810562.4  cuIpcOpenMemHandle_v2        
+      9.0        166644718         64   2603823.7   2508456.0      3905    6156608    2499015.3  cuMemFreeHost                
+      6.7        123874903      16408      7549.7      2680.0      2144    1091943      62166.8  cuMemcpyHtoDAsync_v2         
+      6.1        113126685      16295      6942.4      1815.0      1522     607584      39469.6  cuStreamSynchronize          
+      3.4         63103845         35   1802967.0     12948.0      9465   60039273   10136232.9  cuStreamCreate               
+      2.4         44117445         32   1378670.2    347184.0      4713   32642279    5717601.1  cuMemAllocHost_v2            
+      2.2         41409335      13649      3033.9      2822.0      2423     275334       2608.1  cuLaunchKernel               
+      1.1         20216500        134    150869.4    176243.0      3053     374027      97887.5  cuMemFree_v2                 
+      0.9         17043751        189     90178.6     92519.0      1284    1408373     134292.3  cuMemAlloc_v2                
+      0.4          8282034          1   8282034.0   8282034.0   8282034    8282034          0.0  cuModuleLoadDataEx           
+      0.4          6836199       2093      3266.2      2835.0      2157      26354       1407.6  cuMemcpyDtoDAsync_v2         
+      0.2          3866810       2916      1326.1      1604.0       290      15726        678.6  cuEventQuery                 
+      0.1          2614170       2260      1156.7       810.5       491      19815        997.6  cuMemRetainAllocationHandle  
+      0.0           891016       2093       425.7       334.0       286      25090        640.0  cuEventRecord                
+      0.0           558930        161      3471.6      3177.0      2693      13356       1145.4  cuCtxSynchronize             
+      0.0           461856         13     35527.4     22058.0     18220     168702      40384.2  cuMemGetHandleForAddressRange
+      0.0           455811          1    455811.0    455811.0    455811     455811          0.0  cuMemCreate                  
+      0.0           325594        124      2625.8      1994.0      1652      10697       1390.6  cuMemsetD32Async             
+      0.0           200680       2093        95.9        86.0        70       3165         71.3  cuCtxGetId                   
+      0.0           137863        159       867.1       153.0       134      49677       3952.3  cuEventCreate                
+      0.0           118795        488       243.4       140.5        75       4912        307.7  cuGetProcAddress_v2          
+      0.0            44094         67       658.1        96.0        88      18105       2736.4  cuCtxSetFlags                
+      0.0            43498          4     10874.5      8121.5      6027      21228       6995.4  cuStreamDestroy_v2           
+      0.0            30054        128       234.8       115.0       109       3274        382.4  cuEventDestroy_v2            
+      0.0             8459          1      8459.0      8459.0      8459       8459          0.0  cuMemHostUnregister          
+      0.0             4344          2      2172.0      2172.0      1232       3112       1329.4  cuInit                       
+      0.0             2145          3       715.0       330.0       174       1641        805.7  cuCtxSetCurrent              
+      0.0             1042          1      1042.0      1042.0      1042       1042          0.0  cudaGetDeviceProperties      
+      0.0              552          1       552.0       552.0       552        552          0.0  cuMemGetAllocationGranularity
+      0.0              198          1       198.0       198.0       198        198          0.0  cuModuleGetLoadingMode       
+
+[5/8] Executing 'cuda_gpu_kern_sum' stats report
+
+ Time (%)  Total Time (ns)  Instances  Avg (ns)  Med (ns)  Min (ns)  Max (ns)  StdDev (ns)                                    Name                                   
+ --------  ---------------  ---------  --------  --------  --------  --------  -----------  -------------------------------------------------------------------------
+     20.1         18051498         30  601716.6  601774.5    600190    603550        665.3  FlowSolverRHEA::calculateViscousFluxes_3137()                            
+     19.3         17365772         30  578859.1  578782.0    575487    582814       1702.0  FlowSolverRHEA::calculateInviscidFluxes_2783()                           
+     10.5          9435972         30  314532.4  314159.0    312255    318303       1564.7  FlowSolverRHEA::timeAdvanceConservedVariables_3322()                     
+      5.1          4616688         30  153889.6  154032.0    151264    156703       1322.5  FlowSolverRHEA::calculateThermodynamicsFromPrimitiveVariables_999()      
+      2.7          2450556         30   81685.2   81504.0     80607     82944        690.1  FlowSolverRHEA::updateBoundaries_1424()                                  
+      2.1          1880795         30   62693.2   62704.0     61280     64639        787.3  FlowSolverRHEA::conservedToPrimitiveVariables_938()                      
+      1.7          1511580         62   24380.3   24208.0      2240     47424      22232.8  FlowSolverRHEA::calculateVolumeAveragedPressure_3750()                   
+      1.7          1500253         31   48395.3   48416.0     47712     49216        342.2  FlowSolverRHEA::calculateArtificiallyModifiedThermodynamics_3871()       
+      1.5          1368830         20   68441.5   68319.5      1952    135328      68131.8  FlowSolverRHEA::calculateTimeStep_2514()                                 
+      1.2          1102874         11  100261.3   99872.0     98623    103583       1314.3  FlowSolverRHEA::updatePreviousStateConservedVariables_2471()             
+      1.2          1086109         62   17517.9   17327.5      2240     33024      15216.1  FlowSolverRHEA::calculateAlphaArtificialCompressibilityMethod_3817()     
+      1.1           956381         30   31879.4   31888.0     31040     33375        491.7  myRHEA::calculateSourceTerms_177()                                       
+      0.6           507231         31   16362.3   17792.0     12672     18816       2320.7  FlowSolverRHEA::calculateArtificiallyModifiedTransportCoefficients_3893()
+      0.5           474559        161    2947.6    2944.0      2496      3264        109.9  ParallelTopology::pack_gpu_4971(double *)                                
+      0.5           446334        251    1778.2    1760.0      1664      2144         98.3  ParallelTopology::fillEdgesCorners_3772(double *)                        
+      0.5           445759        251    1775.9    1728.0      1664      2112         96.7  ParallelTopology::fillEdgesCorners_3852(double *)                        
+      0.5           445630        251    1775.4    1728.0      1664      2112         99.4  ParallelTopology::fillEdgesCorners_3692(double *)                        
+      0.5           444927        251    1772.6    1728.0      1664      2112        106.4  ParallelTopology::fillEdgesCorners_3722(double *)                        
+      0.5           444509        251    1771.0    1728.0      1663      2016         95.5  ParallelTopology::fillEdgesCorners_3662(double *)                        
+      0.5           443487        251    1766.9    1728.0      1664      2080         97.0  ParallelTopology::fillEdgesCorners_3742(double *)                        
+      0.5           443390        251    1766.5    1728.0      1664      2144         96.0  ParallelTopology::fillEdgesCorners_3802(double *)                        
+      0.5           443264        251    1766.0    1728.0      1664      2080         91.0  ParallelTopology::fillEdgesCorners_3822(double *)                        
+      0.5           437887        251    1744.6    1760.0      1664      1952         46.2  ParallelTopology::fillEdgesCorners_3812(double *)                        
+      0.5           437120        251    1741.5    1760.0      1664      1888         37.2  ParallelTopology::fillEdgesCorners_3832(double *)                        
+      0.5           436254        251    1738.1    1728.0      1664      1952         36.3  ParallelTopology::fillEdgesCorners_3672(double *)                        
+      0.5           436224        251    1737.9    1728.0      1664      1952         42.6  ParallelTopology::fillEdgesCorners_3752(double *)                        
+      0.5           436032        251    1737.2    1728.0      1664      1920         43.5  ParallelTopology::fillEdgesCorners_3842(double *)                        
+      0.5           435455        251    1734.9    1728.0      1664      1824         36.0  ParallelTopology::fillEdgesCorners_3712(double *)                        
+      0.5           435392        251    1734.6    1728.0      1664      1824         35.6  ParallelTopology::fillEdgesCorners_3732(double *)                        
+      0.5           435231        251    1734.0    1728.0      1664      1888         37.0  ParallelTopology::fillEdgesCorners_3792(double *)                        
+      0.5           434848        251    1732.5    1728.0      1664      1888         40.2  ParallelTopology::fillEdgesCorners_3782(double *)                        
+      0.5           433951        251    1728.9    1728.0      1664      1888         36.8  ParallelTopology::fillEdgesCorners_3702(double *)                        
+      0.5           433535        251    1727.2    1728.0      1664      1888         38.0  ParallelTopology::fillEdgesCorners_3682(double *)                        
+      0.5           433535        251    1727.2    1728.0      1664      1888         34.3  ParallelTopology::fillEdgesCorners_3762(double *)                        
+      0.5           407904        161    2533.6    2528.0      2304      2848         77.4  ParallelTopology::pack_gpu_4982(double *)                                
+      0.4           404062        161    2509.7    2464.0      2368      3008        121.1  ParallelTopology::pack_gpu_4960(double *)                                
+      0.4           391967        161    2434.6    2368.0      2336      2816        124.7  ParallelTopology::pack_gpu_4923(double *)                                
+      0.4           385118        161    2392.0    2368.0      2335      2784         79.2  ParallelTopology::unpack_gpu_5282(double *)                              
+      0.4           382880        161    2378.1    2336.0      2304      2720         92.0  ParallelTopology::pack_gpu_5182(double *)                                
+      0.4           382752        161    2377.3    2336.0      2304      2688         86.8  ParallelTopology::pack_gpu_5004(double *)                                
+      0.4           381856        161    2371.8    2336.0      2304      2688         87.2  ParallelTopology::pack_gpu_5149(double *)                                
+      0.4           381760        161    2371.2    2336.0      2304      2688         91.7  ParallelTopology::pack_gpu_5093(double *)                                
+      0.4           381438        161    2369.2    2336.0      2304      2688         83.8  ParallelTopology::unpack_gpu_5476(double *)                              
+      0.4           380863        161    2365.6    2336.0      2304      2656         72.9  ParallelTopology::unpack_gpu_5379(double *)                              
+      0.4           380768        161    2365.0    2336.0      2304      2720         82.7  ParallelTopology::pack_gpu_5060(double *)                                
+      0.4           379678        161    2358.2    2336.0      2304      2528         34.7  ParallelTopology::unpack_gpu_5233(double *)                              
+      0.4           379006        161    2354.1    2304.0      2303      2688         83.6  ParallelTopology::unpack_gpu_5343(double *)                              
+      0.4           378784        161    2352.7    2304.0      2304      2688         80.5  ParallelTopology::unpack_gpu_5439(double *)                              
+      0.4           377758        161    2346.3    2336.0      2304      2560         31.1  ParallelTopology::pack_gpu_5016(double *)                                
+      0.4           377152        161    2342.6    2336.0      2304      2496         26.1  ParallelTopology::unpack_gpu_5524(double *)                              
+      0.4           376639        161    2339.4    2336.0      2303      2496         27.2  ParallelTopology::pack_gpu_5137(double *)                                
+      0.4           376575        161    2339.0    2336.0      2304      2464         25.8  ParallelTopology::unpack_gpu_5427(double *)                              
+      0.4           376447        161    2338.2    2336.0      2304      2432         26.3  ParallelTopology::unpack_gpu_5331(double *)                              
+      0.4           376317        161    2337.4    2336.0      2303      2560         28.0  ParallelTopology::pack_gpu_5193(double *)                                
+      0.4           376192        161    2336.6    2336.0      2304      2560         27.8  ParallelTopology::pack_gpu_5049(double *)                                
+      0.4           376062        161    2335.8    2336.0      2304      2592         29.6  ParallelTopology::pack_gpu_5104(double *)                                
+      0.4           375197        161    2330.4    2336.0      2303      2496         32.3  ParallelTopology::unpack_gpu_5488(double *)                              
+      0.4           374430        161    2325.7    2336.0      2303      2496         30.7  ParallelTopology::unpack_gpu_5391(double *)                              
+      0.4           373311        161    2318.7    2304.0      2272      2400         22.1  ParallelTopology::unpack_gpu_5294(double *)                              
+      0.4           371391        161    2306.8    2240.0      2208      2816        121.4  ParallelTopology::unpack_gpu_5258(double *)                              
+      0.4           366655        161    2277.4    2240.0      2208      2560         81.4  ParallelTopology::unpack_gpu_5221(double *)                              
+      0.4           364064        161    2261.3    2240.0      2208      2528         80.9  ParallelTopology::pack_gpu_5126(double *)                                
+      0.4           363519        161    2257.9    2208.0      2176      2528         80.4  ParallelTopology::pack_gpu_5038(double *)                                
+      0.4           363294        161    2256.5    2240.0      2208      2688         44.1  ParallelTopology::pack_gpu_4935(double *)                                
+      0.4           362591        161    2252.1    2208.0      2175      2592         91.8  ParallelTopology::unpack_gpu_5319(double *)                              
+      0.4           362430        161    2251.1    2240.0      2176      2912         72.6  ParallelTopology::pack_gpu_5082(double *)                                
+      0.4           362398        161    2250.9    2208.0      2176      2560         89.5  ParallelTopology::unpack_gpu_5415(double *)                              
+      0.4           362013        161    2248.5    2208.0      2176      2560         86.6  ParallelTopology::unpack_gpu_5512(double *)                              
+      0.4           361663        161    2246.4    2240.0      2208      2624         39.3  ParallelTopology::unpack_gpu_5270(double *)                              
+      0.4           360096        161    2236.6    2208.0      2176      2528         61.5  ParallelTopology::unpack_gpu_5464(double *)                              
+      0.4           359872        161    2235.2    2240.0      2176      2432         36.2  ParallelTopology::pack_gpu_5171(double *)                                
+      0.4           359327        161    2231.8    2240.0      2208      2464         30.4  ParallelTopology::pack_gpu_4993(double *)                                
+      0.4           359296        161    2231.7    2208.0      2208      2432         36.6  ParallelTopology::pack_gpu_5027(double *)                                
+      0.4           359104        161    2230.5    2208.0      2208      2432         39.3  ParallelTopology::pack_gpu_5160(double *)                                
+      0.4           358815        161    2228.7    2208.0      2176      2368         30.9  ParallelTopology::unpack_gpu_5451(double *)                              
+      0.4           358814        161    2228.7    2208.0      2176      2432         36.9  ParallelTopology::pack_gpu_5204(double *)                                
+      0.4           357920        161    2223.1    2208.0      2176      2400         24.8  ParallelTopology::unpack_gpu_5500(double *)                              
+      0.4           357600        161    2221.1    2208.0      2176      2368         27.1  ParallelTopology::unpack_gpu_5355(double *)                              
+      0.4           357439        161    2220.1    2208.0      2176      2560         36.6  ParallelTopology::pack_gpu_5115(double *)                                
+      0.4           357439        161    2220.1    2208.0      2175      2368         28.8  ParallelTopology::unpack_gpu_5403(double *)                              
+      0.4           357247        161    2218.9    2208.0      2176      2304         20.0  ParallelTopology::unpack_gpu_5306(double *)                              
+      0.4           357085        161    2217.9    2208.0      2176      2464         27.5  ParallelTopology::pack_gpu_5071(double *)                                
+      0.4           356221        161    2212.6    2208.0      2176      2368         24.2  ParallelTopology::unpack_gpu_5367(double *)                              
+      0.1           134719          1  134719.0  134719.0    134719    134719          0.0  FlowSolverRHEA::initializeThermodynamics_879()                           
+      0.1            80416         30    2680.5    2672.0      2592      3008         80.5  FlowSolverRHEA::updateBoundaries_1241()                                  
+      0.1            80320         30    2677.3    2656.0      2592      2944         89.9  FlowSolverRHEA::updateBoundaries_1790()                                  
+      0.1            77248         30    2574.9    2560.0      2496      2720         48.8  FlowSolverRHEA::updateBoundaries_1058()                                  
+      0.1            76096         30    2536.5    2528.0      2464      2688         47.5  FlowSolverRHEA::updateBoundaries_1607()                                  
+      0.1            64832          1   64832.0   64832.0     64832     64832          0.0  FlowSolverRHEA::primitiveToConservedVariables_914()                      
+      0.1            47200         30    1573.3    1568.0      1504      1728         38.6  FlowSolverRHEA::updateBoundaries_1973()                                  
+
+[6/8] Executing 'cuda_gpu_mem_time_sum' stats report
+
+ Time (%)  Total Time (ns)  Count  Avg (ns)   Med (ns)  Min (ns)  Max (ns)  StdDev (ns)            Operation           
+ --------  ---------------  -----  ---------  --------  --------  --------  -----------  ------------------------------
+     82.1        362618202    263  1378776.4    2560.0      2208   5027921    1890993.4  [CUDA memcpy Device-to-Host]  
+     17.0         74856328  16408     4562.2     800.0       704    963197      48717.9  [CUDA memcpy Host-to-Device]  
+      0.7          3198065   1449     2207.1    1664.0      1568     81440       4458.7  [CUDA memcpy Peer-to-Peer]    
+      0.2           701054    644     1088.6    1104.0       992      1312         79.0  [CUDA memcpy Device-to-Device]
+      0.0            96064    124      774.7     768.0       768       800         13.1  [CUDA memset]                 
+
+[7/8] Executing 'cuda_gpu_mem_size_sum' stats report
+
+ Total (MB)  Count  Avg (MB)  Med (MB)  Min (MB)  Max (MB)  StdDev (MB)            Operation           
+ ----------  -----  --------  --------  --------  --------  -----------  ------------------------------
+   1151.094    263     4.377     0.000     0.000     8.923        4.469  [CUDA memcpy Device-to-Host]  
+    892.465  16408     0.054     0.000     0.000     8.923        0.695  [CUDA memcpy Host-to-Device]  
+     43.194   1449     0.030     0.001     0.001     0.131        0.044  [CUDA memcpy Peer-to-Peer]    
+     21.432    644     0.033     0.033     0.001     0.066        0.032  [CUDA memcpy Device-to-Device]
+      0.001    124     0.000     0.000     0.000     0.000        0.000  [CUDA memset]                 
+
+[8/8] Executing 'openacc_sum' stats report
+
+ Time (%)  Total Time (ns)  Num Calls   Avg (ns)     Med (ns)    Min (ns)  Max (ns)   StdDev (ns)                     Name                    
+ --------  ---------------  ---------  -----------  -----------  --------  ---------  -----------  -------------------------------------------
+     15.9        406337206          2  203168603.0  203168603.0  84850478  321486728  167327097.0  Update@FlowSolverRHEA.cpp:3434             
+     15.9        406171876        124    3275579.6    2630221.0    724810    5889354    2191285.0  Enqueue Download@FlowSolverRHEA.cpp:3434   
+      3.4         86998971         92     945641.0    1007505.5    656094    2324683     219749.9  Enter Data@DistributedArray.cpp:40         
+      2.8         71841311        276     260294.6       7963.0      5741     924096     369023.8  Enqueue Upload@DistributedArray.cpp:40     
+      2.7         67983581        161     422258.3       5893.0      4893   47135375    4021296.1  Enter Data@ParallelTopology.cpp:5049       
+      2.7         67642665       5152      13129.4      12843.5      3268      45181       5924.9  Wait@ParallelTopology.cpp:5534             
+      2.1         52539635        161     326333.1       6502.0      5776   51448885    4054203.0  Enter Data@ParallelTopology.cpp:5221       
+      2.0         50079749        161     311054.3       4936.0      4202   49217109    3878427.2  Compute Construct@ParallelTopology.cpp:4993
+      1.9         48435560        322     150421.0       3819.5      2727   47127817    2626104.2  Enqueue Upload@ParallelTopology.cpp:5049   
+      1.2         29410152          1   29410152.0   29410152.0  29410152   29410152          0.0  Update@myRHEA.cpp:63                       
+      1.2         29386203          5    5877240.6    5886401.0   5724662    6071819     141492.7  Enqueue Download@myRHEA.cpp:63             
+      0.9         22644275        161     140647.7       5825.0      4749   21665117    1706968.5  Enter Data@ParallelTopology.cpp:5319       
+      0.8         21471018        161     133360.4       5908.0      5097   20481965    1613718.1  Enter Data@ParallelTopology.cpp:5160       
+      0.8         21099105        161     131050.3       6069.0      5014   20060476    1580476.1  Enter Data@ParallelTopology.cpp:4935       
+      0.8         21096970        161     131037.1       5966.0      4995   18685944    1475673.8  Enter Data@ParallelTopology.cpp:5282       
+      0.8         21015357        161     130530.2       5822.0      4811   20042060    1579056.6  Enter Data@ParallelTopology.cpp:5060       
+      0.8         20855622        161     129538.0       5973.0      5042   19853042    1564145.4  Enter Data@ParallelTopology.cpp:5104       
+      0.8         20775497        161     129040.4       5746.0      4992   19777862    1558223.4  Enter Data@ParallelTopology.cpp:5016       
+      0.8         20761837        161     128955.5       6006.0      5038   19747975    1555859.5  Enter Data@ParallelTopology.cpp:4993       
+      0.8         20741774        161     128830.9       5784.0      4951   19763249    1557080.6  Enter Data@ParallelTopology.cpp:5126       
+      0.8         20633054        161     128155.6       5934.0      4971   19635137    1546974.3  Enter Data@ParallelTopology.cpp:4971       
+      0.8         20594658        161     127917.1       5940.0      5051   19590213    1543430.7  Enter Data@ParallelTopology.cpp:5115       
+      0.8         20572622        161     127780.3       5825.0      5033   19603517    1544496.5  Enter Data@ParallelTopology.cpp:4982       
+      0.8         20526894        161     127496.2       6514.0      5315   19390969    1527665.0  Enter Data@ParallelTopology.cpp:4923       
+      0.8         20449980        161     127018.5       5905.0      5050   19445396    1532017.6  Enter Data@ParallelTopology.cpp:5093       
+      0.8         20364337        161     126486.6       5872.0      4959   19373116    1526327.5  Enter Data@ParallelTopology.cpp:5082       
+      0.8         20274399        161     125927.9       6130.0      4881   19235619    1515468.2  Enter Data@ParallelTopology.cpp:4960       
+      0.8         20155073        161     125186.8       5875.0      5117   19149828    1508723.1  Enter Data@ParallelTopology.cpp:5038       
+      0.8         20111269        161     124914.7       5810.0      4905   19122950    1506613.3  Enter Data@ParallelTopology.cpp:5004       
+      0.8         19790923        161     122925.0       5926.0      4856   18791246    1480465.6  Enter Data@ParallelTopology.cpp:5027       
+      0.8         19752185        161     122684.4       6002.0      5182   18744971    1476814.9  Enter Data@ParallelTopology.cpp:5258       
+      0.8         19692558        161     122314.0       6007.0      5019   18677055    1471458.5  Enter Data@ParallelTopology.cpp:5149       
+      0.8         19551307        161     121436.7       5898.0      5096   18566946    1462795.7  Enter Data@ParallelTopology.cpp:5137       
+      0.8         19500810        161     121123.0       5916.0      4936   18514037    1458624.7  Enter Data@ParallelTopology.cpp:5071       
+      0.8         19477647        161     120979.2       5899.0      5037   18494869    1457116.1  Enter Data@ParallelTopology.cpp:5171       
+      0.8         19332780        161     120079.4       5836.0      4958   18345166    1445315.5  Enter Data@ParallelTopology.cpp:5193       
+      0.8         19316711        161     119979.6       6050.0      5100   18298218    1441600.2  Enter Data@ParallelTopology.cpp:5233       
+      0.7         19121430        161     118766.6       5892.0      4897   18128653    1428249.4  Enter Data@ParallelTopology.cpp:5182       
+      0.7         19116845        161     118738.2       5856.0      4866   18129368    1428308.3  Enter Data@ParallelTopology.cpp:5270       
+      0.7         19100907          1   19100907.0   19100907.0  19100907   19100907          0.0  Enter Data@FlowSolverRHEA.cpp:146          
+      0.7         18556864        161     115260.0       5837.0      4979   17574212    1384558.4  Enter Data@ParallelTopology.cpp:5204       
+      0.7         18382752         30     612758.4     612445.5    610579     617095       1331.9  Compute Construct@FlowSolverRHEA.cpp:3137  
+      0.7         18279083         60     304651.4     304669.0      2019     608432     304821.2  Wait@FlowSolverRHEA.cpp:3137               
+      0.7         17677580         30     589252.7     588800.5    585213     593127       1841.6  Compute Construct@FlowSolverRHEA.cpp:2783  
+      0.7         17580095         60     293001.6     291617.5      2076     587504     293006.7  Wait@FlowSolverRHEA.cpp:2783               
+      0.4          9749075         30     324969.2     324608.5    322283     329465       1906.1  Compute Construct@FlowSolverRHEA.cpp:3322  
+      0.4          9650756         60     160845.9     159955.5      2043     322933     159711.5  Wait@FlowSolverRHEA.cpp:3322               
+      0.4          8978708        322      27884.2       3976.5      2935    7667492     427065.9  Enqueue Upload@ParallelTopology.cpp:5385   
+      0.3          8663907        161      53813.1       5942.0      5127    7670457     604028.0  Exit Data@ParallelTopology.cpp:5379        
+      0.2          5206855          1    5206855.0    5206855.0   5206855    5206855          0.0  Update@myRHEA.cpp:82                       
+      0.2          5182583          5    1036516.6    1044881.0    988087    1059977      27855.5  Enqueue Upload@myRHEA.cpp:82               
+      0.2          4924797         30     164159.9     164224.5    161220     168508       1504.9  Compute Construct@FlowSolverRHEA.cpp:999   
+      0.2          4837192         60      80619.9      80213.5      2136     161411      78737.6  Wait@FlowSolverRHEA.cpp:999                
+      0.2          4266539        322      13250.1       3752.0      2686    1516210     118959.2  Enqueue Upload@ParallelTopology.cpp:5427   
+      0.2          4025745        251      16038.8       3214.0      2691    3192990     201330.1  Enter Data@ParallelTopology.cpp:3702       
+      0.1          2993452          1    2993452.0    2993452.0   2993452    2993452          0.0  Update@FlowSolverRHEA.cpp:706              
+      0.1          2980205        251      11873.3      11638.0     10429      20954       1113.3  Compute Construct@ParallelTopology.cpp:3662
+      0.1          2970399          3     990133.0     980418.0    895906    1094075      99441.1  Enqueue Upload@FlowSolverRHEA.cpp:706      
+      0.1          2905516        251      11575.8      11288.0     10430      20961       1027.5  Compute Construct@ParallelTopology.cpp:3672
+      0.1          2875135        251      11454.7      11214.0     10348      17786        992.4  Compute Construct@ParallelTopology.cpp:3682
+      0.1          2873563        251      11448.5      11174.0     10305      15127        831.9  Compute Construct@ParallelTopology.cpp:3692
+      0.1          2864059        251      11410.6      11104.0     10400      17338        916.8  Compute Construct@ParallelTopology.cpp:3742
+      0.1          2863008        251      11406.4      11200.0     10452      18322        910.2  Compute Construct@ParallelTopology.cpp:3822
+      0.1          2861737        251      11401.3      11177.0     10280      15617        812.1  Compute Construct@ParallelTopology.cpp:3722
+      0.1          2861479        251      11400.3      11104.0     10403      17713        983.7  Compute Construct@ParallelTopology.cpp:3712
+      0.1          2854983        251      11374.4      11099.0     10336      17959        854.7  Compute Construct@ParallelTopology.cpp:3842
+      0.1          2850620        251      11357.1      11103.0     10209      18071        934.5  Compute Construct@ParallelTopology.cpp:3812
+      0.1          2848011        251      11346.7      11177.0     10458      20469        884.4  Compute Construct@ParallelTopology.cpp:3702
+      0.1          2846316        251      11339.9      11098.0     10378      17293        880.0  Compute Construct@ParallelTopology.cpp:3762
+      0.1          2842980        251      11326.6      11088.0     10413      20339        917.4  Compute Construct@ParallelTopology.cpp:3732
+      0.1          2842139        251      11323.3      11078.0     10211      18617        915.4  Compute Construct@ParallelTopology.cpp:3782
+      0.1          2838829        251      11310.1      11082.0     10269      15737        799.4  Compute Construct@ParallelTopology.cpp:3792
+      0.1          2838448        251      11308.6      11045.0     10277      16567        896.1  Compute Construct@ParallelTopology.cpp:3832
+      0.1          2837276        251      11303.9      11108.0     10310      16862        808.3  Compute Construct@ParallelTopology.cpp:3802
+      0.1          2835471        251      11296.7      11050.0     10325      17173        943.9  Compute Construct@ParallelTopology.cpp:3752
+      0.1          2832655        251      11285.5      11099.0     10392      13724        657.2  Compute Construct@ParallelTopology.cpp:3852
+      0.1          2831385        251      11280.4      11115.0     10325      15547        693.8  Compute Construct@ParallelTopology.cpp:3772
+      0.1          2759165         30      91972.2      91835.5     89789      98533       1579.8  Compute Construct@FlowSolverRHEA.cpp:1424  
+      0.1          2688811        322       8350.3       3801.0      2662    1416361      78720.0  Enqueue Upload@ParallelTopology.cpp:5282   
+      0.1          2659697         60      44328.3      44404.5      2049      87469      42299.3  Wait@FlowSolverRHEA.cpp:1424               
+      0.1          2481022        161      15410.1       5765.0      4873    1517983     119163.0  Enter Data@ParallelTopology.cpp:5427       
+      0.1          2190428         30      73014.3      73054.5     71246      75592       1025.9  Compute Construct@FlowSolverRHEA.cpp:938   
+      0.1          2185865        502       4354.3       5329.0      1935       9121       2011.4  Wait@ParallelTopology.cpp:3822             
+      0.1          2181176        502       4345.0       5526.0      1942       7886       1988.2  Wait@ParallelTopology.cpp:3772             
+      0.1          2178960        502       4340.6       5210.5      1889       9019       2070.2  Wait@ParallelTopology.cpp:3662             
+      0.1          2177747        502       4338.1       5232.0      1932      10115       2004.0  Wait@ParallelTopology.cpp:3832             
+      0.1          2177047        502       4336.7       5787.0      1957       7069       2017.6  Wait@ParallelTopology.cpp:3802             
+      0.1          2176464        502       4335.6       5112.5      1905      10127       2002.3  Wait@ParallelTopology.cpp:3692             
+      0.1          2169199        502       4321.1       5329.0      1927      11995       2038.3  Wait@ParallelTopology.cpp:3812             
+      0.1          2167896        502       4318.5       4952.0      1906      11947       2043.8  Wait@ParallelTopology.cpp:3782             
+      0.1          2167851        502       4318.4       4884.0      1934      14683       2045.2  Wait@ParallelTopology.cpp:3682             
+      0.1          2167731        502       4318.2       5274.5      1919       8729       2000.6  Wait@ParallelTopology.cpp:3792             
+      0.1          2163538        502       4309.8       4485.5      1930       9570       2021.3  Wait@ParallelTopology.cpp:3722             
+      0.1          2161205        502       4305.2       4106.5      1910      12172       2052.8  Wait@ParallelTopology.cpp:3742             
+      0.1          2160673        502       4304.1       4146.5      1932      10251       2003.8  Wait@ParallelTopology.cpp:3752             
+      0.1          2160373        502       4303.5       5336.0      1911       7894       1978.1  Wait@ParallelTopology.cpp:3842             
+      0.1          2157990        502       4298.8       5112.0      1943      10755       1998.5  Wait@ParallelTopology.cpp:3672             
+      0.1          2156878        502       4296.6       5205.5      1941       6784       1972.6  Wait@ParallelTopology.cpp:3732             
+      0.1          2156157        502       4295.1       5629.0      1909       6772       1988.3  Wait@ParallelTopology.cpp:3762             
+      0.1          2154200        502       4291.2       5094.5      1905       8169       2008.7  Wait@ParallelTopology.cpp:3852             
+      0.1          2142954        502       4268.8       5270.0      1933       6906       1968.1  Wait@ParallelTopology.cpp:3712             
+      0.1          2134380        502       4251.8       4592.0      1912       6791       1988.1  Wait@ParallelTopology.cpp:3702             
+      0.1          2091863         60      34864.4      34750.0      2210      68715      32530.0  Wait@FlowSolverRHEA.cpp:938                
+      0.1          1899992         31      61290.1      60953.0     59674      68832       1759.6  Compute Construct@FlowSolverRHEA.cpp:3750  
+      0.1          1822419         31      58787.7      58348.0     57112      64408       1366.8  Compute Construct@FlowSolverRHEA.cpp:3871  
+      0.1          1804115         93      19399.1       5740.0      2023      51292      21924.0  Wait@FlowSolverRHEA.cpp:3750               
+      0.1          1778847        161      11048.7       6150.0      5231     741364      57937.5  Exit Data@ParallelTopology.cpp:5038        
+      0.1          1706917         62      27530.9      27238.5      1988      53341      25268.6  Wait@FlowSolverRHEA.cpp:3871               
+      0.1          1695361        322       5265.1       4043.0      2990     176613      13563.3  Enqueue Upload@ParallelTopology.cpp:4966   
+      0.1          1686807        161      10477.1       4915.0      4155     841848      65939.6  Compute Construct@ParallelTopology.cpp:5476
+      0.1          1589547        322       4936.5       3990.5      2948     248838      13728.7  Enqueue Upload@ParallelTopology.cpp:5055   
+      0.1          1526269        322       4740.0       4316.0      2961      32237       2595.6  Enqueue Upload@ParallelTopology.cpp:4923   
+      0.1          1488510         10     148851.0     148696.0    148137     150284        689.1  Compute Construct@FlowSolverRHEA.cpp:2514  
+      0.1          1470556         92      15984.3      15512.5      6043      28332       2207.6  Wait@DistributedArray.cpp:40               
+      0.1          1465496         30      48849.9       5699.5      2043     139166      64360.3  Wait@FlowSolverRHEA.cpp:2514               
+      0.1          1451435         31      46820.5      46612.0     45725      49642        877.6  Compute Construct@FlowSolverRHEA.cpp:3817  
+      0.1          1440200        322       4472.7       4021.0      2914     103299       5627.5  Enqueue Upload@ParallelTopology.cpp:5143   
+      0.1          1418243        161       8809.0       5802.0      4847     432442      33614.4  Enter Data@ParallelTopology.cpp:5415       
+      0.1          1405226        322       4364.1       4180.5      2935      10425       1014.7  Enqueue Upload@ParallelTopology.cpp:4929   
+      0.1          1391495        322       4321.4       4100.0      3056      15026       1264.9  Enqueue Upload@ParallelTopology.cpp:5044   
+      0.1          1387708        322       4309.7       4007.0      2910      26680       1824.8  Enqueue Upload@ParallelTopology.cpp:4999   
+      0.1          1382585        322       4293.7       4184.5      2950       8447        928.4  Enqueue Upload@ParallelTopology.cpp:5227   
+      0.1          1379745         93      14836.0       5803.0      2181      37584      15302.1  Wait@FlowSolverRHEA.cpp:3817               
+      0.1          1372754        322       4263.2       4100.0      2887      25881       1733.9  Enqueue Upload@ParallelTopology.cpp:5221   
+      0.1          1367528        322       4247.0       3913.5      2696      23842       1824.6  Enqueue Upload@ParallelTopology.cpp:4960   
+      0.1          1365490        322       4240.7       3882.5      2778      37237       2627.7  Enqueue Upload@ParallelTopology.cpp:5093   
+      0.1          1360788        322       4226.0       4087.0      2888       8383        957.9  Enqueue Upload@ParallelTopology.cpp:4977   
+      0.1          1360785        322       4226.0       4050.5      2934      14375       1215.1  Enqueue Upload@ParallelTopology.cpp:4941   
+      0.1          1357438        322       4215.6       3894.5      2781      29927       2018.0  Enqueue Upload@ParallelTopology.cpp:4993   
+      0.1          1353106        322       4202.2       4058.5      2909      10282        981.0  Enqueue Upload@ParallelTopology.cpp:5433   
+      0.1          1352069        322       4199.0       4069.0      2958       9777        901.9  Enqueue Upload@ParallelTopology.cpp:5088   
+      0.1          1350594        322       4194.4       4089.5      2918       9358        964.2  Enqueue Upload@ParallelTopology.cpp:5199   
+      0.1          1349012        322       4189.5       3899.5      2804      19055       1664.0  Enqueue Upload@ParallelTopology.cpp:4935   
+      0.1          1344917        322       4176.8       4033.5      2966      14441       1116.1  Enqueue Upload@ParallelTopology.cpp:5022   
+      0.1          1344080        322       4174.2       3961.5      2882      18761       1406.1  Enqueue Upload@ParallelTopology.cpp:5506   
+      0.1          1343459        322       4172.2       3999.5      2920      12928       1050.9  Enqueue Upload@ParallelTopology.cpp:5010   
+      0.1          1342865        322       4170.4       4004.0      2897      17671       1207.9  Enqueue Upload@ParallelTopology.cpp:5312   
+      0.1          1340701        322       4163.7       4075.0      3075       9128        855.4  Enqueue Upload@ParallelTopology.cpp:5155   
+      0.1          1339528        322       4160.0       3990.5      2906      12120       1099.6  Enqueue Upload@ParallelTopology.cpp:5397   
+      0.1          1338978        322       4158.3       4048.5      2939      11403       1000.7  Enqueue Upload@ParallelTopology.cpp:5166   
+      0.1          1338491        322       4156.8       4047.5      2944       7866        899.1  Enqueue Upload@ParallelTopology.cpp:5121   
+      0.1          1337922        322       4155.0       4003.5      2855      15133       1037.0  Enqueue Upload@ParallelTopology.cpp:5349   
+      0.1          1336535        322       4150.7       4007.5      2910       9930       1004.5  Enqueue Upload@ParallelTopology.cpp:5177   
+      0.1          1336429        322       4150.4       4038.0      2798       9776        965.7  Enqueue Upload@ParallelTopology.cpp:5239   
+      0.1          1334368        322       4144.0       4020.5      2825      10006        962.9  Enqueue Upload@ParallelTopology.cpp:5518   
+      0.1          1332634        322       4138.6       4017.0      2965       9336        870.3  Enqueue Upload@ParallelTopology.cpp:5110   
+      0.1          1332088        322       4136.9       4001.5      2882       7868        912.2  Enqueue Upload@ParallelTopology.cpp:5264   
+      0.1          1329964        322       4130.3       3974.5      2952      11114       1018.9  Enqueue Upload@ParallelTopology.cpp:5337   
+      0.1          1328978        322       4127.3       3977.5      2933      10318        955.0  Enqueue Upload@ParallelTopology.cpp:4988   
+      0.1          1328558        322       4126.0       3983.5      2903       9327        945.3  Enqueue Upload@ParallelTopology.cpp:5494   
+      0.1          1327506        322       4122.7       4022.0      2954       8164        884.5  Enqueue Upload@ParallelTopology.cpp:5470   
+      0.1          1327305        322       4122.1       3893.5      2701      31514       1937.8  Enqueue Upload@ParallelTopology.cpp:5104   
+      0.1          1325557        322       4116.6       3993.5      2941      10292       1032.7  Enqueue Upload@ParallelTopology.cpp:5288   
+      0.1          1325457        322       4116.3       3820.5      2703      19051       1565.6  Enqueue Upload@ParallelTopology.cpp:5149   
+      0.1          1324920        322       4114.7       4013.5      2854       8127        831.7  Enqueue Upload@ParallelTopology.cpp:5132   
+      0.1          1321954        322       4105.4       3811.5      2779      29735       2020.1  Enqueue Upload@ParallelTopology.cpp:5115   
+      0.1          1321392        322       4103.7       3980.0      2794       8728        856.5  Enqueue Upload@ParallelTopology.cpp:5077   
+      0.1          1319579        322       4098.1       3833.0      2727      36025       2129.4  Enqueue Upload@ParallelTopology.cpp:5082   
+      0.1          1319511        322       4097.9       3966.0      2936      10347        915.3  Enqueue Upload@ParallelTopology.cpp:5210   
+      0.1          1319221        322       4097.0       3976.0      2778       9211        893.1  Enqueue Upload@ParallelTopology.cpp:5276   
+      0.1          1317861        322       4092.7       3954.5      2914       8541        841.7  Enqueue Upload@ParallelTopology.cpp:5300   
+      0.1          1316459        322       4088.4       3779.5      2773      24408       1685.5  Enqueue Upload@ParallelTopology.cpp:5182   
+      0.1          1314530        322       4082.4       3961.0      2909      10612        877.9  Enqueue Upload@ParallelTopology.cpp:5421   
+      0.1          1313022        322       4077.7       3979.5      2834       9801        958.1  Enqueue Upload@ParallelTopology.cpp:5457   
+      0.1          1312482        322       4076.0       4003.0      2926       8162        810.9  Enqueue Upload@ParallelTopology.cpp:5188   
+      0.1          1311940        322       4074.3       3919.0      2891      15150       1116.8  Enqueue Upload@ParallelTopology.cpp:5373   
+      0.1          1311452        322       4072.8       4009.5      2914       7365        811.5  Enqueue Upload@ParallelTopology.cpp:5409   
+      0.1          1310895        322       4071.1       3993.0      2925       7629        793.9  Enqueue Upload@ParallelTopology.cpp:5099   
+      0.1          1308343        322       4063.2       4032.5      2822       8240        832.1  Enqueue Upload@ParallelTopology.cpp:5361   
+      0.1          1308310        322       4063.1       3856.0      2797      26171       1740.6  Enqueue Upload@ParallelTopology.cpp:5038   
+      0.1          1308062        322       4062.3       3887.5      2770      18052       1272.8  Enqueue Upload@ParallelTopology.cpp:5233   
+      0.1          1307971        322       4062.0       3834.0      2783      30984       1993.3  Enqueue Upload@ParallelTopology.cpp:5160   
+      0.1          1305852        322       4055.4       3843.5      2702      24506       1649.2  Enqueue Upload@ParallelTopology.cpp:4971   
+      0.1          1305786        322       4055.2       3811.5      2765      25927       1726.2  Enqueue Upload@ParallelTopology.cpp:5027   
+      0.1          1305554        322       4054.5       3808.0      2756      30355       1990.3  Enqueue Upload@ParallelTopology.cpp:5071   
+      0.1          1304020        322       4049.8       4014.5      2974       9034        774.8  Enqueue Upload@ParallelTopology.cpp:5033   
+      0.1          1304001        322       4049.7       3872.5      2835      25197       1688.2  Enqueue Upload@ParallelTopology.cpp:5004   
+      0.1          1302879        322       4046.2       3963.5      2900       7918        878.5  Enqueue Upload@ParallelTopology.cpp:5325   
+      0.1          1299653        322       4036.2       3990.5      3047       8423        759.5  Enqueue Upload@ParallelTopology.cpp:5066   
+      0.1          1298145        322       4031.5       3971.5      2917       9211        817.3  Enqueue Upload@ParallelTopology.cpp:5445   
+      0.1          1296117        322       4025.2       3875.5      2857       9678        930.5  Enqueue Upload@ParallelTopology.cpp:5482   
+      0.1          1294017        322       4018.7       3813.5      2749      25738       1737.5  Enqueue Upload@ParallelTopology.cpp:5016   
+      0.1          1293028        322       4015.6       3824.0      2742      18670       1335.6  Enqueue Upload@ParallelTopology.cpp:5171   
+      0.1          1291270        322       4010.2       3839.0      2767      16197       1250.2  Enqueue Upload@ParallelTopology.cpp:5258   
+      0.1          1289880        322       4005.8       3837.5      2717      22684       1517.1  Enqueue Upload@ParallelTopology.cpp:5137   
+      0.1          1288983        322       4003.1       3742.5      2698      23649       1642.4  Enqueue Upload@ParallelTopology.cpp:5319   
+      0.1          1283392        322       3985.7       3847.5      2735      16624       1190.7  Enqueue Upload@ParallelTopology.cpp:5270   
+      0.1          1283043        322       3984.6       3854.5      2776       8221        828.3  Enqueue Upload@ParallelTopology.cpp:5530   
+      0.1          1283017        322       3984.5       3739.5      2695      25143       1683.1  Enqueue Upload@ParallelTopology.cpp:5060   
+      0.1          1279581        322       3973.9       3808.5      2792      11547       1095.0  Enqueue Upload@ParallelTopology.cpp:5415   
+      0.1          1278497        322       3970.5       3700.5      2720      30482       1868.6  Enqueue Upload@ParallelTopology.cpp:5126   
+      0.0          1274625        322       3958.5       3853.0      2688       9739       1031.3  Enqueue Upload@ParallelTopology.cpp:5294   
+      0.0          1273641        322       3955.4       3743.5      2745      24319       1583.8  Enqueue Upload@ParallelTopology.cpp:4982   
+      0.0          1273561        322       3955.2       3754.0      2714      18266       1438.1  Enqueue Upload@ParallelTopology.cpp:5204   
+      0.0          1269819        322       3943.5       3742.0      2701       9051       1040.2  Enqueue Upload@ParallelTopology.cpp:5331   
+      0.0          1268669         30      42289.0      42047.5     40790      47686       1310.2  Compute Construct@myRHEA.cpp:177           
+      0.0          1268651        161       7879.8       5974.0      5086     255960      19812.1  Exit Data@ParallelTopology.cpp:5049        
+      0.0          1261668        322       3918.2       3764.0      2685       9103        981.9  Enqueue Upload@ParallelTopology.cpp:5343   
+      0.0          1260025        322       3913.1       3791.5      2728      17667       1270.5  Enqueue Upload@ParallelTopology.cpp:5193   
+      0.0          1257299        322       3904.7       3738.0      2634       9393       1021.0  Enqueue Upload@ParallelTopology.cpp:5306   
+      0.0          1255527        322       3899.2       3804.0      2678      10287        965.1  Enqueue Upload@ParallelTopology.cpp:5512   
+      0.0          1248370        322       3876.9       3747.0      2701       8170        852.5  Enqueue Upload@ParallelTopology.cpp:5488   
+      0.0          1247882        322       3875.4       3760.0      2649       8716        913.4  Enqueue Upload@ParallelTopology.cpp:5367   
+      0.0          1247294        322       3873.6       3730.5      2759      10812        974.8  Enqueue Upload@ParallelTopology.cpp:5476   
+      0.0          1242846         90      13809.4       2447.0      1899      38770      16326.5  Wait@myRHEA.cpp:177                        
+      0.0          1242526        322       3858.8       3740.5      2748      11068        942.3  Enqueue Upload@ParallelTopology.cpp:5379   
+      0.0          1241812        322       3856.6       3769.0      2771       8286        789.5  Enqueue Upload@ParallelTopology.cpp:5464   
+      0.0          1239103        322       3848.1       3811.0      2709       7235        791.4  Enqueue Upload@ParallelTopology.cpp:5439   
+      0.0          1238820        322       3847.3       3816.5      2733       6868        783.9  Enqueue Upload@ParallelTopology.cpp:5391   
+      0.0          1236160        322       3839.0       3739.0      2643       8930        927.6  Enqueue Upload@ParallelTopology.cpp:5451   
+      0.0          1231575        322       3824.8       3712.0      2675       8593        911.9  Enqueue Upload@ParallelTopology.cpp:5524   
+      0.0          1229956        322       3819.7       3723.5      2662       8331        854.6  Enqueue Upload@ParallelTopology.cpp:5500   
+      0.0          1223781        322       3800.6       3741.0      2746       7357        831.3  Enqueue Upload@ParallelTopology.cpp:5403   
+      0.0          1219906         11     110900.5     110348.0    108801     115095       1829.8  Compute Construct@FlowSolverRHEA.cpp:2471  
+      0.0          1218374        322       3783.8       3716.0      2641       7310        795.2  Enqueue Upload@ParallelTopology.cpp:5355   
+      0.0          1214432        161       7543.1       6161.0      5195     178109      13579.6  Exit Data@ParallelTopology.cpp:4960        
+      0.0          1179141         22      53597.3      52963.5      2029     108024      52442.0  Wait@FlowSolverRHEA.cpp:2471               
+      0.0          1138203        161       7069.6       4840.0      4101     293412      22737.7  Compute Construct@ParallelTopology.cpp:5306
+      0.0          1136213        161       7057.2       6082.0      5095     106067       7960.3  Exit Data@ParallelTopology.cpp:5137        
+      0.0          1129406         62      18216.2      17784.5      1447      57286      16823.4  Exit Data@FlowSolverRHEA.cpp:3750          
+      0.0          1095593        161       6804.9       6453.0      5228      25395       1796.8  Exit Data@ParallelTopology.cpp:4923        
+      0.0          1068896        161       6639.1       6248.0      5292      15174       1207.5  Exit Data@ParallelTopology.cpp:5221        
+      0.0          1057703        161       6569.6       6059.0      5124      37947       2920.9  Exit Data@ParallelTopology.cpp:4993        
+      0.0          1054238        161       6548.1       6252.0      5202      16600       1287.2  Exit Data@ParallelTopology.cpp:4935        
+      0.0          1045178        161       6491.8       6087.0      5224      30215       2096.8  Exit Data@ParallelTopology.cpp:5149        
+      0.0          1041645        161       6469.8       6174.0      5020      26804       1806.0  Exit Data@ParallelTopology.cpp:5306        
+      0.0          1041523        161       6469.1       6024.0      5129      38763       2754.5  Exit Data@ParallelTopology.cpp:5004        
+      0.0          1038113        161       6447.9       6167.0      5049      14534       1128.4  Exit Data@ParallelTopology.cpp:5258        
+      0.0          1034113        161       6423.1       5976.0      5160      15621       1332.3  Exit Data@ParallelTopology.cpp:5282        
+      0.0          1033982        161       6422.2       6084.0      5077      14578       1183.8  Exit Data@ParallelTopology.cpp:4971        
+      0.0          1031856        161       6409.0       6064.0      5046      21417       1463.7  Exit Data@ParallelTopology.cpp:5016        
+      0.0          1031131        161       6404.5       6177.0      5140      16078       1101.9  Exit Data@ParallelTopology.cpp:5082        
+      0.0          1031019        161       6403.8       6056.0      5157      12881       1091.1  Exit Data@ParallelTopology.cpp:5193        
+      0.0          1029952        161       6397.2       6111.0      5035      11703       1058.3  Exit Data@ParallelTopology.cpp:5512        
+      0.0          1029903        161       6396.9       6102.0      5146      16697       1206.7  Exit Data@ParallelTopology.cpp:5343        
+      0.0          1029768        161       6396.1       6108.0      4970      15995       1200.7  Exit Data@ParallelTopology.cpp:5233        
+      0.0          1029032        161       6391.5       6097.0      5141      14727       1127.7  Exit Data@ParallelTopology.cpp:5270        
+      0.0          1027737        161       6383.5       6036.0      5102      13888       1161.1  Exit Data@ParallelTopology.cpp:5104        
+      0.0          1026244        161       6374.2       6045.0      4957      20738       1370.0  Exit Data@ParallelTopology.cpp:5126        
+      0.0          1026190        161       6373.9       6011.0      4935      20517       1433.7  Exit Data@ParallelTopology.cpp:5500        
+      0.0          1025811        161       6371.5       6084.0      5148      14613       1164.3  Exit Data@ParallelTopology.cpp:5160        
+      0.0          1025371        161       6368.8       6062.0      5121      12820       1015.8  Exit Data@ParallelTopology.cpp:5115        
+      0.0          1024515        161       6363.4       6002.0      5101      12951       1131.9  Exit Data@ParallelTopology.cpp:4982        
+      0.0          1023557        161       6357.5       6164.0      5302      13547       1035.1  Exit Data@ParallelTopology.cpp:5391        
+      0.0          1023306        161       6355.9       6051.0      5206      15647       1181.7  Exit Data@ParallelTopology.cpp:5171        
+      0.0          1023146        161       6354.9       6084.0      5100      12381       1023.4  Exit Data@ParallelTopology.cpp:5427        
+      0.0          1022942        161       6353.7       6130.0      5177      13925        967.2  Exit Data@ParallelTopology.cpp:5415        
+      0.0          1021413        161       6344.2       5953.0      5025      17207       1456.0  Exit Data@ParallelTopology.cpp:5027        
+      0.0          1021260        161       6343.2       6014.0      5296      10109        956.9  Exit Data@ParallelTopology.cpp:5464        
+      0.0          1019218        161       6330.5       6006.0      5153      11521       1056.5  Exit Data@ParallelTopology.cpp:5451        
+      0.0          1014700        161       6302.5       6046.0      5150      11436        928.9  Exit Data@ParallelTopology.cpp:5439        
+      0.0          1013987        161       6298.1       5965.0      5107      14962       1133.3  Exit Data@ParallelTopology.cpp:5182        
+      0.0          1011562        161       6283.0       6044.0      5156      15577       1071.5  Exit Data@ParallelTopology.cpp:5071        
+      0.0          1010772        161       6278.1       6036.0      5045      10370        906.8  Exit Data@ParallelTopology.cpp:5294        
+      0.0          1010131        161       6274.1       6009.0      5071      15677       1162.5  Exit Data@ParallelTopology.cpp:5204        
+      0.0          1009319        161       6269.1       5968.0      5254      10084        839.2  Exit Data@ParallelTopology.cpp:5355        
+      0.0          1009240        161       6268.6       6010.0      4889      13800       1051.5  Exit Data@ParallelTopology.cpp:5319        
+      0.0          1008606        161       6264.6       5978.0      4991      10881        962.8  Exit Data@ParallelTopology.cpp:5488        
+      0.0          1008394        161       6263.3       6030.0      5059      10180        836.4  Exit Data@ParallelTopology.cpp:5403        
+      0.0          1006352        161       6250.6       5977.0      5018      16623       1120.4  Exit Data@ParallelTopology.cpp:5367        
+      0.0          1005987        161       6248.4       5996.0      5151      12590       1051.9  Exit Data@ParallelTopology.cpp:5331        
+      0.0          1003682        161       6234.0       6009.0      5072      13225        929.5  Exit Data@ParallelTopology.cpp:5093        
+      0.0          1003634        251       3998.5       3765.0      3026      13085        956.0  Enqueue Launch@ParallelTopology.cpp:3662   
+      0.0          1001527        161       6220.7       5940.0      5138      15001       1011.7  Exit Data@ParallelTopology.cpp:5060        
+      0.0          1000131        161       6212.0       5973.0      5049      11297       1004.6  Exit Data@ParallelTopology.cpp:5476        
+      0.0           992857        161       6166.8       5723.0      4771      25667       1844.4  Enter Data@ParallelTopology.cpp:5306       
+      0.0           986421        161       6126.8       5901.0      5032       9811        870.2  Exit Data@ParallelTopology.cpp:5524        
+      0.0           986149        161       6125.1       5690.0      4839      11613       1151.6  Enter Data@ParallelTopology.cpp:5294       
+      0.0           981901        161       6098.8       5727.0      4765      12286       1222.8  Enter Data@ParallelTopology.cpp:5331       
+      0.0           978808        161       6079.6       5749.0      4877      10556       1045.5  Enter Data@ParallelTopology.cpp:5343       
+      0.0           977835        161       6073.5       5749.0      4920      12353        989.3  Enter Data@ParallelTopology.cpp:5476       
+      0.0           974999        251       3884.5       3644.0      3106      13148        893.5  Enqueue Launch@ParallelTopology.cpp:3672   
+      0.0           973677        161       6047.7       5791.0      4916      13326        972.1  Enter Data@ParallelTopology.cpp:5379       
+      0.0           968129        161       6013.2       5434.0      4516      45780       3326.8  Compute Construct@ParallelTopology.cpp:5221
+      0.0           967903        161       6011.8       5654.0      4673      11524       1007.8  Enter Data@ParallelTopology.cpp:5512       
+      0.0           967689        161       6010.5       5701.0      4841      10193        959.3  Enter Data@ParallelTopology.cpp:5367       
+      0.0           966586        161       6003.6       5669.0      4748      17329       1305.1  Enter Data@ParallelTopology.cpp:5451       
+      0.0           966268        161       6001.7       5627.0      4915      10978        973.7  Enter Data@ParallelTopology.cpp:5500       
+      0.0           965620        161       5997.6       5770.0      4927       8673        809.6  Enter Data@ParallelTopology.cpp:5391       
+      0.0           965610        161       5997.6       5751.0      4895       9739        808.8  Enter Data@ParallelTopology.cpp:5439       
+      0.0           964665        161       5991.7       5766.0      4888      10276        794.0  Enter Data@ParallelTopology.cpp:5464       
+      0.0           953987        161       5925.4       5598.0      4876      10458        997.6  Enter Data@ParallelTopology.cpp:5524       
+      0.0           953252        161       5920.8       5701.0      4775       9758        853.6  Enter Data@ParallelTopology.cpp:5355       
+      0.0           951854        161       5912.1       5713.0      4902       9676        845.2  Enter Data@ParallelTopology.cpp:5488       
+      0.0           949722        161       5898.9       5566.0      4810      11872       1025.2  Enter Data@ParallelTopology.cpp:5403       
+      0.0           945319        251       3766.2       3534.0      3060      10437        818.8  Enqueue Launch@ParallelTopology.cpp:3682   
+      0.0           939564        161       5835.8       4985.0      4219      88189       6619.9  Compute Construct@ParallelTopology.cpp:4923
+      0.0           933638        251       3719.7       3499.0      3033      10036        817.8  Enqueue Launch@ParallelTopology.cpp:3712   
+      0.0           933404         62      15054.9      14292.0      1383      32609      13566.4  Exit Data@FlowSolverRHEA.cpp:3817          
+      0.0           930951        251       3709.0       3497.0      3005       6896        633.1  Enqueue Launch@ParallelTopology.cpp:3692   
+      0.0           929403        251       3702.8       3464.0      3092      10017        750.2  Enqueue Launch@ParallelTopology.cpp:3842   
+      0.0           923476        251       3679.2       3432.0      2979       9874        808.6  Enqueue Launch@ParallelTopology.cpp:3762   
+      0.0           922399        251       3674.9       3438.0      2992      13316        889.0  Enqueue Launch@ParallelTopology.cpp:3732   
+      0.0           921562        251       3671.6       3487.0      2979       7504        647.7  Enqueue Launch@ParallelTopology.cpp:3722   
+      0.0           921250        251       3670.3       3454.0      3016       6908        678.2  Enqueue Launch@ParallelTopology.cpp:3742   
+      0.0           913913        251       3641.1       3491.0      3023       7013        549.2  Enqueue Launch@ParallelTopology.cpp:3702   
+      0.0           910783        161       5657.0       4957.0      4214      51521       4159.7  Compute Construct@ParallelTopology.cpp:5049
+      0.0           909690        251       3624.3       3439.0      2908      10004        753.1  Enqueue Launch@ParallelTopology.cpp:3822   
+      0.0           908587        251       3619.9       3424.0      2965       9305        781.5  Enqueue Launch@ParallelTopology.cpp:3752   
+      0.0           908046        161       5640.0       3542.0      3012     289706      22547.2  Enqueue Launch@ParallelTopology.cpp:5306   
+      0.0           906553        251       3611.8       3403.0      2932       7939        646.8  Enqueue Launch@ParallelTopology.cpp:3792   
+      0.0           906347        251       3610.9       3395.0      2933       8872        780.3  Enqueue Launch@ParallelTopology.cpp:3832   
+      0.0           906179        251       3610.3       3424.0      2924      10317        756.9  Enqueue Launch@ParallelTopology.cpp:3812   
+      0.0           901277        251       3590.7       3430.0      3003       7870        581.5  Enqueue Launch@ParallelTopology.cpp:3772   
+      0.0           901248        251       3590.6       3434.0      3001       6268        556.4  Enqueue Launch@ParallelTopology.cpp:3852   
+      0.0           898914        251       3581.3       3418.0      2961      10825        675.3  Enqueue Launch@ParallelTopology.cpp:3782   
+      0.0           893986        251       3561.7       3364.0      2980       8747        652.9  Enqueue Launch@ParallelTopology.cpp:3802   
+      0.0           891290        161       5536.0       4994.0      4187      26650       2093.7  Compute Construct@ParallelTopology.cpp:5258
+      0.0           889116         31      28681.2      27699.0     23003      88074      11239.4  Compute Construct@FlowSolverRHEA.cpp:3893  
+      0.0           885296        161       5498.7       5063.0      4331      33810       2476.0  Compute Construct@ParallelTopology.cpp:5160
+      0.0           883361        251       3519.4       3315.0      2581       9210        832.3  Enter Data@DistributedArray.cpp:77         
+      0.0           880620        161       5469.7       5129.0      4294      20672       1523.1  Compute Construct@ParallelTopology.cpp:5233
+      0.0           879811        161       5464.7       4863.0      4145      38507       3189.8  Compute Construct@ParallelTopology.cpp:5004
+      0.0           875442        161       5437.5       4934.0      4316      36948       2701.6  Compute Construct@ParallelTopology.cpp:5319
+      0.0           873141        251       3478.6       3262.0      2727       7990        730.4  Enter Data@ParallelTopology.cpp:3772       
+      0.0           871630        161       5413.9       4977.0      4232      24104       1918.3  Compute Construct@ParallelTopology.cpp:5126
+      0.0           871472        251       3472.0       3290.0      2731      15623        968.7  Enter Data@ParallelTopology.cpp:3682       
+      0.0           870704        161       5408.1       4949.0      4273      23522       1817.7  Compute Construct@ParallelTopology.cpp:5282
+      0.0           870501        161       5406.8       4916.0      4145      26800       2015.8  Compute Construct@ParallelTopology.cpp:5060
+      0.0           870088        161       5404.3       4988.0      4229      21418       1836.5  Compute Construct@ParallelTopology.cpp:5171
+      0.0           869535        161       5400.8       4867.0      4257      25323       2125.0  Compute Construct@ParallelTopology.cpp:5071
+      0.0           869458        161       5400.4       5024.0      4347      20044       1635.2  Compute Construct@ParallelTopology.cpp:5204
+      0.0           868015        161       5391.4       5039.0      4256      21657       1586.7  Compute Construct@ParallelTopology.cpp:5193
+      0.0           867354        161       5387.3       5044.0      4166      25298       1803.8  Compute Construct@ParallelTopology.cpp:4935
+      0.0           863425        161       5362.9       4968.0      4266      26415       1903.1  Compute Construct@ParallelTopology.cpp:5027
+      0.0           862754        161       5358.7       4930.0      4111      29418       2127.5  Compute Construct@ParallelTopology.cpp:5082
+      0.0           861891        251       3433.8       3249.0      2674       8049        643.8  Enter Data@ParallelTopology.cpp:3792       
+      0.0           860603        251       3428.7       3298.0      2696       6491        548.5  Enter Data@ParallelTopology.cpp:3672       
+      0.0           859715        251       3425.2       3281.0      2677       6052        561.0  Enter Data@ParallelTopology.cpp:3822       
+      0.0           859170        161       5336.5       4928.0      4184      13288       1243.4  Compute Construct@ParallelTopology.cpp:5294
+      0.0           858843        161       5334.4       4965.0      4107      13638       1271.6  Compute Construct@ParallelTopology.cpp:5367
+      0.0           857854        251       3417.7       3274.0      2683       6372        578.4  Enter Data@ParallelTopology.cpp:3832       
+      0.0           856821        251       3413.6       3241.0      2655       5935        566.8  Enter Data@ParallelTopology.cpp:3722       
+      0.0           856674        161       5321.0       4917.0      4070      23354       1690.6  Compute Construct@ParallelTopology.cpp:4982
+      0.0           856597        161       5320.5       5089.0      4162      25378       1729.0  Compute Construct@ParallelTopology.cpp:4960
+      0.0           855859        251       3409.8       3240.0      2678      11059        700.6  Enter Data@ParallelTopology.cpp:3692       
+      0.0           855331        251       3407.7       3240.0      2721       8966        690.6  Enter Data@ParallelTopology.cpp:3802       
+      0.0           854184        161       5305.5       4879.0      4165      25872       1865.2  Compute Construct@ParallelTopology.cpp:4971
+      0.0           853974        161       5304.2       4909.0      4279      25868       1832.9  Compute Construct@ParallelTopology.cpp:5038
+      0.0           853238        251       3399.4       3243.0      2755       7488        596.6  Enter Data@ParallelTopology.cpp:3812       
+      0.0           853217        251       3399.3       3248.0      2708       5916        533.9  Enter Data@ParallelTopology.cpp:3842       
+      0.0           853196        161       5299.4       4878.0      4155      20708       1693.5  Compute Construct@ParallelTopology.cpp:5149
+      0.0           850918        251       3390.1       3221.0      2709       6378        532.6  Enter Data@ParallelTopology.cpp:3732       
+      0.0           850672        161       5283.7       4960.0      4102      23870       1693.1  Compute Construct@ParallelTopology.cpp:5115
+      0.0           850115        161       5280.2       4958.0      4124      20313       1444.4  Compute Construct@ParallelTopology.cpp:5270
+      0.0           849651        161       5277.3       4873.0      4243      25336       1809.3  Compute Construct@ParallelTopology.cpp:5093
+      0.0           848343        251       3379.9       3212.0      2638       8688        741.8  Enter Data@ParallelTopology.cpp:3852       
+      0.0           847117        161       5261.6       4933.0      4194      24846       1736.2  Compute Construct@ParallelTopology.cpp:5182
+      0.0           846710        251       3373.3       3235.0      2686       5932        499.1  Enter Data@ParallelTopology.cpp:3662       
+      0.0           846377        161       5257.0       4865.0      4214      24719       1735.7  Compute Construct@ParallelTopology.cpp:5016
+      0.0           845895         62      13643.5      13769.5     11030      29610       2869.2  Enqueue Download@FlowSolverRHEA.cpp:3765   
+      0.0           845717        161       5252.9       4918.0      4268       9844        999.0  Compute Construct@ParallelTopology.cpp:5500
+      0.0           844786        161       5247.1       4918.0      4278      10496        991.2  Compute Construct@ParallelTopology.cpp:5391
+      0.0           844714        251       3365.4       3245.0      2688       5609        488.9  Enter Data@ParallelTopology.cpp:3752       
+      0.0           844407        251       3364.2       3216.0      2633       6708        570.1  Enter Data@ParallelTopology.cpp:3762       
+      0.0           844305        251       3363.8       3224.0      2659       7005        567.6  Enter Data@ParallelTopology.cpp:3712       
+      0.0           840087        161       5217.9       4907.0      4108      10619       1011.2  Compute Construct@ParallelTopology.cpp:5488
+      0.0           839847        161       5216.4       4926.0      4223      10786        930.5  Compute Construct@ParallelTopology.cpp:5355
+      0.0           839757        161       5215.9       4888.0      4239      12007        944.5  Compute Construct@ParallelTopology.cpp:5451
+      0.0           838310        251       3339.9       3198.0      2740       5386        494.2  Enter Data@ParallelTopology.cpp:3742       
+      0.0           838144        161       5205.9       4791.0      4198      25455       1821.2  Compute Construct@ParallelTopology.cpp:5104
+      0.0           837795        161       5203.7       4922.0      4184      10767        932.2  Compute Construct@ParallelTopology.cpp:5343
+      0.0           837730        161       5203.3       4919.0      4174       9259        857.1  Compute Construct@ParallelTopology.cpp:5379
+      0.0           836720        251       3333.5       3218.0      2648       5486        484.2  Enter Data@ParallelTopology.cpp:3782       
+      0.0           836321        161       5194.5       4903.0      4210      10281        936.6  Compute Construct@ParallelTopology.cpp:5512
+      0.0           834786        161       5185.0       4768.0      4157      22000       1633.1  Compute Construct@ParallelTopology.cpp:5137
+      0.0           831781        161       5166.3       4941.0      4032      10771        857.0  Compute Construct@ParallelTopology.cpp:5331
+      0.0           831253        161       5163.1       4909.0      4313       9481        876.7  Compute Construct@ParallelTopology.cpp:5439
+      0.0           827363        161       5138.9       4874.0      4185       8886        770.2  Compute Construct@ParallelTopology.cpp:5403
+      0.0           826449        161       5133.2       4870.0      4266       8030        753.3  Compute Construct@ParallelTopology.cpp:5464
+      0.0           821383        161       5101.8       4872.0      4145       8955        784.6  Compute Construct@ParallelTopology.cpp:5415
+      0.0           821134        161       5100.2       4830.0      4189       8890        865.2  Compute Construct@ParallelTopology.cpp:5524
+      0.0           820568        161       5096.7       4828.0      4095       9786        880.6  Compute Construct@ParallelTopology.cpp:5427
+      0.0           811500        251       3233.1       3052.0      2466       8080        705.8  Enter Data@ParallelTopology.cpp:3658       
+      0.0           797831         62      12868.2      11633.0      3692      58911      10085.4  Enter Data@FlowSolverRHEA.cpp:3750         
+      0.0           755715         62      12189.0      13868.5      2018      42812      10144.9  Wait@FlowSolverRHEA.cpp:3893               
+      0.0           717412        161       4456.0       4039.0      3352      38973       2870.4  Enqueue Launch@ParallelTopology.cpp:5221   
+      0.0           703594         62      11348.3      11271.0     10483      13668        633.3  Enqueue Download@FlowSolverRHEA.cpp:3830   
+      0.0           691346        161       4294.1       3662.0      3001      65359       4929.4  Enqueue Launch@ParallelTopology.cpp:4923   
+      0.0           676980        161       4204.8       3707.0      3110      32625       2782.4  Enqueue Launch@ParallelTopology.cpp:5049   
+      0.0           661142        161       4106.5       3735.0      3171      26761       1988.9  Enqueue Launch@ParallelTopology.cpp:5160   
+      0.0           659079        161       4093.7       3802.0      3144      15212       1203.7  Enqueue Launch@ParallelTopology.cpp:5233   
+      0.0           659013        161       4093.2       3696.0      3001      21288       1741.2  Enqueue Launch@ParallelTopology.cpp:5258   
+      0.0           658027        161       4087.1       3690.0      3169      30407       2271.3  Enqueue Launch@ParallelTopology.cpp:5319   
+      0.0           654965        161       4068.1       3660.0      3023      19528       1548.9  Enqueue Launch@ParallelTopology.cpp:4993   
+      0.0           652549        161       4053.1       3689.0      3130      16487       1552.4  Enqueue Launch@ParallelTopology.cpp:5171   
+      0.0           649668        161       4035.2       3626.0      3062      19903       1560.9  Enqueue Launch@ParallelTopology.cpp:5060   
+      0.0           648287        161       4026.6       3645.0      3076      18658       1488.3  Enqueue Launch@ParallelTopology.cpp:5282   
+      0.0           648180        161       4026.0       3651.0      3145      17816       1574.4  Enqueue Launch@ParallelTopology.cpp:5126   
+      0.0           646026        161       4012.6       3699.0      3180      16332       1230.8  Enqueue Launch@ParallelTopology.cpp:5193   
+      0.0           645512        161       4009.4       3699.0      3032      19625       1445.3  Enqueue Launch@ParallelTopology.cpp:4935   
+      0.0           642583        161       3991.2       3727.0      3196      15145       1174.1  Enqueue Launch@ParallelTopology.cpp:5204   
+      0.0           639547        161       3972.3       3642.0      3019      12214       1190.2  Enqueue Launch@ParallelTopology.cpp:5367   
+      0.0           638486        161       3965.8       3653.0      3138      19610       1440.8  Enqueue Launch@ParallelTopology.cpp:5027   
+      0.0           637235        161       3958.0       3587.0      3020      18430       1744.0  Enqueue Launch@ParallelTopology.cpp:5004   
+      0.0           637052        161       3956.8       3583.0      3037      18631       1417.3  Enqueue Launch@ParallelTopology.cpp:5071   
+      0.0           635017        161       3944.2       3603.0      3010      15495       1358.0  Enqueue Launch@ParallelTopology.cpp:5149   
+      0.0           634859        161       3943.2       3642.0      3156      19107       1412.8  Enqueue Launch@ParallelTopology.cpp:5038   
+      0.0           634723        161       3942.4       3715.0      3120      17913       1281.3  Enqueue Launch@ParallelTopology.cpp:5182   
+      0.0           634628        161       3941.8       3638.0      3010      17177       1257.6  Enqueue Launch@ParallelTopology.cpp:4982   
+      0.0           634475        161       3940.8       3655.0      3095      10358       1023.5  Enqueue Launch@ParallelTopology.cpp:5476   
+      0.0           634334        161       3940.0       3671.0      3006      17741       1293.9  Enqueue Launch@ParallelTopology.cpp:5115   
+      0.0           634143        161       3938.8       3655.0      3038      20500       1521.0  Enqueue Launch@ParallelTopology.cpp:5082   
+      0.0           632178        161       3926.6       3598.0      3068      18763       1379.3  Enqueue Launch@ParallelTopology.cpp:5093   
+      0.0           631573        161       3922.8       3614.0      3042      12083       1063.2  Enqueue Launch@ParallelTopology.cpp:5294   
+      0.0           631532        161       3922.6       3709.0      3065      18542       1300.8  Enqueue Launch@ParallelTopology.cpp:4960   
+      0.0           631135        161       3920.1       3661.0      3155       7591        847.7  Enqueue Launch@ParallelTopology.cpp:5500   
+      0.0           630477        161       3916.0       3659.0      3082      14613       1104.9  Enqueue Launch@ParallelTopology.cpp:5270   
+      0.0           629447        251       2507.8       2385.0      1969       8228        622.6  Wait@DistributedArray.cpp:77               
+      0.0           627114        161       3895.1       3593.0      3079      18874       1391.9  Enqueue Launch@ParallelTopology.cpp:4971   
+      0.0           625279        161       3883.7       3597.0      3103       8998        831.4  Enqueue Launch@ParallelTopology.cpp:5512   
+      0.0           623819        161       3874.7       3606.0      3171       7881        791.9  Enqueue Launch@ParallelTopology.cpp:5391   
+      0.0           622257        161       3865.0       3613.0      3073      10734        809.3  Enqueue Launch@ParallelTopology.cpp:5451   
+      0.0           620932        161       3856.7       3620.0      3067      17847       1257.7  Enqueue Launch@ParallelTopology.cpp:5016   
+      0.0           620387        161       3853.3       3622.0      3082       9344        810.0  Enqueue Launch@ParallelTopology.cpp:5343   
+      0.0           619817        161       3849.8       3646.0      3098       6851        668.9  Enqueue Launch@ParallelTopology.cpp:5355   
+      0.0           619470        161       3847.6       3520.0      3077      19370       1426.2  Enqueue Launch@ParallelTopology.cpp:5104   
+      0.0           616556        161       3829.5       3633.0      2975       8064        684.4  Enqueue Launch@ParallelTopology.cpp:5331   
+      0.0           616189        161       3827.3       3498.0      3028      16358       1274.9  Enqueue Launch@ParallelTopology.cpp:5137   
+      0.0           616026        161       3826.2       3598.0      3059       7395        673.2  Enqueue Launch@ParallelTopology.cpp:5379   
+      0.0           615872        161       3825.3       3580.0      3029       7578        756.6  Enqueue Launch@ParallelTopology.cpp:5488   
+      0.0           615742        161       3824.5       3617.0      3135       7761        736.1  Enqueue Launch@ParallelTopology.cpp:5439   
+      0.0           613452        161       3810.3       3573.0      3155       6439        640.6  Enqueue Launch@ParallelTopology.cpp:5464   
+      0.0           613006        161       3807.5       3612.0      3084       7672        658.8  Enqueue Launch@ParallelTopology.cpp:5403   
+      0.0           606586        161       3767.6       3590.0      3041       6619        651.6  Enqueue Launch@ParallelTopology.cpp:5415   
+      0.0           606077        161       3764.5       3562.0      3086       7260        707.2  Enqueue Launch@ParallelTopology.cpp:5524   
+      0.0           605381         62       9764.2      10074.0      4073      18673       5259.2  Enter Data@FlowSolverRHEA.cpp:3817         
+      0.0           604080        161       3752.0       3574.0      3030       7227        683.2  Enqueue Launch@ParallelTopology.cpp:5427   
+      0.0           585694        251       2333.4       2239.0      1888       6856        478.5  Wait@ParallelTopology.cpp:3658             
+      0.0           553263        161       3436.4       3237.0      2771       8993        702.5  Enter Data@DistributedArray.cpp:49         
+      0.0           536818        161       3334.3       3108.0      2696       6324        617.4  Enter Data@ParallelTopology.cpp:4909       
+      0.0           458086        161       2845.3       2697.0      2198       7253        702.2  Wait@ParallelTopology.cpp:5605             
+      0.0           441006        161       2739.2       2464.0      2135      19431       1484.1  Wait@ParallelTopology.cpp:5549             
+      0.0           424052        161       2633.9       2537.0      2122       7877        599.5  Wait@ParallelTopology.cpp:5696             
+      0.0           412328        161       2561.0       2487.0      2083       4186        397.1  Wait@ParallelTopology.cpp:5614             
+      0.0           407491         30      13583.0      13051.5     12506      17068       1255.8  Compute Construct@FlowSolverRHEA.cpp:1058  
+      0.0           404586        161       2513.0       2385.0      2061      10513        741.9  Wait@ParallelTopology.cpp:5558             
+      0.0           403466        161       2506.0       2393.0      2041       5764        505.4  Wait@ParallelTopology.cpp:5576             
+      0.0           392820         92       4269.8       3785.5      2292      36203       3636.9  Exit Data@DistributedArray.cpp:44          
+      0.0           392701        161       2439.1       2349.0      1935       4530        378.4  Wait@ParallelTopology.cpp:5632             
+      0.0           390931        161       2428.1       2309.0      1935       4869        440.2  Wait@ParallelTopology.cpp:5650             
+      0.0           390358        161       2424.6       2311.0      1942       5002        422.2  Wait@ParallelTopology.cpp:5585             
+      0.0           388880        161       2415.4       2276.0      1921       7433        559.6  Wait@ParallelTopology.cpp:5687             
+      0.0           388598        161       2413.7       2333.0      1933       4464        397.4  Wait@ParallelTopology.cpp:5641             
+      0.0           388183        161       2411.1       2309.0      2063       4311        377.3  Wait@ParallelTopology.cpp:5705             
+      0.0           387808        161       2408.7       2355.0      1930       4802        382.2  Wait@ParallelTopology.cpp:5660             
+      0.0           386984        161       2403.6       2304.0      1925       4973        420.0  Wait@ParallelTopology.cpp:5743             
+      0.0           386965         30      12898.8      12594.5     12118      16794        949.8  Compute Construct@FlowSolverRHEA.cpp:1607  
+      0.0           386138        161       2398.4       2286.0      1958       6311        502.7  Wait@ParallelTopology.cpp:5594             
+      0.0           385991         30      12866.4      12377.0     11759      21421       1749.6  Compute Construct@FlowSolverRHEA.cpp:1790  
+      0.0           385850        161       2396.6       2286.0      1969       5595        432.9  Wait@ParallelTopology.cpp:4909             
+      0.0           385017        161       2391.4       2341.0      2001       3990        266.1  Wait@DistributedArray.cpp:49               
+      0.0           384185        161       2386.2       2317.0      1933       4208        343.7  Wait@ParallelTopology.cpp:5623             
+      0.0           384157        161       2386.1       2293.0      1943       4487        416.2  Wait@ParallelTopology.cpp:5678             
+      0.0           383873        161       2384.3       2270.0      1918       4386        408.2  Wait@ParallelTopology.cpp:5734             
+      0.0           383666        161       2383.0       2278.0      1973       4328        384.2  Wait@ParallelTopology.cpp:5716             
+      0.0           381205        161       2367.7       2277.0      1899       4732        400.4  Wait@ParallelTopology.cpp:5761             
+      0.0           381064        161       2366.9       2301.0      1915       3728        278.3  Wait@ParallelTopology.cpp:5725             
+      0.0           379271        161       2355.7       2277.0      1904       4104        316.4  Wait@ParallelTopology.cpp:5770             
+      0.0           378027        161       2348.0       2255.0      1878       5349        462.6  Wait@ParallelTopology.cpp:5752             
+      0.0           377808         30      12593.6      12420.0     11902      15137        661.3  Compute Construct@FlowSolverRHEA.cpp:1241  
+      0.0           376578        161       2339.0       2241.0      1902       4384        361.5  Wait@ParallelTopology.cpp:5669             
+      0.0           373870        161       2322.2       2276.0      1909       3829        277.5  Wait@ParallelTopology.cpp:5779             
+      0.0           342419         30      11414.0      11184.5     10752      13040        635.9  Compute Construct@FlowSolverRHEA.cpp:1973  
+      0.0           335688         30      11189.6      11071.5     10453      12643        565.8  Update@FlowSolverRHEA.cpp:4199             
+      0.0           324336         30      10811.2      10694.5     10001      13203        640.0  Update@FlowSolverRHEA.cpp:4203             
+      0.0           307397         30      10246.6       9783.5      9282      14046       1117.7  Enter Data@FlowSolverRHEA.cpp:3322         
+      0.0           297627          1     297627.0     297627.0    297627     297627          0.0  Enter Data@ImmersedBoundaryMethod.cpp:15   
+      0.0           293897         60       4898.3       6222.0      2081       7554       2425.9  Wait@FlowSolverRHEA.cpp:1058               
+      0.0           292924         60       4882.1       5467.5      2002      11191       2676.0  Wait@FlowSolverRHEA.cpp:1607               
+      0.0           285830         60       4763.8       5033.5      2041       7664       2424.8  Wait@FlowSolverRHEA.cpp:1241               
+      0.0           281953         60       4699.2       5003.0      1978       7661       2421.0  Wait@FlowSolverRHEA.cpp:1790               
+      0.0           273477         62       4410.9       4442.5      2346      12001       1918.1  Enqueue Upload@FlowSolverRHEA.cpp:3750     
+      0.0           272917        251       1087.3        984.0       753       3582        398.5  Exit Data@ParallelTopology.cpp:3662        
+      0.0           271853         62       4384.7       4125.5      3695       6963        725.8  Enqueue Launch@FlowSolverRHEA.cpp:3817     
+      0.0           269494        251       1073.7        947.0       722       6680        662.0  Exit Data@ParallelTopology.cpp:3702        
+      0.0           269267        251       1072.8        990.0       701       3425        360.2  Exit Data@ParallelTopology.cpp:3732        
+      0.0           268780         62       4335.2       4121.5      3707       6199        593.4  Enqueue Launch@FlowSolverRHEA.cpp:3750     
+      0.0           266867        251       1063.2        951.0       707       3609        438.5  Exit Data@ParallelTopology.cpp:3842        
+      0.0           266063        251       1060.0        998.0       757       2502        274.3  Exit Data@ParallelTopology.cpp:3672        
+      0.0           264739        251       1054.7        951.0       708       3456        402.0  Exit Data@ParallelTopology.cpp:3822        
+      0.0           264667        251       1054.5        977.0       701       8648        576.7  Exit Data@ParallelTopology.cpp:3722        
+      0.0           264482        251       1053.7        957.0       741       2797        371.6  Exit Data@ParallelTopology.cpp:3682        
+      0.0           263336        251       1049.1        979.0       752       3378        316.8  Exit Data@ParallelTopology.cpp:3692        
+      0.0           262845        251       1047.2        981.0       737       2486        298.4  Exit Data@ParallelTopology.cpp:3742        
+      0.0           262758        251       1046.8        979.0       711       5694        423.9  Exit Data@ParallelTopology.cpp:3712        
+      0.0           258475        251       1029.8        963.0       733       5521        387.2  Exit Data@ParallelTopology.cpp:3772        
+      0.0           257781        251       1027.0        953.0       738       2795        328.6  Exit Data@ParallelTopology.cpp:3852        
+      0.0           255688        251       1018.7        937.0       707       3359        391.0  Exit Data@ParallelTopology.cpp:3762        
+      0.0           254733        251       1014.9        943.0       709       2578        312.7  Exit Data@ParallelTopology.cpp:3832        
+      0.0           254660        251       1014.6        947.0       721       2939        343.9  Exit Data@ParallelTopology.cpp:3792        
+      0.0           253224        251       1008.9        931.0       707       2642        328.4  Exit Data@ParallelTopology.cpp:3812        
+      0.0           252149         60       4202.5       4589.5      1990       6494       1883.4  Wait@FlowSolverRHEA.cpp:1973               
+      0.0           251946        251       1003.8        916.0       690       3501        348.2  Exit Data@ParallelTopology.cpp:3782        
+      0.0           250943        251        999.8        955.0       710       2626        295.4  Exit Data@ParallelTopology.cpp:3752        
+      0.0           250807        251        999.2        937.0       713       3004        305.7  Exit Data@ParallelTopology.cpp:3802        
+      0.0           248317         30       8277.2       7907.5      7254      11876       1006.1  Enter Data@FlowSolverRHEA.cpp:1058         
+      0.0           240180         60       4003.0       4232.0      2759       6496        979.4  Enter Data@myRHEA.cpp:177                  
+      0.0           232058         30       7735.3       7482.0      6632      15225       1535.0  Enter Data@FlowSolverRHEA.cpp:2783         
+      0.0           227401         30       7580.0       7366.0      6669      10528        867.9  Enter Data@FlowSolverRHEA.cpp:999          
+      0.0           225913         30       7530.4       7282.0      6678       9762        652.2  Enter Data@FlowSolverRHEA.cpp:1241         
+      0.0           223189         30       7439.6       7186.0      6447      10973        860.7  Enter Data@FlowSolverRHEA.cpp:1973         
+      0.0           222630         30       7421.0       7295.0      6788       9038        576.9  Enter Data@FlowSolverRHEA.cpp:1607         
+      0.0           222280         30       7409.3       7068.0      6569      15868       1645.4  Enter Data@FlowSolverRHEA.cpp:1790         
+      0.0           215247         30       7174.9       7041.5      6564       8919        588.4  Enter Data@FlowSolverRHEA.cpp:1424         
+      0.0           210138         30       7004.6       6599.5      6162      12891       1267.6  Enter Data@FlowSolverRHEA.cpp:3137         
+      0.0           202351         30       6745.0       6605.5      6148       9144        687.1  Exit Data@FlowSolverRHEA.cpp:3322          
+      0.0           201428         31       6497.7       4393.0      3929      64411      10767.0  Enter Data@FlowSolverRHEA.cpp:3893         
+      0.0           196878         20       9843.9       9881.5      2741      18285       6915.7  Exit Data@FlowSolverRHEA.cpp:2514          
+      0.0           184183         20       9209.1       9221.0      5418      14189       3243.9  Enter Data@FlowSolverRHEA.cpp:2514         
+      0.0           183812        251        732.3        670.0       464       2534        298.7  Exit Data@DistributedArray.cpp:77          
+      0.0           183483         31       5918.8       3989.0      3417      61150      10262.2  Enqueue Launch@FlowSolverRHEA.cpp:3893     
+      0.0           182641         30       6088.0       6026.5      5303       7245        460.0  Enter Data@FlowSolverRHEA.cpp:938          
+      0.0           178250         30       5941.7       5907.5      5694       6302        122.7  Wait@FlowSolverRHEA.cpp:4203               
+      0.0           177383          1     177383.0     177383.0    177383     177383          0.0  Enter Data@ParallelTopology.cpp:3614       
+      0.0           177090         62       2856.3       2724.5      2281       7273        722.3  Enqueue Upload@FlowSolverRHEA.cpp:3817     
+      0.0           175310        251        698.4        622.0       435       2678        296.0  Exit Data@ParallelTopology.cpp:3658        
+      0.0           166666         30       5555.5       5534.0      5190       6101        192.6  Wait@FlowSolverRHEA.cpp:4199               
+      0.0           156633          1     156633.0     156633.0    156633     156633          0.0  Enter Data@LagrangianPointParticles.hpp:14…
+      0.0           152861          1     152861.0     152861.0    152861     152861          0.0  Compute Construct@FlowSolverRHEA.cpp:879   
+      0.0           149326         30       4977.5       4663.0      4293       9637       1143.5  Exit Data@FlowSolverRHEA.cpp:1241          
+      0.0           149286         30       4976.2       5021.0      4399       5435        253.1  Exit Data@FlowSolverRHEA.cpp:1058          
+      0.0           148634         34       4371.6       4157.0      3214       7340       1106.0  Enqueue Upload@LagrangianPointParticles.hp…
+      0.0           147229         31       4749.3       4540.0      4051       7724        790.3  Enter Data@FlowSolverRHEA.cpp:3871         
+      0.0           145564         30       4852.1       4612.0      4153      10041       1042.3  Exit Data@FlowSolverRHEA.cpp:1790          
+      0.0           141578         31       4567.0       4073.0      3591      10116       1348.7  Enqueue Launch@FlowSolverRHEA.cpp:3871     
+      0.0           140659         30       4688.6       4508.5      3934       8373        763.8  Exit Data@FlowSolverRHEA.cpp:1973          
+      0.0           139882         30       4662.7       4659.5      4296       5595        243.5  Exit Data@FlowSolverRHEA.cpp:1424          
+      0.0           139664          2      69832.0      69832.0      2251     137413      95574.0  Wait@FlowSolverRHEA.cpp:879                
+      0.0           135215         30       4507.2       4374.0      4009       6372        502.2  Exit Data@FlowSolverRHEA.cpp:2783          
+      0.0           134821         30       4494.0       4409.5      4262       5781        280.2  Exit Data@FlowSolverRHEA.cpp:1607          
+      0.0           133125         30       4437.5       4126.5      3620       8214       1030.6  Enqueue Launch@FlowSolverRHEA.cpp:1058     
+      0.0           131166        161        814.7        706.0       488       2541        379.2  Exit Data@DistributedArray.cpp:49          
+      0.0           127103         30       4236.8       4133.5      3339       5799        538.8  Enqueue Upload@FlowSolverRHEA.cpp:4199     
+      0.0           125894         30       4196.5       3718.0      3252      12259       1627.1  Enqueue Launch@FlowSolverRHEA.cpp:1790     
+      0.0           125302        161        778.3        724.0       504       1979        256.6  Exit Data@ParallelTopology.cpp:4909        
+      0.0           124747         30       4158.2       4005.0      3535       6220        616.4  Enqueue Launch@FlowSolverRHEA.cpp:938      
+      0.0           124391         30       4146.4       3770.5      3317       7060        984.0  Enqueue Launch@FlowSolverRHEA.cpp:3137     
+      0.0           124017         30       4133.9       3766.0      3223       9939       1238.9  Enqueue Launch@FlowSolverRHEA.cpp:1424     
+      0.0           121602         30       4053.4       3695.5      3317       7880        969.1  Enqueue Launch@FlowSolverRHEA.cpp:3322     
+      0.0           120135         30       4004.5       3863.5      3659       6192        494.6  Exit Data@FlowSolverRHEA.cpp:3137          
+      0.0           119580         20       5979.0       4674.5      3259      23248       4787.5  Enqueue Upload@FlowSolverRHEA.cpp:146      
+      0.0           119358         10      11935.8      11915.5     11311      13124        502.5  Enqueue Download@FlowSolverRHEA.cpp:2543   
+      0.0           119214         30       3973.8       3749.0      3321       9940       1188.8  Enqueue Launch@FlowSolverRHEA.cpp:2783     
+      0.0           119175         30       3972.5       3776.0      3352       7837        851.2  Exit Data@FlowSolverRHEA.cpp:999           
+      0.0           117993         30       3933.1       3692.0      3345       7551        782.3  Enqueue Launch@myRHEA.cpp:177              
+      0.0           117432         30       3914.4       3663.0      3401       6625        662.0  Enqueue Launch@FlowSolverRHEA.cpp:1241     
+      0.0           117061         30       3902.0       3803.5      3182       5588        452.6  Enqueue Launch@FlowSolverRHEA.cpp:1607     
+      0.0           115287         30       3842.9       3668.0      3264       5737        508.8  Enqueue Launch@FlowSolverRHEA.cpp:999      
+      0.0           112670         30       3755.7       3594.0      3232       4992        515.6  Enqueue Launch@FlowSolverRHEA.cpp:1973     
+      0.0           111697         10      11169.7      10899.5     10276      12840        975.4  Update@FlowSolverRHEA.cpp:4042             
+      0.0           111161         30       3705.4       3594.0      3343       4894        369.6  Enqueue Upload@FlowSolverRHEA.cpp:4203     
+      0.0            88264         30       2942.1       2817.0      2581       5012        485.4  Exit Data@FlowSolverRHEA.cpp:938           
+      0.0            85547         20       4277.4       4140.0      3630       5933        587.8  Enqueue Launch@FlowSolverRHEA.cpp:2514     
+      0.0            83295         60       1388.3       1644.5       638       3420        560.3  Exit Data@myRHEA.cpp:177                   
+      0.0            75440          1      75440.0      75440.0     75440      75440          0.0  Compute Construct@FlowSolverRHEA.cpp:914   
+      0.0            75289         31       2428.7       2395.0      2049       3694        336.8  Wait@FlowSolverRHEA.cpp:3765               
+      0.0            74028         11       6729.8       6332.0      5919       9966       1123.5  Enter Data@FlowSolverRHEA.cpp:2471         
+      0.0            72890          2      36445.0      36445.0      3404      69486      46727.0  Wait@FlowSolverRHEA.cpp:914                
+      0.0            69931         31       2255.8       2186.0      1994       2723        212.1  Wait@FlowSolverRHEA.cpp:3830               
+      0.0            61998         31       1999.9       1935.0      1629       3712        420.6  Exit Data@FlowSolverRHEA.cpp:3871          
+      0.0            61761          1      61761.0      61761.0     61761      61761          0.0  Enter Data@FlowSolverRHEA.cpp:386          
+      0.0            61112         31       1971.4       1718.0      1488       5635        830.0  Exit Data@FlowSolverRHEA.cpp:3893          
+      0.0            58350         10       5835.0       5816.0      5708       6029        111.8  Wait@FlowSolverRHEA.cpp:4042               
+      0.0            56761          1      56761.0      56761.0     56761      56761          0.0  Exit Data@FlowSolverRHEA.cpp:405           
+      0.0            47547          1      47547.0      47547.0     47547      47547          0.0  Enter Data@ParallelTopology.cpp:3460       
+      0.0            46140         11       4194.5       3989.0      3512       5083        602.5  Enqueue Launch@FlowSolverRHEA.cpp:2471     
+      0.0            44533          1      44533.0      44533.0     44533      44533          0.0  Enter Data@ParallelTopology.cpp:3489       
+      0.0            43137         11       3921.5       3733.0      3373       4880        484.3  Exit Data@FlowSolverRHEA.cpp:2471          
+      0.0            41359         10       4135.9       3902.0      3569       6214        784.2  Enqueue Upload@FlowSolverRHEA.cpp:2514     
+      0.0            41207         10       4120.7       3794.0      3496       5946        838.0  Enqueue Upload@FlowSolverRHEA.cpp:4042     
+      0.0            40467          1      40467.0      40467.0     40467      40467          0.0  Enqueue Upload@ImmersedBoundaryMethod.cpp:…
+      0.0            36361          1      36361.0      36361.0     36361      36361          0.0  Enter Data@ParallelTopology.cpp:293        
+      0.0            33244          3      11081.3      13055.0      5167      15022       5215.5  Enqueue Upload@FlowSolverRHEA.cpp:386      
+      0.0            25631          2      12815.5      12815.5     10432      15199       3370.8  Update@LagrangianPointParticles.hpp:1498   
+      0.0            22765          1      22765.0      22765.0     22765      22765          0.0  Enqueue Upload@ParallelTopology.cpp:293    
+      0.0            22271         10       2227.1       2187.0      2085       2402        108.9  Wait@FlowSolverRHEA.cpp:2543               
+      0.0            22263          1      22263.0      22263.0     22263      22263          0.0  Enter Data@ParallelTopology.cpp:3474       
+      0.0            21578          1      21578.0      21578.0     21578      21578          0.0  Enter Data@ParallelTopology.cpp:3467       
+      0.0            15364          1      15364.0      15364.0     15364      15364          0.0  Wait@myRHEA.cpp:82                         
+      0.0            13504          1      13504.0      13504.0     13504      13504          0.0  Wait@FlowSolverRHEA.cpp:706                
+      0.0            13107          1      13107.0      13107.0     13107      13107          0.0  Enter Data@ParallelTopology.cpp:3493       
+      0.0            11824          1      11824.0      11824.0     11824      11824          0.0  Enter Data@ParallelTopology.cpp:3497       
+      0.0            11805          1      11805.0      11805.0     11805      11805          0.0  Update@FlowSolverRHEA.cpp:3967             
+      0.0            11451          1      11451.0      11451.0     11451      11451          0.0  Enter Data@ParallelTopology.cpp:3501       
+      0.0            11337          1      11337.0      11337.0     11337      11337          0.0  Enter Data@ParallelTopology.cpp:3517       
+      0.0            10934          1      10934.0      10934.0     10934      10934          0.0  Enter Data@ParallelTopology.cpp:3505       
+      0.0            10933          1      10933.0      10933.0     10933      10933          0.0  Enter Data@ParallelTopology.cpp:3582       
+      0.0            10927          1      10927.0      10927.0     10927      10927          0.0  Enter Data@ParallelTopology.cpp:3561       
+      0.0            10799          1      10799.0      10799.0     10799      10799          0.0  Update@FlowSolverRHEA.cpp:3971             
+      0.0            10502          1      10502.0      10502.0     10502      10502          0.0  Enter Data@ParallelTopology.cpp:3630       
+      0.0            10380          1      10380.0      10380.0     10380      10380          0.0  Enqueue Launch@FlowSolverRHEA.cpp:879      
+      0.0            10239          1      10239.0      10239.0     10239      10239          0.0  Enter Data@ParallelTopology.cpp:3565       
+      0.0            10176          1      10176.0      10176.0     10176      10176          0.0  Enter Data@ParallelTopology.cpp:3626       
+      0.0            10149          1      10149.0      10149.0     10149      10149          0.0  Enter Data@ParallelTopology.cpp:3646       
+      0.0            10072          1      10072.0      10072.0     10072      10072          0.0  Enter Data@ParallelTopology.cpp:3537       
+      0.0            10030          1      10030.0      10030.0     10030      10030          0.0  Enter Data@ParallelTopology.cpp:3618       
+      0.0             9997          1       9997.0       9997.0      9997       9997          0.0  Enter Data@ParallelTopology.cpp:3549       
+      0.0             9594          1       9594.0       9594.0      9594       9594          0.0  Enter Data@ParallelTopology.cpp:3622       
+      0.0             9593          1       9593.0       9593.0      9593       9593          0.0  Enter Data@ParallelTopology.cpp:3513       
+      0.0             9565          1       9565.0       9565.0      9565       9565          0.0  Enter Data@ParallelTopology.cpp:3533       
+      0.0             9449          1       9449.0       9449.0      9449       9449          0.0  Enter Data@ParallelTopology.cpp:3634       
+      0.0             9314          1       9314.0       9314.0      9314       9314          0.0  Enter Data@ParallelTopology.cpp:3521       
+      0.0             9259          1       9259.0       9259.0      9259       9259          0.0  Enter Data@ParallelTopology.cpp:3602       
+      0.0             9229          1       9229.0       9229.0      9229       9229          0.0  Enter Data@ParallelTopology.cpp:3594       
+      0.0             9197          1       9197.0       9197.0      9197       9197          0.0  Enter Data@ParallelTopology.cpp:3509       
+      0.0             9191          1       9191.0       9191.0      9191       9191          0.0  Enter Data@ParallelTopology.cpp:3578       
+      0.0             9168          1       9168.0       9168.0      9168       9168          0.0  Enter Data@ParallelTopology.cpp:3610       
+      0.0             9138          1       9138.0       9138.0      9138       9138          0.0  Enter Data@ParallelTopology.cpp:3541       
+      0.0             9109          1       9109.0       9109.0      9109       9109          0.0  Enter Data@FlowSolverRHEA.cpp:879          
+      0.0             9027          2       4513.5       4513.5      4031       4996        682.4  Wait@FlowSolverRHEA.cpp:3434               
+      0.0             9017          1       9017.0       9017.0      9017       9017          0.0  Enter Data@ParallelTopology.cpp:3586       
+      0.0             8970          1       8970.0       8970.0      8970       8970          0.0  Enter Data@ParallelTopology.cpp:3570       
+      0.0             8948          1       8948.0       8948.0      8948       8948          0.0  Enter Data@ParallelTopology.cpp:3606       
+      0.0             8943          1       8943.0       8943.0      8943       8943          0.0  Enter Data@ParallelTopology.cpp:3598       
+      0.0             8932          1       8932.0       8932.0      8932       8932          0.0  Wait@FlowSolverRHEA.cpp:146                
+      0.0             8864          1       8864.0       8864.0      8864       8864          0.0  Enter Data@ParallelTopology.cpp:3525       
+      0.0             8841          1       8841.0       8841.0      8841       8841          0.0  Enter Data@ParallelTopology.cpp:3545       
+      0.0             8814          1       8814.0       8814.0      8814       8814          0.0  Enter Data@ParallelTopology.cpp:3642       
+      0.0             8734          1       8734.0       8734.0      8734       8734          0.0  Enter Data@ParallelTopology.cpp:3590       
+      0.0             8684          1       8684.0       8684.0      8684       8684          0.0  Enter Data@ParallelTopology.cpp:3574       
+      0.0             8623          1       8623.0       8623.0      8623       8623          0.0  Enter Data@ParallelTopology.cpp:3529       
+      0.0             8536          1       8536.0       8536.0      8536       8536          0.0  Enter Data@ParallelTopology.cpp:3557       
+      0.0             8003          1       8003.0       8003.0      8003       8003          0.0  Exit Data@FlowSolverRHEA.cpp:879           
+      0.0             7887          1       7887.0       7887.0      7887       7887          0.0  Wait@ParallelTopology.cpp:3489             
+      0.0             7414          1       7414.0       7414.0      7414       7414          0.0  Enter Data@FlowSolverRHEA.cpp:914          
+      0.0             7055          1       7055.0       7055.0      7055       7055          0.0  Wait@ImmersedBoundaryMethod.cpp:15         
+      0.0             6990          1       6990.0       6990.0      6990       6990          0.0  Enter Data@ParallelTopology.cpp:3638       
+      0.0             6767          1       6767.0       6767.0      6767       6767          0.0  Enter Data@ParallelTopology.cpp:3553       
+      0.0             6280          1       6280.0       6280.0      6280       6280          0.0  Wait@FlowSolverRHEA.cpp:386                
+      0.0             5887          1       5887.0       5887.0      5887       5887          0.0  Wait@FlowSolverRHEA.cpp:3971               
+      0.0             5730          1       5730.0       5730.0      5730       5730          0.0  Wait@myRHEA.cpp:63                         
+      0.0             5568          1       5568.0       5568.0      5568       5568          0.0  Wait@LagrangianPointParticles.hpp:1486     
+      0.0             5478          1       5478.0       5478.0      5478       5478          0.0  Wait@FlowSolverRHEA.cpp:3967               
+      0.0             4725          1       4725.0       4725.0      4725       4725          0.0  Enqueue Upload@FlowSolverRHEA.cpp:3967     
+      0.0             4710          1       4710.0       4710.0      4710       4710          0.0  Enter Data@FlowSolverRHEA.cpp:4030         
+      0.0             4238          1       4238.0       4238.0      4238       4238          0.0  Enqueue Launch@FlowSolverRHEA.cpp:914      
+      0.0             4011          1       4011.0       4011.0      4011       4011          0.0  Enqueue Upload@FlowSolverRHEA.cpp:3971     
+      0.0             3979          1       3979.0       3979.0      3979       3979          0.0  Wait@ParallelTopology.cpp:293              
+      0.0             3152          1       3152.0       3152.0      3152       3152          0.0  Wait@ParallelTopology.cpp:3460             
+      0.0             3114          1       3114.0       3114.0      3114       3114          0.0  Wait@ParallelTopology.cpp:3493             
+      0.0             3097          1       3097.0       3097.0      3097       3097          0.0  Exit Data@FlowSolverRHEA.cpp:914           
+      0.0             2628          1       2628.0       2628.0      2628       2628          0.0  Wait@FlowSolverRHEA.cpp:4030               
+      0.0             2521          1       2521.0       2521.0      2521       2521          0.0  Wait@ParallelTopology.cpp:3537             
+      0.0             2521          1       2521.0       2521.0      2521       2521          0.0  Wait@ParallelTopology.cpp:3594             
+      0.0             2418          1       2418.0       2418.0      2418       2418          0.0  Wait@ParallelTopology.cpp:3622             
+      0.0             2317          1       2317.0       2317.0      2317       2317          0.0  Wait@ParallelTopology.cpp:3646             
+      0.0             2310          1       2310.0       2310.0      2310       2310          0.0  Wait@ParallelTopology.cpp:3513             
+      0.0             2296          1       2296.0       2296.0      2296       2296          0.0  Wait@ParallelTopology.cpp:3614             
+      0.0             2287          1       2287.0       2287.0      2287       2287          0.0  Wait@ParallelTopology.cpp:3553             
+      0.0             2234          1       2234.0       2234.0      2234       2234          0.0  Wait@ParallelTopology.cpp:3467             
+      0.0             2200          1       2200.0       2200.0      2200       2200          0.0  Wait@ParallelTopology.cpp:3549             
+      0.0             2197          1       2197.0       2197.0      2197       2197          0.0  Wait@ParallelTopology.cpp:3474             
+      0.0             2196          1       2196.0       2196.0      2196       2196          0.0  Wait@ParallelTopology.cpp:3497             
+      0.0             2164          1       2164.0       2164.0      2164       2164          0.0  Wait@ParallelTopology.cpp:3545             
+      0.0             2151          1       2151.0       2151.0      2151       2151          0.0  Wait@ParallelTopology.cpp:3578             
+      0.0             2117          1       2117.0       2117.0      2117       2117          0.0  Wait@ParallelTopology.cpp:3517             
+      0.0             2105          1       2105.0       2105.0      2105       2105          0.0  Wait@ParallelTopology.cpp:3501             
+      0.0             2090          1       2090.0       2090.0      2090       2090          0.0  Wait@ParallelTopology.cpp:3618             
+      0.0             2086          1       2086.0       2086.0      2086       2086          0.0  Wait@ParallelTopology.cpp:3602             
+      0.0             2082          1       2082.0       2082.0      2082       2082          0.0  Wait@ParallelTopology.cpp:3561             
+      0.0             2075          1       2075.0       2075.0      2075       2075          0.0  Wait@ParallelTopology.cpp:3598             
+      0.0             2069          1       2069.0       2069.0      2069       2069          0.0  Wait@ParallelTopology.cpp:3570             
+      0.0             2060          1       2060.0       2060.0      2060       2060          0.0  Wait@ParallelTopology.cpp:3505             
+      0.0             2047          1       2047.0       2047.0      2047       2047          0.0  Wait@ParallelTopology.cpp:3533             
+      0.0             2039          1       2039.0       2039.0      2039       2039          0.0  Wait@ParallelTopology.cpp:3582             
+      0.0             2023          1       2023.0       2023.0      2023       2023          0.0  Wait@ParallelTopology.cpp:3525             
+      0.0             2019          1       2019.0       2019.0      2019       2019          0.0  Wait@ParallelTopology.cpp:3634             
+      0.0             2017          1       2017.0       2017.0      2017       2017          0.0  Wait@ParallelTopology.cpp:3590             
+      0.0             2015          1       2015.0       2015.0      2015       2015          0.0  Wait@ParallelTopology.cpp:3630             
+      0.0             2008          1       2008.0       2008.0      2008       2008          0.0  Wait@ParallelTopology.cpp:3509             
+      0.0             2008          1       2008.0       2008.0      2008       2008          0.0  Wait@ParallelTopology.cpp:3529             
+      0.0             2003          1       2003.0       2003.0      2003       2003          0.0  Wait@ParallelTopology.cpp:3642             
+      0.0             2001          1       2001.0       2001.0      2001       2001          0.0  Wait@ParallelTopology.cpp:3586             
+      0.0             1997          1       1997.0       1997.0      1997       1997          0.0  Wait@ParallelTopology.cpp:3606             
+      0.0             1994          1       1994.0       1994.0      1994       1994          0.0  Wait@ParallelTopology.cpp:3638             
+      0.0             1991          1       1991.0       1991.0      1991       1991          0.0  Wait@ParallelTopology.cpp:3541             
+      0.0             1990          1       1990.0       1990.0      1990       1990          0.0  Wait@ParallelTopology.cpp:3626             
+      0.0             1982          1       1982.0       1982.0      1982       1982          0.0  Wait@ParallelTopology.cpp:3574             
+      0.0             1976          1       1976.0       1976.0      1976       1976          0.0  Wait@ParallelTopology.cpp:3565             
+      0.0             1974          1       1974.0       1974.0      1974       1974          0.0  Wait@ParallelTopology.cpp:3521             
+      0.0             1955          1       1955.0       1955.0      1955       1955          0.0  Wait@ParallelTopology.cpp:3610             
+      0.0             1919          1       1919.0       1919.0      1919       1919          0.0  Wait@ParallelTopology.cpp:3557             
+      0.0             1321          1       1321.0       1321.0      1321       1321          0.0  Exit Data@FlowSolverRHEA.cpp:4274          
+      0.0                0         92          0.0          0.0         0          0          0.0  Alloc@DistributedArray.cpp:40              
+      0.0                0          6          0.0          0.0         0          0          0.0  Alloc@FlowSolverRHEA.cpp:146               
+      0.0                0          2          0.0          0.0         0          0          0.0  Alloc@FlowSolverRHEA.cpp:3750              
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@FlowSolverRHEA.cpp:386               
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ImmersedBoundaryMethod.cpp:15        
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:293             
+      0.0                0          4          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3460            
+      0.0                0          4          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3467            
+      0.0                0          4          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3474            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3489            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3493            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3497            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3501            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3505            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3509            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3513            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3517            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3521            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3525            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3529            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3533            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3537            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3541            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3545            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3549            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3553            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3557            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3561            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3565            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3570            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3574            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3578            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3582            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3586            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3590            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3594            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3598            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3602            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3606            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3610            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3614            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3618            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3622            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3626            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3630            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3634            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3638            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3642            
+      0.0                0          1          0.0          0.0         0          0          0.0  Alloc@ParallelTopology.cpp:3646            
+      0.0                0         92          0.0          0.0         0          0          0.0  Create@DistributedArray.cpp:40             
+      0.0                0          6          0.0          0.0         0          0          0.0  Create@FlowSolverRHEA.cpp:146              
+      0.0                0         10          0.0          0.0         0          0          0.0  Create@FlowSolverRHEA.cpp:2514             
+      0.0                0         62          0.0          0.0         0          0          0.0  Create@FlowSolverRHEA.cpp:3750             
+      0.0                0         62          0.0          0.0         0          0          0.0  Create@FlowSolverRHEA.cpp:3817             
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@FlowSolverRHEA.cpp:386              
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ImmersedBoundaryMethod.cpp:15       
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:293            
+      0.0                0          4          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3460           
+      0.0                0          4          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3467           
+      0.0                0          4          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3474           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3489           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3493           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3497           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3501           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3505           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3509           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3513           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3517           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3521           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3525           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3529           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3533           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3537           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3541           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3545           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3549           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3553           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3557           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3561           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3565           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3570           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3574           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3578           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3582           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3586           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3590           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3594           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3598           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3602           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3606           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3610           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3614           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3618           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3622           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3626           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3630           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3634           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3638           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3642           
+      0.0                0          1          0.0          0.0         0          0          0.0  Create@ParallelTopology.cpp:3646           
+      0.0                0         92          0.0          0.0         0          0          0.0  Delete@DistributedArray.cpp:44             
+      0.0                0         10          0.0          0.0         0          0          0.0  Delete@FlowSolverRHEA.cpp:2543             
+      0.0                0         62          0.0          0.0         0          0          0.0  Delete@FlowSolverRHEA.cpp:3765             
+      0.0                0         62          0.0          0.0         0          0          0.0  Delete@FlowSolverRHEA.cpp:3830             
+      0.0                0          7          0.0          0.0         0          0          0.0  Delete@FlowSolverRHEA.cpp:405              
+      0.0                0        101          0.0          0.0         0          0          0.0  Free@DistributedArray.cpp:44               
+
+Generated:
+	/gpfs/scratch/upc119/RHEA_GPU_optimization/Cases/3d_turbulent_channel_flow/rhea_profile_rank_0.nsys-rep
+	/gpfs/scratch/upc119/RHEA_GPU_optimization/Cases/3d_turbulent_channel_flow/rhea_profile_rank_0.sqlite

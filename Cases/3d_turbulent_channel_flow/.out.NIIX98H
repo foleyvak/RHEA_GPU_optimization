@@ -1,0 +1,3 @@
+>>> PSUBMIT: sbatch -J RHEA_test --exclusive --time=10 --qos=acc_debug --gres=gpu:4     --account=upc119   -D /gpfs/scratch/upc119/RHEA_GPU_optimization/Cases/3d_turbulent_channel_flow -N 1 -n 4 /gpfs/home/upc/upc027946/bin/psubmit-mpiexec-wrapper.sh -t slurm -n 4 -p 4 -h 1 -g 4 -d /gpfs/home/upc/upc027946/bin -s .  -e ./runner-script.sh -o ./psubmit.opt -a "\"\""
+sbatch: error: QOSMaxSubmitJobPerUserLimit
+sbatch: error: Batch job submission failed: Job violates accounting/QOS policy (job submit limit, user's size and/or time limits)
