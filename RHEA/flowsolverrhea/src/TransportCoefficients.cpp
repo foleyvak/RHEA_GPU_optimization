@@ -353,7 +353,8 @@ double HighPressureTransportCoefficients::calculateMolarStdCpFromNASApolynomials
 
 };
 
-/*
+
+#if COOLPROP_ACTIVATED_
 ////////// CoolPropTransportCoefficients CLASS //////////
 
 CoolPropTransportCoefficients::CoolPropTransportCoefficients() : BaseTransportCoefficients() {};
@@ -407,7 +408,8 @@ double CoolPropTransportCoefficients::calculateThermalConductivity(const double 
     return( cp_substance->conductivity() );
 
 };
-*/
+#endif
+
 
 ////////// SvdSurrogateTransportCoefficients CLASS //////////
 

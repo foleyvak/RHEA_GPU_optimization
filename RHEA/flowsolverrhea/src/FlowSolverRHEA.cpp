@@ -1,5 +1,14 @@
 #include "FlowSolverRHEA.hpp"
 
+#ifdef USE_NVTX
+    #include <nvtx3/nvToolsExt.h>     /// header-only NVTX3 (use <nvToolsExt.h> and link -lnvToolsExt for NVTX v2)
+    #define NVTX_PUSH(name) nvtxRangePushA(name)
+    #define NVTX_POP()      nvtxRangePop()
+#else
+    #define NVTX_PUSH(name)
+    #define NVTX_POP()
+#endif
+
 using namespace std;
 
 
@@ -38,15 +47,17 @@ FlowSolverRHEA::FlowSolverRHEA(const string name_configuration_file, function<vo
         thermodynamics = new StiffenedGasThermodynamicModel( configuration_file );
     } else if( thermodynamic_model == "PENG_ROBINSON" ) {
         thermodynamics = new PengRobinsonThermodynamicModel( configuration_file );
+#if COOLPROP_ACTIVATED_	
     } else if( thermodynamic_model == "COOLPROP" ) {
         thermodynamics = new CoolPropThermodynamicModel( configuration_file );
+#endif
     } else if( thermodynamic_model == "SVD_SURROGATE" ) {
         thermodynamics = new SvdSurrogateThermodynamicModel( configuration_file );	
     } else {
         cout << "Thermodynamic model not available!" << endl;
         MPI_Abort( MPI_COMM_WORLD, 1 );
     }*/
-    thermodynamics = new IdealGasThermodynamicModel( configuration_file );	// ... modified for OpenACC
+    thermodynamics = new _ThermodynamicModel_( configuration_file );	// ... modified for OpenACC
 
     /// Construct (initialize) transport coefficients model
     /*if( transport_coefficients_model == "CONSTANT" ) {
@@ -55,15 +66,17 @@ FlowSolverRHEA::FlowSolverRHEA(const string name_configuration_file, function<vo
         transport_coefficients = new LowPressureGasTransportCoefficients( configuration_file );
     } else if( transport_coefficients_model == "HIGH_PRESSURE" ) {
         transport_coefficients = new HighPressureTransportCoefficients( configuration_file );
+#if COOLPROP_ACTIVATED_
     } else if( transport_coefficients_model == "COOLPROP" ) {
         transport_coefficients = new CoolPropTransportCoefficients( configuration_file );
+#endif
     } else if( transport_coefficients_model == "SVD_SURROGATE" ) {
         transport_coefficients = new SvdSurrogateTransportCoefficients( configuration_file );	
     } else {
         cout << "Transport coefficients model not available!" << endl;
         MPI_Abort( MPI_COMM_WORLD, 1 );
     }*/
-    transport_coefficients = new ConstantTransportCoefficients( configuration_file );	// ... modified for OpenACC
+    transport_coefficients = new _TransportCoefficientsModel_( configuration_file );	// ... modified for OpenACC
 
     /// Construct (initialize) Riemann solver
     /*if( riemann_solver_scheme == "DIVERGENCE" ) {
@@ -88,7 +101,7 @@ FlowSolverRHEA::FlowSolverRHEA(const string name_configuration_file, function<vo
         cout << "Riemann solver not available!" << endl;
         MPI_Abort( MPI_COMM_WORLD, 1 );
     }*/
-    riemann_solver = new KgpFluxApproximateRiemannSolver();	// ... modified for OpenACC
+    riemann_solver = new _RiemannSolverScheme_();	// ... modified for OpenACC
 
     /// Construct (initialize) Runge-Kutta method
     /*if( runge_kutta_time_scheme == "RK1" ) {
@@ -101,14 +114,14 @@ FlowSolverRHEA::FlowSolverRHEA(const string name_configuration_file, function<vo
         cout << "Runge-Kutta time scheme not available!" << endl;
         MPI_Abort( MPI_COMM_WORLD, 1 );
     }*/
-    runge_kutta_method = new StrongStabilityPreservingRungeKutta3Method();	// ... modified for OpenACC
+    runge_kutta_method = new _ExplicitRungeKuttaMethod_();	// ... modified for OpenACC
     rk_number_stages = runge_kutta_method->getNumberRungeKuttaStages();
 
     /// Construct (initialize) immersed boundary method
     /*if( activate_immersed_boundary_method ) {
         immersed_boundary_method = new BaseImmersedBoundaryMethod( configuration_file );
     }*/
-    immersed_boundary_method = new BaseImmersedBoundaryMethod( configuration_file ); // ... modified for OpenACC
+    immersed_boundary_method = new _ImmersedBoundaryMethod_( configuration_file ); // ... modified for OpenACC
 
     /// Construct (initialize) computational domain
     mesh = new ComputationalDomain(L_x, L_y, L_z, x_0, y_0, z_0, A_x, A_y, A_z, num_grid_x, num_grid_y, num_grid_z, external_mesh, external_mesh_file);
@@ -3893,6 +3906,8 @@ void FlowSolverRHEA::calculateArtificiallyModifiedTransportCoefficients() {
 };
 
 void FlowSolverRHEA::execute() {
+
+    NVTX_PUSH("execute");
    
     /// Start wall-clock timer
     auto start_wall_clock_timer = chrono::steady_clock::now();
@@ -3970,6 +3985,7 @@ void FlowSolverRHEA::execute() {
     if( activate_immersed_boundary_method ) {
 
         /// Start timer: immersed_boundary_method
+        NVTX_PUSH("immersed_boundary_method");
         timers->start( "immersed_boundary_method" );
 
         /// Tag immersed boundary method
@@ -3977,6 +3993,7 @@ void FlowSolverRHEA::execute() {
 
         /// Stop timer: immersed_boundary_method
         timers->stop( "immersed_boundary_method" );
+        NVTX_POP(); // immersed_boundary_method
 
     }
 
@@ -4003,6 +4020,7 @@ void FlowSolverRHEA::execute() {
     point_particles->copyToDeviceParticles();
 
     /// Start timer: time_iteration_loop
+    NVTX_PUSH("time_iteration_loop");
     timers->start( "time_iteration_loop" );
 
     // Some copyin's to the GPU, need to figure out where to put them. UNDER DEVELOPMENT
@@ -4012,6 +4030,7 @@ void FlowSolverRHEA::execute() {
     for(int time_iter = current_time_iter; time_iter < final_time_iter; time_iter++) {
 
         /// Start timer: calculate_time_step
+        NVTX_PUSH("calculate_time_step");
         timers->start( "calculate_time_step" );
 	   
 	/// Calculate time step
@@ -4021,11 +4040,13 @@ void FlowSolverRHEA::execute() {
 
         /// Stop timer: calculate_time_step
         timers->stop( "calculate_time_step" );
+        NVTX_POP(); // calculate_time_step
 
         /// Stop timer: execute
         timers->stop( "execute" );
 
         /// Start timer: output_solver_state
+        NVTX_PUSH("output_solver_state");
         timers->start( "output_solver_state" );
 
         /// Print time iteration information (if criterion satisfied)
@@ -4052,11 +4073,13 @@ void FlowSolverRHEA::execute() {
 	
         /// Stop timer: output_solver_state
         timers->stop( "output_solver_state" );
+        NVTX_POP(); // output_solver_state
 
         /// Start timer: execute
         timers->start( "execute" );
 
         /// Start timer: time_advance_point_particles
+        NVTX_PUSH("time_advance_point_particles");
         timers->start( "time_advance_point_particles" );
 
         /// Update position & velocity of point particles
@@ -4064,14 +4087,17 @@ void FlowSolverRHEA::execute() {
             
         /// Stop timer: time_advance_point_particles
         timers->stop( "time_advance_point_particles" );
+        NVTX_POP(); // time_advance_point_particles
 
         /// Start timer: rk_iteration_loop
-        timers->start( "rk_iteration_loop" );
+	NVTX_PUSH("rk_iteration_loop");
+	timers->start( "rk_iteration_loop" );
 
         /// Runge-Kutta time-integration steps
         for(rk_time_stage = 1; rk_time_stage <= rk_number_stages; rk_time_stage++) {
 
             /// Start timer: calculate_thermophysical_properties
+            NVTX_PUSH("calculate_thermophysical_properties");
             timers->start( "calculate_thermophysical_properties" );
 	
 	    if( artificial_compressibility_method ) {
@@ -4088,8 +4114,10 @@ void FlowSolverRHEA::execute() {
 
 	    /// Stop timer: calculate_thermophysical_properties
             timers->stop( "calculate_thermophysical_properties" );
+            NVTX_POP(); // calculate_thermophysical_properties
 
             /// Start timer: calculate_inviscid_fluxes
+            NVTX_PUSH("calculate_inviscid_fluxes");
             timers->start( "calculate_inviscid_fluxes" );
 
             /// Calculate inviscid fluxes
@@ -4097,8 +4125,10 @@ void FlowSolverRHEA::execute() {
 	    
 	    /// Stop timer: calculate_inviscid_fluxes
             timers->stop( "calculate_inviscid_fluxes" );
+            NVTX_POP(); // calculate_inviscid_fluxes
 
             /// Start timer: calculate_viscous_fluxes
+            NVTX_PUSH("calculate_viscous_fluxes");
             timers->start( "calculate_viscous_fluxes" );
 
             /// Calculate viscous fluxes
@@ -4106,8 +4136,10 @@ void FlowSolverRHEA::execute() {
 
             /// Stop timer: calculate_viscous_fluxes
             timers->stop( "calculate_viscous_fluxes" );
+            NVTX_POP(); // calculate_viscous_fluxes
 
             /// Start timer: calculate_source_terms
+            NVTX_PUSH("calculate_source_terms");
             timers->start( "calculate_source_terms" );
 
             /// Calculate source terms
@@ -4115,8 +4147,10 @@ void FlowSolverRHEA::execute() {
 
             /// Stop timer: calculate_source_terms
             timers->stop( "calculate_source_terms" );
+            NVTX_POP(); // calculate_source_terms
 
             /// Start timer: immersed_boundary_method
+            NVTX_PUSH("immersed_boundary_method");
             timers->start( "immersed_boundary_method" );
 
             /// Impose immersed boundary method
@@ -4124,8 +4158,10 @@ void FlowSolverRHEA::execute() {
 
             /// Stop timer: immersed_boundary_method
             timers->stop( "immersed_boundary_method" );
+            NVTX_POP(); // immersed_boundary_method
 
             /// Start timer: time_advance_conserved_variables
+            NVTX_PUSH("time_advance_conserved_variables");
             timers->start( "time_advance_conserved_variables" );
 
             /// Advance conserved variables in time
@@ -4133,8 +4169,10 @@ void FlowSolverRHEA::execute() {
             
 	    /// Stop timer: time_advance_conserved_variables
             timers->stop( "time_advance_conserved_variables" );
+            NVTX_POP(); // time_advance_conserved_variables
 
             /// Start timer: conserved_to_primitive_variables
+            NVTX_PUSH("conserved_to_primitive_variables");
             timers->start( "conserved_to_primitive_variables" );
 
             /// Calculate primitive variables from conserved variables
@@ -4142,8 +4180,10 @@ void FlowSolverRHEA::execute() {
 
             /// Stop timer: conserved_to_primitive_variables
             timers->stop( "conserved_to_primitive_variables" );
+            NVTX_POP(); // conserved_to_primitive_variables
 
             /// Start timer: calculate_thermodynamics_from_primitive_variables
+            NVTX_PUSH("calculate_thermodynamics_from_primitive_variables");
             timers->start( "calculate_thermodynamics_from_primitive_variables" );
 
             /// Calculate thermodynamics from primitive variables
@@ -4166,8 +4206,10 @@ void FlowSolverRHEA::execute() {
 
             /// Stop timer: calculate_thermodynamics_from_primitive_variables
             timers->stop( "calculate_thermodynamics_from_primitive_variables" );
+            NVTX_POP(); // calculate_thermodynamics_from_primitive_variables
 
             /// Start timer: update_boundaries
+            NVTX_PUSH("update_boundaries");
             timers->start( "update_boundaries" );
 
             /// Update boundary values
@@ -4175,13 +4217,16 @@ void FlowSolverRHEA::execute() {
             
             /// Stop timer: update_boundaries
             timers->stop( "update_boundaries" );
+            NVTX_POP(); // update_boundaries
 
         }
 
         /// Stop timer: rk_iteration_loop
         timers->stop( "rk_iteration_loop" );
+        NVTX_POP(); // rk_iteration_loop
 
         /// Start timer: temporal_hook_function
+        NVTX_PUSH("temporal_hook_function");
         timers->start( "temporal_hook_function" );
 
         /// Temporal hook function
@@ -4189,8 +4234,10 @@ void FlowSolverRHEA::execute() {
 
         /// Stop timer: temporal_hook_function
         timers->stop( "temporal_hook_function" );
+        NVTX_POP(); // temporal_hook_function
 
         /// Start timer: update_time_averaged_quantities
+        NVTX_PUSH("update_time_averaged_quantities");
         timers->start( "update_time_averaged_quantities" );
 	
         /// Update time-averaged quantities
@@ -4198,8 +4245,10 @@ void FlowSolverRHEA::execute() {
 	
         /// Stop timer: update_time_averaged_quantities
         timers->stop( "update_time_averaged_quantities" );
+        NVTX_POP(); // update_time_averaged_quantities
 
         /// Start timer: update_previous_state_conserved_variables
+        NVTX_PUSH("update_previous_state_conserved_variables");
         timers->start( "update_previous_state_conserved_variables" );
         
         /// Update previous state of conserved variables
@@ -4211,6 +4260,7 @@ void FlowSolverRHEA::execute() {
 
         /// Stop timer: update_previous_state_conserved_variables
         timers->stop( "update_previous_state_conserved_variables" );
+        NVTX_POP(); // update_previous_state_conserved_variables
 
         /// Check if simulation is completed: current_time > final_time
         if( current_time >= final_time ) break;
@@ -4222,6 +4272,7 @@ void FlowSolverRHEA::execute() {
 
     /// Stop timer: time_iteration_loop
     timers->stop( "time_iteration_loop" );
+    NVTX_POP(); // time_iteration_loop
 
     /// Print timers information
     if( print_timers ) timers->printTimers( timers_information_file );
@@ -4255,7 +4306,10 @@ void FlowSolverRHEA::execute() {
     /// Start wall-clock timer
     //auto end_wall_clock_timer = chrono::steady_clock::now();
 
+    NVTX_POP(); // execute
+
 };
+
 
 
 ////////// BaseRiemannSolver CLASS //////////

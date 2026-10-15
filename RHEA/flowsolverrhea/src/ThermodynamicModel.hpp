@@ -10,13 +10,21 @@
 #include <mpi.h>
 #include "yaml-cpp/yaml.h"
 #include "RootFindingMinimization.hpp"
+#if COOLPROP_ACTIVATED_
+#include "HelmholtzEOSBackend.h"
+#endif
+
 
 ////////// CLASS DECLARATION //////////
 class BaseThermodynamicModel;				/// Base thermodynamic model
 class IdealGasThermodynamicModel;			/// Ideal-gas thermodynamic model
 class StiffenedGasThermodynamicModel;			/// Stiffened-gas thermodynamic model
 class PengRobinsonThermodynamicModel;			/// Peng-Robinson (real-fluid) thermodynamic model
-//class CoolPropThermodynamicModel;			/// CoolProp thermodynamic model
+
+#if COOLPROP_ACTIVATED_
+class CoolPropThermodynamicModel;			/// CoolProp thermodynamic model
+#endif
+
 class SvdSurrogateThermodynamicModel;			/// SVD surrogate thermodynamic model
 
 ////////// FUNCTION DECLARATION //////////

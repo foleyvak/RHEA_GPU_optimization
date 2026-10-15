@@ -1,7 +1,7 @@
 CMakeFiles/CoolProp.dir/externals/miniz-3.1.1/miniz.c.o: \
- /home/reynolds/Documents/MN5/RHEA/flowsolverrhea/externals/CoolProp/externals/miniz-3.1.1/miniz.c \
+ /home/reynolds/Documents/MN5/RHEA_GPU_optimization/RHEA/flowsolverrhea_NVTX_v2/externals/CoolProp/externals/miniz-3.1.1/miniz.c \
  /usr/include/stdc-predef.h \
- /home/reynolds/Documents/MN5/RHEA/flowsolverrhea/externals/CoolProp/externals/miniz-3.1.1/miniz.h \
+ /home/reynolds/Documents/MN5/RHEA_GPU_optimization/RHEA/flowsolverrhea_NVTX_v2/externals/CoolProp/externals/miniz-3.1.1/miniz.h \
  /usr/lib/gcc/x86_64-linux-gnu/11/include/stddef.h /usr/include/time.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/x86_64-linux-gnu/bits/wordsize.h \

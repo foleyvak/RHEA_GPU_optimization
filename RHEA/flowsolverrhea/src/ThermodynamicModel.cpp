@@ -1567,7 +1567,7 @@ void PengRobinsonThermodynamicModel::solve2D(double &fxmin, double &xmin_1, doub
 
 };
 
-/*
+#if COOLPROP_ACTIVATED_
 ////////// CoolPropThermodynamicModel CLASS //////////
 
 CoolPropThermodynamicModel::CoolPropThermodynamicModel() : BaseThermodynamicModel() {};
@@ -1765,7 +1765,7 @@ double CoolPropThermodynamicModel::calculateIsentropicCompressibility(const doub
     return( kappa_T/gamma );
 
 };
-*/
+#endif
 
 ////////// SvdSurrogateThermodynamicModel CLASS //////////
 

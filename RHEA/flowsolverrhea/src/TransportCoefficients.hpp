@@ -7,13 +7,20 @@
 #include <iostream>
 #include <mpi.h>
 #include "yaml-cpp/yaml.h"
+#if COOLPROP_ACTIVATED_
+#include "HelmholtzEOSBackend.h"
+#endif
 
 ////////// CLASS DECLARATION //////////
 class BaseTransportCoefficients;				/// Base transport coefficients
 class ConstantTransportCoefficients;				/// Constant transport coefficients
 class LowPressureGasTransportCoefficients;			/// Low-pressure gas variable transport coefficients
 class HighPressureTransportCoefficients;			/// High-pressure transport coefficients
-//class CoolPropTransportCoefficients;                            /// CoolProp transport coefficients
+
+#if COOLPROP_ACTIVATED_
+class CoolPropTransportCoefficients;                            /// CoolProp transport coefficients
+#endif
+
 class SvdSurrogateTransportCoefficients;                        /// SVD surrogate transport coefficients
 
 ////////// FUNCTION DECLARATION //////////
@@ -206,7 +213,7 @@ class HighPressureTransportCoefficients : public BaseTransportCoefficients {
 
 };
 
-/*
+#if COOLPROP_ACTIVATED_
 ////////// CoolPropTransportCoefficients CLASS //////////
 class CoolPropTransportCoefficients : public BaseTransportCoefficients {
    
@@ -240,7 +247,8 @@ class CoolPropTransportCoefficients : public BaseTransportCoefficients {
         CoolProp::HelmholtzEOSBackend *cp_substance;		/// Helmholtz Energy Equation of State
 
 };
-*/
+#endif
+
 
 ////////// SvdSurrogateTransportCoefficients CLASS //////////
 class SvdSurrogateTransportCoefficients : public BaseTransportCoefficients {

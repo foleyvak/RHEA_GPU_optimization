@@ -456,23 +456,25 @@ class FlowSolverRHEA {
         DistributedArray w_IBM_field;				/// 3-D field of IBM w-velocity
         DistributedArray T_IBM_field;				/// 3-D field of IBM temperature
 
+
 	////////// THERMODYNAMIC MODEL, TRANSPORT COEFFICIENTS, RIEMANN SOLVER, EXPLICIT RUNGE-KUTTA METHOD //////////
 	////////// IMMERSED BOUNDARY METHOD, COMPUTATIONAL DOMAIN, PARALLEL TOPOLOGY, WRITER/READER, PARALLEL TIMER //////////
         //BaseThermodynamicModel *thermodynamics;		/// Thermodynamic model
-        IdealGasThermodynamicModel *thermodynamics;			/// Thermodynamic model ... modified for OpenACC
+        _ThermodynamicModel_ *thermodynamics;			/// Thermodynamic model ... modified for OpenACC
         //BaseTransportCoefficients *transport_coefficients;	/// Transport coefficients
-        ConstantTransportCoefficients *transport_coefficients;	/// Transport coefficients ... modified for OpenACC
+        _TransportCoefficientsModel_ *transport_coefficients;	/// Transport coefficients ... modified for OpenACC
         //BaseRiemannSolver *riemann_solver;			/// Riemann solver
-        KgpFluxApproximateRiemannSolver *riemann_solver;			/// Riemann solver ... modified for OpenACC
+        _RiemannSolverScheme_ *riemann_solver;			/// Riemann solver ... modified for OpenACC
         //BaseExplicitRungeKuttaMethod *runge_kutta_method;	/// Runge-Kutta method
-        StrongStabilityPreservingRungeKutta3Method *runge_kutta_method;		/// Runge-Kutta method ... modified for OpenACC
+        _ExplicitRungeKuttaMethod_ *runge_kutta_method;		/// Runge-Kutta method ... modified for OpenACC
         //BaseImmersedBoundaryMethod *immersed_boundary_method;	/// Immersed boundary method
-        BaseImmersedBoundaryMethod *immersed_boundary_method;	/// Immersed boundary method ... modified for OpenACC
+        _ImmersedBoundaryMethod_ *immersed_boundary_method;	/// Immersed boundary method ... modified for OpenACC
         ComputationalDomain *mesh;				/// Computational domain
         ParallelTopology *topo;					/// Parallel topology
         DistributedPointParticles *point_particles;		/// Distributed point particles
         WriteReadHDF5 *writer_reader;				/// HDF5 data writer/reader
         ParallelTimer *timers;					/// Parallel timer
+
 	
 	////////// VERSION STUFF //////////
         /// Version numbers consist of three numbers separated by dots; i.e., 1.2.3.
