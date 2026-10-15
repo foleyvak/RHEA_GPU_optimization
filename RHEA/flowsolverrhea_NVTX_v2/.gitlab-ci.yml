@@ -1,0 +1,29 @@
+run-hello-world-job:
+  script:
+    - echo "Hello, World!"
+#build:
+#  stage: build
+#  tags:
+#    - flowsolverrhea
+#  script:
+#    - echo "Performing CI/CD for the changes commited by $GITLAB_USER_LOGIN"
+#    - echo "Tests will be build and executed individually ..."
+#
+#test_2d_taylor_green_vortex:
+#  stage: test
+#  tags:
+#    - flowsolverrhea
+#  script:
+#    - echo "Start testing 2d_taylor_green_vortex"
+#    - cd tests/2d_taylor_green_vortex
+#    - export RHEA_PATH='../..'
+#    - make
+#    - ./execute.sh
+#    - FILE=2d_taylor_green_vortex_66.h5
+#    - if test -f "$FILE"; then
+#    - echo "Test worked correctly!"
+#    - fi
+#    - rm *.h5 *.xdmf timers_information_file.txt
+#    - make clean
+#    - cd ../..
+#    - echo "Stop testing 2d_taylor_green_vortex"

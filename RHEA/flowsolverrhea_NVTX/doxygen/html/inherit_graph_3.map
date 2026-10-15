@@ -1,0 +1,10 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$classBaseRiemannSolver.html" title=" " alt="" coords="5,181,159,207"/>
+<area shape="rect" id="node2" href="$classDivergenceFluxApproximateRiemannSolver.html" title=" " alt="" coords="219,5,427,47"/>
+<area shape="rect" id="node3" href="$classHllApproximateRiemannSolver.html" title=" " alt="" coords="212,71,435,98"/>
+<area shape="rect" id="node4" href="$classHllcApproximateRiemannSolver.html" title=" " alt="" coords="208,122,439,149"/>
+<area shape="rect" id="node5" href="$classHllcPlusApproximateRiemannSolver.html" title=" " alt="" coords="215,173,431,215"/>
+<area shape="rect" id="node6" href="$classKgpFluxApproximateRiemannSolver.html" title=" " alt="" coords="215,239,432,280"/>
+<area shape="rect" id="node7" href="$classMurmanRoeFluxApproximateRiemannSolver.html" title=" " alt="" coords="217,304,430,345"/>
+<area shape="rect" id="node8" href="$classShimaFluxApproximateRiemannSolver.html" title=" " alt="" coords="207,369,440,411"/>
+</map>
