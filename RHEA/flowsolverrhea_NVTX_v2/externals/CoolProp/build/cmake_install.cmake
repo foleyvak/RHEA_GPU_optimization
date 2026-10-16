@@ -1,8 +1,8 @@
-# Install script for directory: /home/reynolds/Documents/MN5/RHEA_GPU_optimization/RHEA/flowsolverrhea_NVTX_v2/externals/CoolProp
+# Install script for directory: /home/eckert/RHEA_GPU_optimization/RHEA/flowsolverrhea_NVTX_v2/externals/CoolProp
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "/home/reynolds/Documents/MN5/RHEA_GPU_optimization/RHEA/flowsolverrhea_NVTX_v2/externals/CoolProp/install_root")
+  set(CMAKE_INSTALL_PREFIX "/home/eckert/RHEA_GPU_optimization/RHEA/flowsolverrhea_NVTX_v2/externals/CoolProp/install_root")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -43,11 +43,11 @@ if(NOT DEFINED CMAKE_OBJDUMP)
 endif()
 
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/static_library/Linux/64bit_GNU_11.4.0" TYPE STATIC_LIBRARY FILES "/home/reynolds/Documents/MN5/RHEA_GPU_optimization/RHEA/flowsolverrhea_NVTX_v2/externals/CoolProp/build/libCoolProp.a")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/static_library/Linux/64bit_GNU_11.4.0" TYPE STATIC_LIBRARY FILES "/home/eckert/RHEA_GPU_optimization/RHEA/flowsolverrhea_NVTX_v2/externals/CoolProp/build/libCoolProp.a")
 endif()
 
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/static_library" TYPE FILE FILES "/home/reynolds/Documents/MN5/RHEA_GPU_optimization/RHEA/flowsolverrhea_NVTX_v2/externals/CoolProp/include/CoolPropLib.h")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/static_library" TYPE FILE FILES "/home/eckert/RHEA_GPU_optimization/RHEA/flowsolverrhea_NVTX_v2/externals/CoolProp/include/CoolPropLib.h")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT)
@@ -58,5 +58,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/reynolds/Documents/MN5/RHEA_GPU_optimization/RHEA/flowsolverrhea_NVTX_v2/externals/CoolProp/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/eckert/RHEA_GPU_optimization/RHEA/flowsolverrhea_NVTX_v2/externals/CoolProp/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
