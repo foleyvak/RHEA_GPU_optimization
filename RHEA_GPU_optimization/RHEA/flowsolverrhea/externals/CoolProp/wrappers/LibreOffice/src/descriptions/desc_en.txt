@@ -1,2 +1,0 @@
-CoolProp is a thermophysical property database. This extension makes the
-functions available in LibreOffice Calc.
