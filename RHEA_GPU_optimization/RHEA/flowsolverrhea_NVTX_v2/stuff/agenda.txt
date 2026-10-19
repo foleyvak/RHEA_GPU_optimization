@@ -1,0 +1,17 @@
+RHEA DEVELOPMENT AGENDA:
+
+- Add thermodynamic and transport coefficients models using CoolProp
+- Improve OpenACC acceleration:
+	- Split 3D loops into one per direction
+	- Find alternative to calling I1D every time
+	- Substitute "privates" for routines
+	- Implement "pragma acc cache"
+	- GPU-aware MPI communicate_particles
+- Implement OpenMP acceleration
+- Change divisions by inverse multiplications
+- Incorporate message that HDF5 labels cannot include special characters
+- Create/check destructors for all classes
+- Implement regression tests using gitlab machinery
+- Improve code implementation/notation/aesthetics in all files
+- Check that it compiles and runs with different compilers (gcc, clang, intel, etc)
+- ...
