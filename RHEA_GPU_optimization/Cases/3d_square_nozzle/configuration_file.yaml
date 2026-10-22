@@ -1,9 +1,6 @@
 # RHEA's CONFIGURATION FILE (YAML LANGUAGE)
 #
-# 3D channel flow problem (Re_tau = 180, Ma = 0.3, Pr = 0.71):
-# R. D. Moser, J. Kim, N. N. Mansour.
-# Direct numerical simulation of turbulent channel flow up to Re_tau = 590.
-# Physics of Fluids, 11, 943-945, 1999.
+# 2D converging-diverging axisymmetric nozzle (U_inlet = 20.0 m/s, P_inlet = 101325 Pa, T_inlet = 400 K):
 ---
 
 ##### FLUID & FLOW PROPERTIES #####
@@ -31,8 +28,8 @@ fluid_flow_properties:
    # COOLPROP (provide substance_name)
    # SVD_SURROGATE (provide substance_surrogate_file)
    transport_coefficients_model: 'CONSTANT'		  		# Transport coefficients model
-   mu: 0.005555556                     					# Dynamic viscosity [Pa·s]
-   kappa: 7.8615                       					# Thermal conductivity [W/(m·K)]
+   mu: 0.00002	                  					# Dynamic viscosity [Pa·s]
+   kappa: 0.02                      					# Thermal conductivity [W/(m·K)]
    mu_0: 0.0								# Reference dynamic viscosity [Pa·s]	
    kappa_0: 0.0								# Reference thermal conductivity [W/(m·K)]	
    T_0: 0.0								# Reference temperature [K]	
@@ -52,35 +49,35 @@ problem_parameters:
    x_0: 0.0                            					# Domain origin in x-direction [m]
    y_0: 0.0                            					# Domain origin in y-direction [m]
    z_0: 0.0                           					# Domain origin in z-direction [m]
-   L_x: 12.566370614                   					# Size of domain in x-direction [m]
-   L_y: 2.0                           					# Size of domain in y-direction [m]
-   L_z: 4.188790205                    					# Size of domain in z-direction [m]
-   final_time: 1.0e6                   					# Final time [s]
+   L_x: 2.0                        					# Size of domain in x-direction [m]
+   L_y: 1.0                          					# Size of domain in y-direction [m]
+   L_z: 0.001                         					# Size of domain in z-direction [m]
+   final_time: 50.0                        				# Final time [s]
 
 
 ##### COMPUTATIONAL PARAMETERS #####
 computational_parameters:
-   num_grid_x: 256                     					# Number of internal grid points in the x-direction
-   num_grid_y: 128                     					# Number of internal grid points in the y-direction
-   num_grid_z: 128                     					# Number of internal grid points in the z-direction
+   num_grid_x: 128                     					# Number of internal grid points in the x-direction
+   num_grid_y: 64                     					# Number of internal grid points in the y-direction
+   num_grid_z: 1                     					# Number of internal grid points in the z-direction
    # Stretching factors: x = x_0 + L*eta + A*( 0.5*L - L*eta )*( 1.0 - eta )*eta, with eta = ( l - 0.5 )/num_grid 
    # A < 0: stretching at ends; A = 0: uniform; A > 0: stretching at center
    A_x: 0.0                 					        # Stretching factor in x-direction
-   A_y: -1.875             					        # Stretching factor in y-direction
+   A_y: 0.0             					        # Stretching factor in y-direction
    A_z: 0.0                       					# Stretching factor in z-direction
    external_mesh: 'FALSE'                                               # Activate external mesh generation
    external_mesh_file: 'external_mesh_file.txt'                         # Name of external mesh file   
-   CFL: 0.3                  					        # CFL coefficient
+   CFL: 0.1                  					        # CFL coefficient
    # Riemann solver scheme: DIVERGENCE, MURMAN-ROE, KGP, SHIMA, HLL, HLLC, HLLC+, ECKEP, HES
-   riemann_solver_scheme: 'KGP'		              	  		# Riemann solver scheme
+   riemann_solver_scheme: 'HES'                  	  		# Riemann solver scheme
    # Runge-Kutta time scheme: RK1, SSP-RK2, SSP-RK3
-   runge_kutta_time_scheme: 'SSP-RK3'		          		# Runge-Kutta time scheme
+   runge_kutta_time_scheme: 'SSP-RK3'		          		# Runge-Kutta time scheme  
    # Transport P instead of rhoE scheme: FALSE, TRUE
    transport_pressure_scheme: 'FALSE'  		          		# Transport P instead of rhoE scheme
    # Artificially decrease the velocity of acoustic waves: FALSE, TRUE
-   artificial_compressibility_method: 'TRUE'  	          		# Artificially decrease velocity of acoustic waves
-   epsilon_acm: 0.05                                                    # Relative error of artificial compressibility method     
-   final_time_iter: 10          					# Final time iteration
+   artificial_compressibility_method: 'FALSE'  	          		# Artificially decrease velocity of acoustic waves
+   epsilon_acm: 0.01                                                    # Relative error of artificial compressibility method 
+   final_time_iter: 1000000       					# Final time iteration
 
 
 ##### BOUNDARY CONDITIONS #####
@@ -93,12 +90,12 @@ boundary_conditions:
    #                 SUBSONIC_OUTFLOW (provide P_inf)
    #                 SUPERSONIC_INFLOW (provide u, v, w, P, T)
    #                 SUPERSONIC_OUTFLOW (no value/derivative needed)
-   west_bc: ['PERIODIC', 0.0, 0.0, 0.0, 0.0, 0.0]			# West boundary condition
-   east_bc: ['PERIODIC', 0.0, 0.0, 0.0, 0.0, 0.0]			# East boundary condition
-   south_bc: ['DIRICHLET', 0.0, 0.0, 0.0, -1.0, 6.7826]	 	       	# South boundary condition
-   north_bc: ['DIRICHLET', 0.0, 0.0, 0.0, -1.0, 6.7826]    		# North boundary condition
-   back_bc: ['PERIODIC', 0.0, 0.0, 0.0, 0.0, 0.0]			# Back boundary condition
-   front_bc: ['PERIODIC', 0.0, 0.0, 0.0, 0.0, 0.0]			# Front boundary condition
+   west_bc: ['SUBSONIC_INFLOW', 20.0, 0.0, 0.0, 101325.0, 400.0]	# West boundary condition
+   east_bc: ['SUPERSONIC_OUTFLOW', 0.0, 0.0, 0.0, 90000.0, 0.0]		# East boundary condition
+   south_bc: ['DIRICHLET', -1.0, 0.0, -1.0, -1.0, -1.0] 		# South boundary condition
+   north_bc: ['DIRICHLET', 0.0, 0.0, 0.0, -1.0, -1.0]          		# North boundary condition
+   back_bc: ['NEUMANN', 0.0, 0.0, 0.0, 0.0, 0.0]			# Back boundary condition
+   front_bc: ['NEUMANN', 0.0, 0.0, 0.0, 0.0, 0.0]			# Front boundary condition
 
 
 ##### IMMERSED BOUNDARY METHOD #####
@@ -108,14 +105,13 @@ immersed_boundary_method:
 
 ##### PRINT/WRITE/READ PARAMETERS #####
 print_write_read_parameters:
-   print_frequency_iter: 10	             				# Print information iteration frequency
-   output_data_file_name: '3d_turbulent_channel_flow'  			# Name of output data file
-   output_frequency_iter: 10       					# Data output iteration frequency
-   generate_xdmf_file: 'TRUE'          					# Generate xdmf file reader
+   print_frequency_iter: 1000 	             				# Print information iteration frequency
+   output_data_file_name: '2d_axisymmetric_nozzle'	  		# Name of output data file
+   output_frequency_iter: 5000   	     				# Data output iteration frequency
+   generate_xdmf_file: 'TRUE'               				# Generate xdmf file reader
    use_restart: 'FALSE'                					# Use restart to initialize problem
-   restart_data_file: 'restart_data_file.h5' 				# Restart data file
+   restart_data_file: '2d_axisymmetric_nozzle_100000.h5' 	        # Restart data file
    time_averaging_active: 'FALSE'          				# Activate time averaging
-   #time_averaging_active: 'TRUE'          				# Activate time averaging
    reset_time_averaging: 'FALSE'          				# Reset time averaging
 
 
@@ -182,7 +178,7 @@ lagrangian_point_particles:
 
 ##### TIMERS INFORMATION #####
 timers_information:
-   print_timers: 'FALSE'               					# Print timers information
+   print_timers: 'TRUE'               					# Print timers information
    timers_information_file: 'timers_information_file.txt'		# Timers information file
 
 

@@ -10,7 +10,8 @@ class myRHEA : public FlowSolverRHEA {
     public:
 
         ////////// CONSTRUCTORS & DESTRUCTOR //////////
-        myRHEA(const std::string configuration_file) : FlowSolverRHEA(configuration_file) {};	/// Parametrized constructor
+        // myRHEA(const std::string configuration_file) : FlowSolverRHEA(configuration_file) {};/// Parametrized constructor
+        myRHEA(const std::string configuration_file);						/// Parametrized constructor
         virtual ~myRHEA() {};									/// Destructor
 
 	////////// SOLVER METHODS //////////
@@ -24,16 +25,22 @@ class myRHEA : public FlowSolverRHEA {
         /// Temporal hook function ... needs to be modified/overwritten according to the problem under consideration
         void temporalHookFunction();
 
-        /// Tag immersed boundary method ... needs to be modified/overwritten according to the problem under consideration
-        void tagImmersedBoundaryMethod();
+        /// Calculate inviscid fluxes in x-, y- and z-direction
+        void calculateInviscidFluxes();
 
-        /// Set initial conditions of particles: x, y, z, u, v, and w ... needs to be modified/overwritten according to the problem under consideration
-        void setInitialParticlesPositionsVelocities();
+        /// Calculate viscous fluxes
+        void calculateViscousFluxes();
 
-        /// Advance point particles in time: velocity ... needs to be modified/overwritten according to the problem under consideration
-        void timeAdvanceVelocityPointParticles();
+        /// Calculate time step satisfying CFL constraint
+        void calculateTimeStep();
+
+        /// Update boundary values: rho, rhou, rhov, rhow and rhoE
+        void updateBoundaries();
 
     protected:
+    
+        DistributedArray det_Jacobian_field;		/// 3-D field of the determinant of Jacobian 
+
 
     private:
 
