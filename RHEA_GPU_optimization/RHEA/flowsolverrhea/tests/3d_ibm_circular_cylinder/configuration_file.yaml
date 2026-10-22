@@ -1,0 +1,192 @@
+# RHEA's CONFIGURATION FILE (YAML LANGUAGE)
+#
+# 3D immersed boundary method flow over circular cylinder (Re = 3900, Ma = 0.3, Pr = 0.71):
+# P. Parnaudeau, J. Carlier, D. Heitz, E. Lamballais.
+# Experimental and numerical studies of the flow over a circular cylinder at Reynolds number 3900.
+# Physics of Fluids, 20, 085101, 2008.
+---
+
+##### FLUID & FLOW PROPERTIES #####
+fluid_flow_properties:
+   # Thermodynamic models: IDEAL_GAS (provide R_specific, gamma),
+   # STIFFENED_GAS (provide R_specific, gamma, P_inf, e_0, c_v),
+   # PENG_ROBINSON (provide R_specific, molecular_weight, acentric_factor, critical temperature, critical pressure, critical molar volume, NASA 7-coefficient polynomial)
+   # COOLPROP (provide substance_name)
+   # SVD_SURROGATE (provide substance_surrogate_file) 
+   thermodynamic_model: 'IDEAL_GAS'			  		# Thermodynamic model
+   R_specific: 287.058                 					# Specific gas constant [J/(kg·K)]
+   gamma: 1.4                          					# Heat capacity ratio (ideal-gas) [-]
+   P_inf: 0.0                         					# Pressure infinity (liquid stiffness) [Pa]
+   e_0: 0.0                         					# Internal energy zero point [J/kg]
+   c_v: 0.0                         					# Specific isochoric heat capacity [J/(kg·K)]
+   molecular_weight: 0.0               					# Molecular weight [kg/mol]
+   acentric_factor: 0.0               					# Acentric factor [-]
+   critical_temperature: 0.0           					# Critical temperature [K]
+   critical_pressure: 0.0           					# Critical pressure [Pa]
+   critical_molar_volume: 0.0          					# Critical molar volume [m3/mol]
+   NASA_coefficients: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]	# NASA 7-coefficient polynomial (15 values)
+   # Transport coefficients models: CONSTANT (provide mu, kappa),
+   # LOW_PRESSURE_GAS (provide reference dynamic viscosity, reference thermal conductivity, reference temperature, Sutherland's dynamic viscosity constant, Sutherland's thermal conductivity constant),
+   # HIGH_PRESSURE (provide molecular weight, critical temperature, critical molar volume, acentric factor, dipole moment, association factor, NASA 7-coefficient polynomial)
+   # COOLPROP (provide substance_name)
+   # SVD_SURROGATE (provide substance_surrogate_file)
+   transport_coefficients_model: 'CONSTANT'		  		# Transport coefficients model
+   mu: 0.00025641                     					# Dynamic viscosity [Pa·s]
+   kappa: 0.36284                      					# Thermal conductivity [W/(m·K)]
+   mu_0: 0.0								# Reference dynamic viscosity [Pa·s]	
+   kappa_0: 0.0								# Reference thermal conductivity [W/(m·K)]	
+   T_0: 0.0								# Reference temperature [K]	
+   S_mu: 0.0								# Sutherland's dynamic viscosity constant [K]	
+   S_kappa: 0.0								# Sutherland's thermal conductivity constant [K]	
+   dipole_moment: 0.0               					# Dipole moment [D]
+   association_factor: 0.0             					# Association factor [-]
+   # Substances: CarbonDioxide, Dummy, Hydrogen, Methane, n-Dodecane, Nitrogen, Oxygen, R134a, Water. For CoolProp substances: https://coolprop.org/fluid_properties/PurePseudoPure.html#list-of-fluids
+   # Optional. Define substance to read from library file: R_specific, gamma, P_inf, e_0, c_v, molecular_weight, acentric_factor, critical_temperature, critical_pressure, critical_molar_volume, NASA_coefficients, dipole_moment, association_factor
+   #substance_name: 'Nitrogen'         					# Substance [-]
+   #substances_library_file: '../../src/substances_library_file.yaml'   # Substances library file [-]
+   #substance_surrogate_file: 'substance_surrogate_file.yaml'           # Substance surrogate file [-]
+
+
+##### PROBLEM PARAMETERS #####
+problem_parameters:
+   x_0: -4.0                           					# Domain origin in x-direction [m]
+   y_0: -6.0                           					# Domain origin in y-direction [m]
+   z_0: 0.0                           					# Domain origin in z-direction [m]
+   L_x: 14.0                      					# Size of domain in x-direction [m]
+   L_y: 12.0                           					# Size of domain in y-direction [m]
+   L_z: 3.141592653589793              					# Size of domain in z-direction [m]
+   final_time: 1000.0                   				# Final time [s]
+
+
+##### COMPUTATIONAL PARAMETERS #####
+computational_parameters:
+   num_grid_x: 193                    					# Number of internal grid points in the x-direction
+   num_grid_y: 129                     					# Number of internal grid points in the y-direction
+   num_grid_z: 64                     					# Number of internal grid points in the z-direction
+   # Stretching factors: x = x_0 + L*eta + A*( 0.5*L - L*eta )*( 1.0 - eta )*eta, with eta = ( l - 0.5 )/num_grid 
+   # A < 0: stretching at ends; A = 0: uniform; A > 0: stretching at center
+   A_x: 0.0                 					        # Stretching factor in x-direction
+   A_y: 0.0              					        # Stretching factor in y-direction
+   A_z: 0.0                       					# Stretching factor in z-direction
+   external_mesh: 'TRUE'                                                # Activate external mesh generation
+   external_mesh_file: 'external_mesh_file.txt'                         # Name of external mesh file
+   CFL: 0.1                  					        # CFL coefficient
+   # Riemann solver scheme: DIVERGENCE, MURMAN-ROE, KGP, SHIMA, HLL, HLLC, HLLC+, ECKEP, HES
+   riemann_solver_scheme: 'KGP'	          	    			# Riemann solver scheme
+   # Runge-Kutta time scheme: RK1, SSP-RK2, SSP-RK3
+   runge_kutta_time_scheme: 'SSP-RK3'		          		# Runge-Kutta time scheme  
+   # Transport P instead of rhoE scheme: FALSE, TRUE
+   transport_pressure_scheme: 'FALSE'  		          		# Transport P instead of rhoE scheme 
+   # Artificially decrease the velocity of acoustic waves: FALSE, TRUE
+   artificial_compressibility_method: 'FALSE'  	          		# Artificially decrease velocity of acoustic waves
+   epsilon_acm: 0.01                                                    # Relative error of artificial compressibility method
+   final_time_iter: 1000000            					# Final time iteration
+
+
+##### BOUNDARY CONDITIONS #####
+boundary_conditions:
+   # For each boundary [west (x), east (x), south (y), north (y), back (z), front (z)], type and u, v, w, P and T values/derivatives are needed
+   # Boundary types: DIRICHLET (provide value ... P < 0 and/or T < 0 for impermeable boundary),
+   #                 NEUMANN (provide derivative),
+   #                 PERIODIC (no value/derivative needed)
+   #                 SUBSONIC_INFLOW (provide u, v, w, T)
+   #                 SUBSONIC_OUTFLOW (provide P_inf)
+   #                 SUPERSONIC_INFLOW (provide u, v, w, P, T)
+   #                 SUPERSONIC_OUTFLOW (no value/derivative needed)
+   west_bc: ['SUBSONIC_INFLOW', 1.0, 0.0, 0.0, 0.0, 0.027648]		# West boundary condition
+   east_bc: ['SUBSONIC_OUTFLOW', 0.0, 0.0, 0.0, 7.9365, 0.0]		# East boundary condition
+   south_bc: ['NEUMANN', 0.0, 0.0, 0.0, 0.0, 0.0]       	        # South boundary condition
+   north_bc: ['NEUMANN', 0.0, 0.0, 0.0, 0.0, 0.0]              	        # North boundary condition
+   back_bc: ['PERIODIC', 0.0, 0.0, 0.0, 0.0, 0.0]			# Back boundary condition
+   front_bc: ['PERIODIC', 0.0, 0.0, 0.0, 0.0, 0.0]			# Front boundary condition
+
+
+##### IMMERSED BOUNDARY METHOD #####
+immersed_boundary_method:
+   activate_immersed_boundary_method: 'TRUE'				# Activate immersed boundary method
+
+
+##### PRINT/WRITE/READ PARAMETERS #####
+print_write_read_parameters:
+   print_frequency_iter: 100 	             				# Print information iteration frequency
+   output_data_file_name: '3d_ibm_circular_cylinder'    		# Name of output data file
+   output_frequency_iter: 10000       					# Data output iteration frequency
+   generate_xdmf_file: 'TRUE'          					# Generate xdmf file reader
+   use_restart: 'FALSE'                					# Use restart to initialize problem
+   restart_data_file: 'restart_data_file.h5' 				# Restart data file
+   time_averaging_active: 'FALSE'          				# Activate time averaging
+   reset_time_averaging: 'FALSE'          				# Reset time averaging
+
+
+##### TWO-DIMENSIONAL DATA OUTPUT SLICES #####
+two_dimensional_data_output_slices:
+   number_two_dimensional_data_output_slices: 0        			# Number of 2D data output slices
+   ## TWO-DIMENSIONAL DATA OUTPUT SLICE 1
+   #slice_1_normal_direction: 'x_normal'				# Slice 1 normal direction: x_normal, y_normal, z_normal
+   #slice_1_x_position: 6.283185307179586				# Slice 1 x position [m]
+   #slice_1_y_position: 1.0						# Slice 1 y position [m]
+   #slice_1_z_position: 2.0943951023931953				# Slice 1 z position [m]
+   #slice_1_output_frequency_iter: 25       				# Slice 1 output iteration frequency
+   #slice_1_generate_xdmf_file: 'TRUE'          			# Slice 1 generate xdmf file reader
+   #slice_1_output_data_file_name: 'slice_1_output'			# Slice 1 name of output data file
+   ## TWO-DIMENSIONAL DATA OUTPUT SLICE 2
+   #slice_2_normal_direction: 'y_normal'				# Slice 2 normal direction: x_normal, y_normal, z_normal
+   #slice_2_x_position: 6.283185307179586				# Slice 2 x position [m]
+   #slice_2_y_position: 1.0						# Slice 2 y position [m]
+   #slice_2_z_position: 2.0943951023931953				# Slice 2 z position [m]
+   #slice_2_output_frequency_iter: 25       				# Slice 2 output iteration frequency
+   #slice_2_generate_xdmf_file: 'TRUE'               			# Slice 2 generate xdmf file reader
+   #slice_2_output_data_file_name: 'slice_2_output'			# Slice 2 name of output data file
+   ## TWO-DIMENSIONAL DATA OUTPUT SLICE 3
+   #slice_3_normal_direction: 'z_normal'				# Slice 3 normal direction: x_normal, y_normal, z_normal
+   #slice_3_x_position: 6.283185307179586				# Slice 3 x position [m]
+   #slice_3_y_position: 1.0						# Slice 3 y position [m]
+   #slice_3_z_position: 2.0943951023931953				# Slice 3 z position [m]
+   #slice_3_output_frequency_iter: 25       				# Slice 3 output iteration frequency
+   #slice_3_generate_xdmf_file: 'TRUE'               			# Slice 3 generate xdmf file reader
+   #slice_3_output_data_file_name: 'slice_3_output'			# Slice 3 name of output data file
+
+
+##### TEMPORAL POINT PROBES #####
+temporal_point_probes:
+   number_temporal_point_probes: 0            				# Number of temporal point probes
+   ## TEMPORAL POINT PROBE 1
+   #probe_1_x_position: 1.0                    				# Probe 1 position in x-direction [m]
+   #probe_1_y_position: 1.0                    				# Probe 1 position in y-direction [m]
+   #probe_1_z_position: 1.0                    				# Probe 1 position in z-direction [m]
+   #probe_1_output_frequency_iter: 100      				# Probe 1 output iteration frequency
+   #probe_1_output_data_file_name: 'temporal_point_probe_1.csv'		# Probe 1 name of output data file
+   ## TEMPORAL POINT PROBE 2
+   #probe_2_x_position: 1.5                    				# Probe 2 position in x-direction [m]
+   #probe_2_y_position: 1.5                    				# Probe 2 position in y-direction [m]
+   #probe_2_z_position: 1.5                    				# Probe 2 position in z-direction [m]
+   #probe_2_output_frequency_iter: 100      				# Probe 2 output iteration frequency
+   #probe_2_output_data_file_name: 'temporal_point_probe_2.csv'		# Probe 2 name of output data file     
+
+
+##### LAGRANGIAN POINT PARTICLES #####
+lagrangian_point_particles:
+   diameter_particles: 0.001						# Diameter of particles [m]
+   density_particles: 1000.0						# Density of particles [kg/m³]
+   number_density_particles: 0.0					# Number density of particles [prts/m³]
+   activate_pure_tracer_particles: 'FALSE'				# Activate pure tracer particles
+   activate_two_way_coupling_particles: 'FALSE'				# Activate two-way coupling particles     
+   buffer_ratio_particles: 5.0						# Buffer ratio to allocate particles [-]
+   output_data_file_name_particles: 'particles'				# Name of particles output data file
+   output_frequency_iter_particles: 1000   				# Particles data output iteration frequency
+   generate_xdmf_file_particles: 'FALSE'        			# Particles generate xdmf file reader
+   use_restart_particles: 'FALSE'      					# Particles use restart to initialize problem
+   restart_data_file_particles: 'particles_restart_data_file.h5'	# Particles restart data file
+
+
+##### TIMERS INFORMATION #####
+timers_information:
+   print_timers: 'TRUE'               					# Print timers information
+   timers_information_file: 'timers_information_file.txt'		# Timers information file
+
+
+##### PARALLELIZATION SCHEME #####
+parallelization_scheme:
+   np_x: 2                             					# Number of processes in x-direction
+   np_y: 2                             					# Number of processes in y-direction
+   np_z: 2                             					# Number of processes in z-direction

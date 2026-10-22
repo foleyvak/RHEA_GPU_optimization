@@ -1,0 +1,326 @@
+# LIBRARY OF SUBSTANCES FILE (YAML LANGUAGE)
+#
+# P. J. Linstrom and W. G. Mallard.
+# Chemistry WebBook, NIST Standard Reference Database.
+# http://webbook.nist.gov/chemistry/fluid/
+#
+# A. Burcat and B. Ruscic
+# Third Millennium Ideal Gas and Condensed Phase Thermochemical Database
+# for Combustion with Updates from Active Thermochemical Tables.
+# ANL-05/20, TAE 960
+---
+
+##### CarbonDioxide #####
+CarbonDioxide:
+   R_specific: 188.92                 					# Specific gas constant [J/(kg·K)]
+   gamma: 1.289                         				# Heat capacity ratio (ideal-gas) [-]
+   P_inf: 8000000.0                    					# Pressure infinity (liquid stiffness) [Pa]
+   e_0: 451340.0                         				# Internal energy zero point [J/kg]
+   c_v: 658.0                         					# Specific isochoric heat capacity [J/(kg·K)]
+   molecular_weight: 0.04401              				# Molecular weight [kg/mol]
+   acentric_factor: 0.22394               				# Acentric factor [-]
+   critical_temperature: 304.1282           				# Critical temperature [K]
+   critical_pressure: 7377270.6           				# Critical pressure [Pa]
+   critical_molar_volume: 0.0000941189     				# Critical molar volume [m3/mol]
+   NASA_coefficients: [ 4.6365111000000000000000,
+			0.0027414569000000000000,
+		       -0.0000009958975900000000,
+			0.0000000001603866600000,
+		       -0.0000000000000091619857,
+		       -49024.904000000000000000,
+		       -1.9348955000000000000000,
+			2.3568130000000000000000,
+			0.0089841299000000000000,
+		       -0.0000071220632000000000,
+			0.0000000024573008000000,
+		       -0.0000000000001428854800,
+		       -48371.971000000000000000,
+			9.9009035000000000000000,
+		       -47328.105000000000000000]                       # NASA 7-coefficient polynomial (15 values)
+   mu_0: 0.00001370							# Reference dynamic viscosity [Pa·s]	
+   kappa_0: 0.0146							# Reference thermal conductivity [W/(m·K)]	
+   T_0: 273.0								# Reference temperature [K]	
+   S_mu: 222.0								# Sutherland's dynamic viscosity constant [K]	
+   S_kappa: 1800.0							# Sutherland's thermal conductivity constant [K]
+   dipole_moment: 0.0               					# Dipole moment [D]
+   association_factor: 0.0             					# Association factor [-]
+
+##### Dummy #####
+Dummy:
+   R_specific: 296.8                 					# Specific gas constant [J/(kg·K)]
+   gamma: 1.4                          					# Heat capacity ratio (ideal-gas) [-]
+   P_inf: 4000000.0                    					# Pressure infinity (liquid stiffness) [Pa]
+   e_0: 0.222                         					# Internal energy zero point [J/kg]
+   c_v: 743.0                         					# Specific isochoric heat capacity [J/(kg·K)]
+   molecular_weight: 0.0280134              				# Molecular weight [kg/mol]
+   acentric_factor: 0.0372               				# Acentric factor [-]
+   critical_temperature: 126.192           				# Critical temperature [K]
+   critical_pressure: 3395800.0           				# Critical pressure [Pa]
+   critical_molar_volume: 0.000089412       				# Critical molar volume [m3/mol]
+   NASA_coefficients: [ 2.952576370000000000000,
+                        0.001396900400000000000,
+                       -0.000000492631603000000,
+                        0.000000000078601019000,
+                       -0.000000000000004607552,
+                       -923.9486880000000000000,
+                        5.871887620000000000000,
+                        3.531005280000000000000,
+                       -0.000123660980000000000,
+                       -0.000000502999433000000,
+                        0.000000002435306120000,
+                       -0.000000000001408812400,
+                       -1046.976280000000000000,
+                        2.967470380000000000000,
+                        0.000000000000000000000]                        # NASA 7-coefficient polynomial (15 values)
+   mu_0: 0.00001663							# Reference dynamic viscosity [Pa·s]	
+   kappa_0: 0.0242							# Reference thermal conductivity [W/(m·K)]	
+   T_0: 273.0								# Reference temperature [K]	
+   S_mu: 107.0								# Sutherland's dynamic viscosity constant [K]	
+   S_kappa: 150.0							# Sutherland's thermal conductivity constant [K]
+   dipole_moment: 0.0               					# Dipole moment [D]
+   association_factor: 0.0             					# Association factor [-]
+
+##### Hydrogen #####
+Hydrogen:
+   R_specific: 4124.237                					# Specific gas constant [J/(kg·K)]
+   gamma: 1.41                        					# Heat capacity ratio (ideal-gas) [-]
+   P_inf: 2000000.0                   					# Pressure infinity (liquid stiffness) [Pa]
+   e_0: 2720000.0                      					# Internal energy zero point [J/kg]
+   c_v: 10185.763                      					# Specific isochoric heat capacity [J/(kg·K)]
+   molecular_weight: 0.002016           				# Molecular weight [kg/mol]
+   acentric_factor: -0.219	             				# Acentric factor [-]
+   critical_temperature: 33.145           				# Critical temperature [K]
+   critical_pressure: 1296352.05          				# Critical pressure [Pa]
+   critical_molar_volume: 0.000064481   				# Critical molar volume [m3/mol]
+   NASA_coefficients: [ 2.93283050000000000000000,
+			0.00082659802000000000000,
+		       -0.00000014640057000000000,
+			0.00000000001540985100000,
+		       -0.00000000000000068879615,
+		       -813.055820000000000000000,
+		       -1.02431640000000000000000,
+			2.34430290000000000000000,
+			0.00798042480000000000000,
+		       -0.00001947791700000000000,
+			0.00000002015696700000000,
+		       -0.00000000000737602890000,
+		       -917.924130000000000000000,
+			0.68300218000000000000000,
+			0.00000000000000000000000]                      # NASA 7-coefficient polynomial (15 values)
+   mu_0: 0.00000675							# Reference dynamic viscosity [Pa·s]	
+   kappa_0: 0.133							# Reference thermal conductivity [W/(m·K)]	
+   T_0: 200.0								# Reference temperature [K]	
+   S_mu: 60.4								# Sutherland's dynamic viscosity constant [K]	
+   S_kappa: 125.2							# Sutherland's thermal conductivity constant [K]
+   dipole_moment: 0.0               					# Dipole moment [D]
+   association_factor: 0.0             					# Association factor [-]
+
+##### Methane #####
+Methane:
+   R_specific: 518.277                 					# Specific gas constant [J/(kg·K)]
+   gamma: 1.303                        					# Heat capacity ratio (ideal-gas) [-]
+   P_inf: 5000000.0                   					# Pressure infinity (liquid stiffness) [Pa]
+   e_0: 758870.0                      					# Internal energy zero point [J/kg]
+   c_v: 27.486                        					# Specific isochoric heat capacity [J/(kg·K)]
+   molecular_weight: 0.0160425          				# Molecular weight [kg/mol]
+   acentric_factor: 0.01142	             				# Acentric factor [-]
+   critical_temperature: 190.56           				# Critical temperature [K]
+   critical_pressure: 4599200.0          				# Critical pressure [Pa]
+   critical_molar_volume: 0.000098626     				# Critical molar volume [m3/mol]
+   NASA_coefficients: [ 1.9117860000000000000000,
+                        0.0096026796000000000000,
+                        0.0000033838784100000000,
+                        0.0000000005387972400000,
+                       -0.0000000000000319306807,
+                       -10099.213600000000000000,
+                        8.4824186100000000000000,
+                        5.1482573200000000000000,
+                       -0.0137002410000000000000,
+                        0.0000493749414000000000,
+                       -0.0000000491952339000000,
+                        0.0000000000170097299000,
+                       -10245.322200000000000000,
+                       -4.6332272600000000000000,
+                       -8972.2665600000000000000]                       # NASA 7-coefficient polynomial (15 values)
+   mu_0: 0.0000142							# Reference dynamic viscosity [Pa·s]	
+   kappa_0: 0.0498							# Reference thermal conductivity [W/(m·K)]	
+   T_0: 400.0								# Reference temperature [K]	
+   S_mu: 179.7								# Sutherland's dynamic viscosity constant [K]	
+   S_kappa: 5649.1							# Sutherland's thermal conductivity constant [K]
+   dipole_moment: 0.0               					# Dipole moment [D]
+   association_factor: 0.0             					# Association factor [-]
+
+##### n-Dodecane #####
+n-Dodecane:
+   R_specific: 48.814                 					# Specific gas constant [J/(kg·K)]
+   gamma: 1.023                         				# Heat capacity ratio (ideal-gas) [-]
+   P_inf: 2000000.0                    					# Pressure infinity (liquid stiffness) [Pa]
+   e_0: -488540.0                         				# Internal energy zero point [J/kg]
+   c_v: 367.686                        					# Specific isochoric heat capacity [J/(kg·K)]
+   molecular_weight: 0.17033              				# Molecular weight [kg/mol]
+   acentric_factor: 0.574               				# Acentric factor [-]
+   critical_temperature: 658.1           				# Critical temperature [K]
+   critical_pressure: 1816959.9           				# Critical pressure [Pa]
+   critical_molar_volume: 0.000750374     				# Critical molar volume [m3/mol]
+   NASA_coefficients: [ 37.01879250000000000000,
+                        0.055472148800000000000,
+                       -0.000019207954800000000,
+                        0.000000003081755740000,
+                       -0.000000000000184800617,
+                       -52698.44580000000000000,
+                       -161.4535010000000000000,
+                        21.32644800000000000000,
+                       -0.038639400200000000000,
+                        0.000399476113000000000,
+                       -0.000000506681097000000,
+                        0.000000000200697878000,
+                       -42247.50530000000000000,
+                       -48.58483000000000000000,
+                       -34983.62260000000000000]                        # NASA 7-coefficient polynomial (15 values)
+   mu_0: 0.00000759							# Reference dynamic viscosity [Pa·s]	
+   kappa_0: 0.0257							# Reference thermal conductivity [W/(m·K)]	
+   T_0: 500.0								# Reference temperature [K]	
+   S_mu: 811.2								# Sutherland's dynamic viscosity constant [K]	
+   S_kappa: 50634511647.9						# Sutherland's thermal conductivity constant [K]
+   dipole_moment: 0.0               					# Dipole moment [D]
+   association_factor: 0.0             					# Association factor [-]
+
+##### Nitrogen #####
+Nitrogen:
+   R_specific: 296.8                 					# Specific gas constant [J/(kg·K)]
+   gamma: 1.4                          					# Heat capacity ratio (ideal-gas) [-]
+   P_inf: 4000000.0                    					# Pressure infinity (liquid stiffness) [Pa]
+   e_0: 0.222                         					# Internal energy zero point [J/kg]
+   c_v: 743.0                         					# Specific isochoric heat capacity [J/(kg·K)]
+   molecular_weight: 0.0280134              				# Molecular weight [kg/mol]
+   acentric_factor: 0.0372               				# Acentric factor [-]
+   critical_temperature: 126.192           				# Critical temperature [K]
+   critical_pressure: 3395800.0           				# Critical pressure [Pa]
+   critical_molar_volume: 0.000089412       				# Critical molar volume [m3/mol]
+   NASA_coefficients: [ 2.952576370000000000000,
+                        0.001396900400000000000,
+                       -0.000000492631603000000,
+                        0.000000000078601019000,
+                       -0.000000000000004607552,
+                       -923.9486880000000000000,
+                        5.871887620000000000000,
+                        3.531005280000000000000,
+                       -0.000123660980000000000,
+                       -0.000000502999433000000,
+                        0.000000002435306120000,
+                       -0.000000000001408812400,
+                       -1046.976280000000000000,
+                        2.967470380000000000000,
+                        0.000000000000000000000]                        # NASA 7-coefficient polynomial (15 values)
+   mu_0: 0.00001663							# Reference dynamic viscosity [Pa·s]	
+   kappa_0: 0.0242							# Reference thermal conductivity [W/(m·K)]	
+   T_0: 273.0								# Reference temperature [K]	
+   S_mu: 107.0								# Sutherland's dynamic viscosity constant [K]	
+   S_kappa: 150.0							# Sutherland's thermal conductivity constant [K]
+   dipole_moment: 0.0               					# Dipole moment [D]
+   association_factor: 0.0             					# Association factor [-]
+
+##### Oxygen #####
+Oxygen:
+   R_specific: 259.8                 					# Specific gas constant [J/(kg·K)]
+   gamma: 1.395                        					# Heat capacity ratio (ideal-gas) [-]
+   P_inf: 6000000.0                   					# Pressure infinity (liquid stiffness) [Pa]
+   e_0: 0.195                         					# Internal energy zero point [J/kg]
+   c_v: 658.0                         					# Specific isochoric heat capacity [J/(kg·K)]
+   molecular_weight: 0.032              				# Molecular weight [kg/mol]
+   acentric_factor: 0.0222               				# Acentric factor [-]
+   critical_temperature: 154.6           				# Critical temperature [K]
+   critical_pressure: 5045985.0           				# Critical pressure [Pa]
+   critical_molar_volume: 0.00007338       				# Critical molar volume [m3/mol]
+   NASA_coefficients: [ 3.66096083000000000000000,
+			0.00065636552300000000000,
+		       -0.00000014114948500000000,
+			0.00000000002057976580000,
+		       -0.00000000000000129913248,
+		       -1215.97725000000000000000,
+			3.41536184000000000000000,
+			3.78245636000000000000000,
+		       -0.00299673415000000000000,
+			0.00000984730200000000000,
+		       -0.00000000968129508000000,
+			0.00000000000324372836000,
+		       -1063.94356000000000000000,
+			3.65767573000000000000000,
+			0.00000000000000000000000]                      # NASA 7-coefficient polynomial (15 values)
+   mu_0: 0.00001919							# Reference dynamic viscosity [Pa·s]	
+   kappa_0: 0.0244							# Reference thermal conductivity [W/(m·K)]	
+   T_0: 273.0								# Reference temperature [K]	
+   S_mu: 139.0								# Sutherland's dynamic viscosity constant [K]	
+   S_kappa: 240.0							# Sutherland's thermal conductivity constant [K]
+   dipole_moment: 0.0               					# Dipole moment [D]
+   association_factor: 0.0             					# Association factor [-]
+
+##### R134a #####
+R134a:
+   R_specific: 81.490                 					# Specific gas constant [J/(kg·K)]
+   gamma: 1.2                           				# Heat capacity ratio (ideal-gas) [-]
+   P_inf: 5000000.0                    					# Pressure infinity (liquid stiffness) [Pa]
+   e_0: 402160.0                         				# Internal energy zero point [J/kg]
+   c_v: 755.1101211                    					# Specific isochoric heat capacity [J/(kg·K)]
+   molecular_weight: 0.10203              				# Molecular weight [kg/mol]
+   acentric_factor: 0.32684               				# Acentric factor [-]
+   critical_temperature: 374.21           				# Critical temperature [K]
+   critical_pressure: 4059280.0           				# Critical pressure [Pa]
+   critical_molar_volume: 0.00019931     				# Critical molar volume [m3/mol]
+   NASA_coefficients: [ 12.555111500000000000000,
+			0.0084018607100000000000,
+		       -0.0000031207729100000000,
+			0.0000000005122845720000,
+		       -0.0000000000000310110291,
+		       -114846.31900000000000000,
+		       -38.037432900000000000000,
+			2.2923968100000000000000,
+			0.0303108483000000000000,
+		       -0.0000053371398500000000,
+		       -0.0000000219456612000000,
+			0.0000000000129970288000,
+		       -111790.43100000000000000,
+		        16.283056800000000000000,
+		       -109844.11600000000000000]                       # NASA 7-coefficient polynomial (15 values)
+   mu_0: 0.0000119							# Reference dynamic viscosity [Pa·s]	
+   kappa_0: 0.0135							# Reference thermal conductivity [W/(m·K)]	
+   T_0: 300.0								# Reference temperature [K]	
+   S_mu: 311.0								# Sutherland's dynamic viscosity constant [K]	
+   S_kappa: 58006341098.4						# Sutherland's thermal conductivity constant [K]
+   dipole_moment: 2.058               					# Dipole moment [D]
+   association_factor: 0.0             					# Association factor [-]
+
+##### Water #####
+Water:
+   R_specific: 461.5                 					# Specific gas constant [J/(kg·K)]
+   gamma: 1.124                        					# Heat capacity ratio (ideal-gas) [-]
+   P_inf: 30000000.0                   					# Pressure infinity (liquid stiffness) [Pa]
+   e_0: 2411600.0                      					# Internal energy zero point [J/kg]
+   c_v: 3725.5                         					# Specific isochoric heat capacity [J/(kg·K)]
+   molecular_weight: 0.018015              				# Molecular weight [kg/mol]
+   acentric_factor: 0.3443               				# Acentric factor [-]
+   critical_temperature: 647.096         				# Critical temperature [K]
+   critical_pressure: 22064025.4        				# Critical pressure [Pa]
+   critical_molar_volume: 0.000055947       				# Critical molar volume [m3/mol]
+   NASA_coefficients: [ 2.6770389000000000000000,
+ 			0.0029731816000000000000,
+		       -0.0000007737688900000000,
+ 			0.0000000000944335140000,
+		       -0.0000000000000042689991,
+ 			29885.894000000000000000,
+ 			6.8825500000000000000000,
+ 			4.1986352000000000000000,
+		       -0.0020364017000000000000,
+ 			0.0000065203416000000000,
+		       -0.0000000054879269000000,
+ 			0.0000000000017719680000,
+		       -30293.726000000000000000,
+		       -0.8490090100000000000000,
+		       -29084.817000000000000000]                       # NASA 7-coefficient polynomial (15 values)
+   mu_0: 0.00001006							# Reference dynamic viscosity [Pa·s]	
+   kappa_0: 0.0161							# Reference thermal conductivity [W/(m·K)]	
+   T_0: 273.0								# Reference temperature [K]	
+   S_mu: 523.0								# Sutherland's dynamic viscosity constant [K]	
+   S_kappa: 1276.0							# Sutherland's thermal conductivity constant [K]
+   dipole_moment: 1.855               					# Dipole moment [D]
+   association_factor: 0.076           					# Association factor [-]

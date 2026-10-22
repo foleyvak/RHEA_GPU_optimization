@@ -10,7 +10,7 @@ CONFIG_FILE  = configuration_file.yaml
 #PROJECT_PATH = $(RHEA_PATH_OPTI)
 #SRC_DIR      = $(PROJECT_PATH)/src
 
-PROJECT_PATH = ../../RHEA/flowsolverrhea_NVTX_v2
+PROJECT_PATH = flowsolverrhea_NVTX_v2
 SRC_DIR      = $(PROJECT_PATH)/src
 
 

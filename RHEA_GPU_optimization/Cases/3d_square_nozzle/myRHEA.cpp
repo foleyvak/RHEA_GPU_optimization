@@ -134,7 +134,11 @@ myRHEA::myRHEA(const std::string name_configuration_file) : FlowSolverRHEA(name_
     //solver->y_field.update();
     //solver->z_field.update();
 
-    det_Jacobian_field.setTopology(topo,"det_Jacobian_field");
+    ///////////////////////////////////////////
+    #pragma acc update device(solver->x_field.vector[0:solver->_ls_], solver->y_field.vector[0:solver->_ls_], solver->z_field.vector[0:solver->_ls_])
+    ///////////////////////////////////////////
+
+    //det_Jacobian_field.setTopology(topo,"det_Jacobian_field");    MOVE TO FLOWSOLVERRHEA
 
     double x_xi, x_eta, x_zeta, y_xi, y_eta, y_zeta, z_xi, z_eta, z_zeta, det_J;
     for(int i = solver->topo->iter_common[_INNER_][_INIX_]; i <= solver->topo->iter_common[_INNER_][_ENDX_]; i++) {
@@ -153,15 +157,17 @@ myRHEA::myRHEA(const std::string name_configuration_file) : FlowSolverRHEA(name_
                 z_zeta  = (solver->z_field[I1D(i,j,k+1)] - solver->z_field[I1D(i,j,k-1)])/2.0;
 
                 det_J = (x_xi*y_eta*z_zeta + x_eta*y_zeta*z_xi + x_zeta*y_xi*z_eta - x_zeta*y_eta*z_xi - x_eta*y_xi*z_zeta - x_xi*y_zeta*z_eta);
-                det_Jacobian_field[I1D(i,j,k)] = 1.0/det_J;
+                solver->det_Jacobian_field[I1D(i,j,k)] = 1.0/det_J;
             }
         }
     }
 
+    #pragma acc update device(det_Jacobian_field.vector[0:_ls_])
     /// Update halo values
     det_Jacobian_field.update();
-
-    #pragma acc update device(solver->x_field.vector[0:solver->_ls_], solver->y_field.vector[0:solver->_ls_], solver->z_field.vector[0:solver->_ls_], det_Jacobian_field.vector[0:solver->_ls_])
+#if _GPU_AWARE_MPI_DEACTIVATED_ 
+    #pragma acc update device(det_Jacobian_field.vector[0:_ls_])
+#endif
 
 })  // Closes the lambda '}' and the initializer list ')'
 {
@@ -1524,7 +1530,7 @@ void myRHEA::calculateTimeStep() {
         for(int j = topo->iter_common[_INNER_][_INIY_]; j <= topo->iter_common[_INNER_][_ENDY_]; j++) {
             for(int k = topo->iter_common[_INNER_][_INIZ_]; k <= topo->iter_common[_INNER_][_ENDZ_]; k++) {
                 /// Speed of sound
-		        sos = sos_field[I1D(i,j,k)];
+		sos = sos_field[I1D(i,j,k)];
                 /// Heat capacities
                 //thermodynamics->calculateSpecificHeatCapacities( c_v, c_p, P_field[I1D(i,j,k)], T_field[I1D(i,j,k)], rho_field[I1D(i,j,k)] );
                 c_p = c_p_field[I1D(i,j,k)];
@@ -1584,41 +1590,6 @@ void myRHEA::calculateTimeStep() {
         }
     }
 
-    /// Iterate through local particles in use
-    if( ( point_particles->get_num_prts_total() > 0 ) and !activate_pure_tracer_particles ) {
-
-        int i_local_index, j_local_index, k_local_index;
-        double u_velocity_particle, v_velocity_particle, w_velocity_particle;   
-	int capacity = point_particles->get_prt_capacity();
-        #pragma acc parallel loop collapse (1) private(i_local_index, j_local_index, k_local_index, u_velocity_particle, v_velocity_particle, w_velocity_particle, delta_z, delta_y, delta_x) present(this, mesh, topo, point_particles, x_field.vector[0:_ls_], v_field.vector[0:_ls_], z_field.vector[0:_ls_], point_particles->local_prts_velocities_0_x[0:capacity], point_particles->local_prts_velocities_0_y[0:capacity], point_particles->local_prts_velocities_0_z[0:capacity], point_particles->local_prts_indexes_0_i[0:capacity], point_particles->local_prts_indexes_0_j[0:capacity], point_particles->local_prts_indexes_0_k[0:capacity]) reduction(min:local_delta_t)
-        for( int p = 0; p < this->number_particles_local_in_use; p++ ) {
-
-            /// Obtain Lagrangian-Eulerian indexes 0
-            i_local_index = point_particles->local_prts_indexes_0_i[p];		/// Local index i
-            j_local_index = point_particles->local_prts_indexes_0_j[p];		/// Local index j
-            k_local_index = point_particles->local_prts_indexes_0_k[p];		/// Local index k
-
-            /// Obtain velocity of point particle
-            u_velocity_particle = point_particles->local_prts_velocities_0_x[p];
-            v_velocity_particle = point_particles->local_prts_velocities_0_y[p];
-            w_velocity_particle = point_particles->local_prts_velocities_0_z[p];
-
-            // / Geometric stuff
-            delta_x = 0.5*( x_field[I1D(i_local_index+1,j_local_index,k_local_index)] - x_field[I1D(i_local_index-1,j_local_index,k_local_index)] ); 
-            delta_y = 0.5*( y_field[I1D(i_local_index,j_local_index+1,k_local_index)] - y_field[I1D(i_local_index,j_local_index-1,k_local_index)] ); 
-            delta_z = 0.5*( z_field[I1D(i_local_index,j_local_index,k_local_index+1)] - z_field[I1D(i_local_index,j_local_index,k_local_index-1)] );
-
-            /// x-direction particle term
-            local_delta_t = min( local_delta_t, CFL*delta_x/max( abs( u_velocity_particle ), epsilon ) );	/// Particle scale
-            /// y-direction particle term
-            local_delta_t = min( local_delta_t, CFL*delta_y/max( abs( v_velocity_particle ), epsilon ) );	/// Particle scale
-            /// z-direction particle term
-            local_delta_t = min( local_delta_t, CFL*delta_z/max( abs( w_velocity_particle ), epsilon ) );	/// Particle scale
-        
-        }
-
-    }
-
     /// Find minimum (global) delta_t
     double global_delta_t;
     MPI_Allreduce(&local_delta_t, &global_delta_t, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
@@ -1627,6 +1598,7 @@ void myRHEA::calculateTimeStep() {
     delta_t = global_delta_t;
    
 };
+
 
 void myRHEA::updateBoundaries() {
 

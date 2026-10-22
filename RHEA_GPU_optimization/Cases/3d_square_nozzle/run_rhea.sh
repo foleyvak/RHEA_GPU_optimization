@@ -28,7 +28,7 @@ export OMP_NUM_THREADS=1 # Only needed in BSC due to minimum number of CPU cores
 #	1) Comment the "Normal execution" line
 #	2) Uncomment the specific profiling line (Nsight systems or Compute)
 #	3) ./run_rhea.sh
-#
+#       4) Read stats: nsys stats --report nvtx_pushpop_sum <nsys-rep-file>
 # ======================================================================
 
 # ================== Normal execution =======================

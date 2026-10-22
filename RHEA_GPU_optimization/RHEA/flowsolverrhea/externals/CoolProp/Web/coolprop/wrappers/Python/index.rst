@@ -1,0 +1,321 @@
+.. _Python:
+
+**************
+Python Wrapper
+**************
+
+.. contents:: :depth: 2
+
+PyFluids (3-party wrapper)
+==========================
+
+It is a simple, full-featured, lightweight CoolProp wrapper for Python.
+PyFluids gets published on `PyPI <https://pypi.org/project/pyfluids/>`_,  so you can easily install it using: ::
+
+    pip install pyfluids
+
+All CoolProp features are included: thermophysical properties of pure fluids, mixtures and humid air.
+Also you can easily convert the results to a JSON string or Python dict, add new properties or inputs for lookups, and more.
+
+Benefits
+--------
+
+* Easy to use: all fluids and properties are at hand, no need to remember CoolProp keys.
+
+* Processes for fluids and humid air are included: there is no need to code it anymore.
+
+* User-friendly interface: writing code is faster.
+
+Examples
+--------
+
+To calculate the specific heat of saturated water vapor at *1 atm*: ::
+
+    from pyfluids import Fluid, FluidsList
+
+    water_vapour = Fluid(FluidsList.Water).dew_point_at_pressure(101325)
+    print(water_vapour.specific_heat)  # 2079.937085633241
+
+To calculate the dynamic viscosity of propylene glycol aqueous solution with *60 %* mass fraction at *100 kPa* and *-20 °C*: ::
+
+    from pyfluids import Fluid, FluidsList, Input
+
+    propylene_glycol = Fluid(FluidsList.MPG, 60).with_state(
+        Input.pressure(100e3), Input.temperature(-20)
+    )
+    print(propylene_glycol.dynamic_viscosity)  # 0.13907391053938878
+
+To calculate the density of ethanol aqueous solution (with ethanol *40 %* mass fraction) at *200 kPa* and *4 °C*: ::
+
+    from pyfluids import Mixture, FluidsList, Input
+
+    mixture = Mixture([FluidsList.Water, FluidsList.Ethanol], [60, 40]).with_state(
+        Input.pressure(200e3), Input.temperature(4)
+    )
+    print(mixture.density)  # 883.3922771627963
+
+To calculate the wet bulb temperature of humid air at *99 kPa*, *30 °C* and *50 %* relative humidity: ::
+
+    from pyfluids import HumidAir, InputHumidAir
+
+    humid_air = HumidAir().with_state(
+        InputHumidAir.pressure(99e3),
+        InputHumidAir.temperature(30),
+        InputHumidAir.relative_humidity(50),
+    )
+    print(humid_air.wet_bulb_temperature)  # 21.946578559079228
+
+For any questions or more examples, `see PyFluids on GitHub <https://github.com/portyanikhin/PyFluids>`_.
+
+Automatic installation
+======================
+
+Using the ``pip`` installation program, you can install the official release from the pypi server using::
+
+    pip install CoolProp
+
+There are also unofficial `Conda <https://conda.io>`__ packages available from the ``conda-forge`` channel. To
+install, use::
+
+    conda install conda-forge::coolprop
+
+Using uv (fast Python package manager)
+---------------------------------------
+
+`uv <https://docs.astral.sh/uv/>`__ is an extremely fast Python package and project manager written in Rust.
+To use CoolProp with uv::
+
+    # Install CoolProp in the current environment
+    uv pip install CoolProp
+
+    # Or create a new project with CoolProp
+    uv init my-project
+    cd my-project
+    uv add CoolProp
+
+    # Run a script with CoolProp (uv will automatically manage the environment)
+    uv run python my_script.py
+
+For development from source::
+
+    # Clone the repository
+    git clone https://github.com/CoolProp/CoolProp --recursive
+    cd CoolProp
+
+    # Create a virtual environment (recommended)
+    uv venv
+
+    # Install build dependencies
+    uv pip install --python .venv/bin/python scikit-build-core cython
+
+    # Install in editable mode with incremental build support
+    uv pip install -ve . --python .venv/bin/python --no-build-isolation
+
+**Important**: The ``--no-build-isolation`` flag is required for incremental builds to work properly.
+Without it, each build will use a temporary isolated environment with different paths, causing CMake
+to reconfigure and rebuild all files even when only one file changed.
+
+Nightly builds
+--------------
+
+If you dare, you can also try the latest nightly release from :sfnightly:`Python`
+or get it directly from the development server using::
+
+    pip install -vvv --pre --trusted-host www.coolprop.dreamhosters.com --find-links http://www.coolprop.dreamhosters.com/binaries/Python/ -U --no-cache --force-reinstall CoolProp
+
+Manual installation
+===================
+
+Compilation of the python wrapper requires a few :ref:`common wrapper pre-requisites <wrapper_common_prereqs>`
+
+CoolProp uses a modern build system based on CMake via scikit-build-core. The build dependencies
+(including Cython and CMake) are automatically installed by pip.
+
+To build and install from source::
+
+    # Check out the sources for CoolProp
+    git clone https://github.com/CoolProp/CoolProp --recursive
+    # Move into the folder you just created
+    cd CoolProp
+    # Install (pip will automatically handle the build)
+    pip install .
+
+Development with Editable Install
+++++++++++++++++++++++++++++++++++
+
+An editable install (also known as "development mode") allows you to make changes to the C++
+source code and have them take effect after a simple rebuild, without reinstalling the package.
+
+Using pip::
+
+    # Install in editable mode
+    pip install -ve .
+
+Using uv (recommended for faster builds and better dependency management)::
+
+    # Create a virtual environment
+    uv venv
+
+    # Install build dependencies first (required for --no-build-isolation)
+    uv pip install --python .venv/bin/python scikit-build-core cython
+
+    # Install in editable mode with incremental build support
+    uv pip install -ve . --python .venv/bin/python --no-build-isolation
+
+When you modify C++ source files, trigger an incremental rebuild::
+
+    # With pip (incremental builds work automatically)
+    pip install -ve .
+
+    # With uv (must use --no-build-isolation for incremental builds)
+    uv pip install -ve . --python .venv/bin/python --no-build-isolation
+
+The build system (scikit-build-core with CMake/Ninja) will automatically detect which files
+have changed and only recompile those files, making the rebuild much faster than a full rebuild.
+
+**Incremental Build Performance**:
+
+* Without ``--no-build-isolation``: Each build uses a fresh isolated environment, causing CMake
+  to reconfigure and rebuild all ~60 source files (~50 seconds)
+* With ``--no-build-isolation``: CMake reuses the existing build directory and only rebuilds
+  changed files (~4 seconds for a single file change)
+
+**Note**: If you use ``--no-build-isolation``, you must manually install the build dependencies
+(``scikit-build-core`` and ``cython``) in your virtual environment first.
+
+Local installation
+------------------
+
+If you prefer not to install system-wide, you can install locally using the ``--user`` flag::
+
+    # Check out the sources for CoolProp
+    git clone https://github.com/CoolProp/CoolProp --recursive
+    # Move into the folder you just created
+    cd CoolProp
+    # Install locally
+    pip install --user .
+
+For specific Python versions
+-----------------------------
+
+If you have multiple Python versions installed, use the specific Python's pip::
+
+    # For Python 3.11 specifically
+    python3.11 -m pip install .
+
+Building with specific compilers
+---------------------------------
+
+You can control CMake options via environment variables::
+
+    # Example: Specify a different C++ compiler
+    export CXX=/usr/bin/g++-11
+    pip install .
+
+Usage
+=====
+
+There is example code :ref:`at the end of this page <python_example>`
+
+Once installed, you can use CoolProp for various things:
+
+* Compute special values in SI units::
+
+    import CoolProp.CoolProp as CP
+    fluid = 'Water'
+    pressure_at_critical_point = CP.PropsSI(fluid,'pcrit')
+    # Massic volume (in m^3/kg) is the inverse of density
+    # (or volumic mass in kg/m^3). Let's compute the massic volume of liquid
+    # at 1bar (1e5 Pa) of pressure
+    vL = 1/CP.PropsSI('D','P',1e5,'Q',0,fluid)
+    # Same for saturated vapor
+    vG = 1/CP.PropsSI('D','P',1e5,'Q',1,fluid)
+
+* Get some nice graphs::
+
+    import CoolProp.Plots as CPP
+    ph_plot = CPP.PropertyPlot('Water','Ph')
+    ph_plot.savefig('enthalpy_pressure_graph_for_Water.png')
+
+* Solve `thermodynamics exercices`_
+
+* Make your own `more complex graphs`_ if you feel the graphing interface is lacking something
+
+* Make even more complex graphs using `3D stuff`_
+
+.. _thermodynamics exercices: https://github.com/jjfPCSI1/py4phys/blob/master/lib/T6_resolution_cycle_diesel.py
+.. _more complex graphs: https://github.com/jjfPCSI1/py4phys/blob/master/lib/T6_diagramme_Ph_coolprop.py
+.. _3D stuff: https://github.com/CoolProp/CoolProp/blob/master/dev/TTSE/TTSE_ranges.py
+
+.. _python_example:
+
+Example Code
+============
+
+.. literalinclude:: Example.py
+   :language: python
+
+Example Code Output
+===================
+
+.. literalinclude:: Example.out
+
+Code Warnings
+=============
+
+Messages may be issued from the Python CoolProp wrapper via the Python `warnings` module.  This module allows
+non-fatal warning messages to be issued to the calling program and stdout to warn of
+improper function usage or deprecation of features.  These warnings will, by
+default, be issued each and every time a suspect call is made to CoolProp.  While, the best
+solution is to correct the calling code according to the message received, sometimes this is
+difficult to do in a legacy or third party code and can result in many, many warning messages that obscure
+the output and hinder debugging.
+
+Suppressing warning messages
+----------------------------
+
+The calling code can suppress or ignore these warning messages by overriding the default
+warnings filter and changing the behavior of the warnings module.  As an example, the
+following script will result in a `DeprecationWarning` on each call to the deprecated function
+Props()::
+
+    from CoolProp.CoolProp import Props
+    Rho = Props('D','T',298.15,'P',10000,'R744')
+    print("R744 Density at {} K and {} kPa      = {} kg/m³".format(298.15, 10000, Rho))
+    H = Props('H','T',298.15,'Q',1,'R134a');
+    print("R134a Saturated Liquid Enthalpy at {} K = {} kJ/kg".format(298.15, H))
+
+Example output::
+
+    TestProps.py:14: DeprecationWarning: Props() function is deprecated; Use the PropsSI() function
+    Rho = Props('D','T',298.15,'P',10000,'R744')
+    R744 Density at 298.15 K and 10000 kPa      = 817.6273812375758 kg/m³
+    TestProps.py:16: DeprecationWarning: Props() function is deprecated; Use the PropsSI() function
+    H = Props('H','T',298.15,'Q',1,'R134a');
+    R134a Saturated Liquid Enthalpy at 298.15 K = 412.33395323186807 kJ/kg
+
+Legacy applications can create a filter override to ignore *all* deprecation warnings by including
+the following code just *after* the last import from CoolProp, but *before* any calls to CoolProp::
+
+    import warnings
+    warnings.filterwarnings('ignore', category=DeprecationWarning)
+
+To suppress, for example, *only* deprecation warning messages that contain the string "Props()",
+the second parameter to filterwarnings() can be a pattern matching regular expression::
+
+    import warnings
+    warnings.filterwarnings('ignore', '.*Props()*.', category=DeprecationWarning)
+
+This filter will suppress any `DeprecationWarning` messages that contain the string "Props()" but will
+allow all other warning messages to be displayed.  The first parameter, `ignore`, can also be set to
+`once`, which will result in a given message to be issued only once and then ignored on further instances.
+
+See `Python >>> Module Warnings <https://docs.python.org/3/library/warnings.html#module-warnings>`_ for more information on using `filterwarnings()`
+
+
+Module Documentation
+====================
+
+.. toctree::
+
+    ../../../apidoc/CoolProp.rst

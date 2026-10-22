@@ -1,0 +1,34 @@
+name: docs
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.13
+  - scipy
+  - numpy
+  - matplotlib
+  - ipython
+  - pandas
+  - pip
+  - six
+  - requests
+  - jinja2
+  - pyyaml
+  - packaging
+  - jupyter
+  - nbconvert
+  - notebook
+  - pandoc
+  - imagemagick
+  - pip:
+    - cython
+    - sphinx
+    - sphinxcontrib-napoleon
+    - sphinxcontrib-doxylink
+    - sphinxcontrib-bibtex
+    - cloud_sptheme
+    - openpyxl
+    - pybtex
+    - pickleshare
+    - nbsphinx
+

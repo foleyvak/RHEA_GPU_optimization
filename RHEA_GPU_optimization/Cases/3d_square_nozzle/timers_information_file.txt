@@ -1,0 +1,1080 @@
+
+Timer : calculate_inviscid_fluxes
+------------------------------
+Last Time Max     :0.000173807
+Accum. Time Max   :0.022428
+------------------------------
+
+Timer : calculate_source_terms
+------------------------------
+Last Time Max     :2.38419e-05
+Accum. Time Max   :0.00359654
+------------------------------
+
+Timer : calculate_thermodynamics_from_primitive_variables
+------------------------------
+Last Time Max     :3.19481e-05
+Accum. Time Max   :0.00437903
+------------------------------
+
+Timer : calculate_thermophysical_properties
+------------------------------
+Last Time Max     :2.19345e-05
+Accum. Time Max   :0.0029664
+------------------------------
+
+Timer : calculate_time_step
+------------------------------
+Last Time Max     :9.01222e-05
+Accum. Time Max   :0.00385261
+------------------------------
+
+Timer : calculate_viscous_fluxes
+------------------------------
+Last Time Max     :5.6982e-05
+Accum. Time Max   :0.00751448
+------------------------------
+
+Timer : conserved_to_primitive_variables
+------------------------------
+Last Time Max     :2.59876e-05
+Accum. Time Max   :0.00353289
+------------------------------
+
+Timer : execute
+------------------------------
+Last Time Max     :0.129826
+Accum. Time Max   :1.76539
+------------------------------
+
+Timer : immersed_boundary_method
+------------------------------
+Last Time Max     :9.53674e-07
+Accum. Time Max   :2.83718e-05
+------------------------------
+
+Timer : output_solver_state
+------------------------------
+Last Time Max     :1.19209e-06
+Accum. Time Max   :0.0268281
+------------------------------
+
+Timer : rk_iteration_loop
+------------------------------
+Last Time Max     :0.019352
+Accum. Time Max   :1.27949
+------------------------------
+
+Timer : temporal_hook_function
+------------------------------
+Last Time Max     :9.53674e-07
+Accum. Time Max   :1.38283e-05
+------------------------------
+
+Timer : time_advance_conserved_variables
+------------------------------
+Last Time Max     :0.00458002
+Accum. Time Max   :1.00279
+------------------------------
+
+Timer : time_advance_point_particles
+------------------------------
+Last Time Max     :0
+Accum. Time Max   :3.29018e-05
+------------------------------
+
+Timer : time_iteration_loop
+------------------------------
+Last Time Max     :1.31636
+Accum. Time Max   :1.31636
+------------------------------
+
+Timer : update_boundaries
+------------------------------
+Last Time Max     :0.00122595
+Accum. Time Max   :0.214377
+------------------------------
+
+Timer : update_previous_state_conserved_variables
+------------------------------
+Last Time Max     :2.81334e-05
+Accum. Time Max   :0.00122404
+------------------------------
+
+Timer : update_time_averaged_quantities
+------------------------------
+Last Time Max     :0
+Accum. Time Max   :1.54972e-05
+------------------------------
+
+Timer : calculate_inviscid_fluxes
+------------------------------
+Last Time Max     :0.00046277
+Accum. Time Max   :0.00329471
+------------------------------
+
+Timer : calculate_source_terms
+------------------------------
+Last Time Max     :3.00407e-05
+Accum. Time Max   :9.08375e-05
+------------------------------
+
+Timer : calculate_thermodynamics_from_primitive_variables
+------------------------------
+Last Time Max     :3.60012e-05
+Accum. Time Max   :0.000133038
+------------------------------
+
+Timer : calculate_thermophysical_properties
+------------------------------
+Last Time Max     :2.59876e-05
+Accum. Time Max   :0.000110149
+------------------------------
+
+Timer : calculate_time_step
+------------------------------
+Last Time Max     :0.00197196
+Accum. Time Max   :0.00197196
+------------------------------
+
+Timer : calculate_viscous_fluxes
+------------------------------
+Last Time Max     :0.000114918
+Accum. Time Max   :0.00039196
+------------------------------
+
+Timer : conserved_to_primitive_variables
+------------------------------
+Last Time Max     :3.00407e-05
+Accum. Time Max   :0.000115871
+------------------------------
+
+Timer : execute
+------------------------------
+Last Time Max     :0.122809
+Accum. Time Max   :0.122809
+------------------------------
+
+Timer : immersed_boundary_method
+------------------------------
+Last Time Max     :9.53674e-07
+Accum. Time Max   :2.86102e-06
+------------------------------
+
+Timer : output_solver_state
+------------------------------
+Last Time Max     :0.058131
+Accum. Time Max   :0.058131
+------------------------------
+
+Timer : rk_iteration_loop
+------------------------------
+Last Time Max     :0.0261271
+Accum. Time Max   :0.0261271
+------------------------------
+
+Timer : temporal_hook_function
+------------------------------
+Last Time Max     :9.53674e-07
+Accum. Time Max   :9.53674e-07
+------------------------------
+
+Timer : time_advance_conserved_variables
+------------------------------
+Last Time Max     :0.00528908
+Accum. Time Max   :0.0171461
+------------------------------
+
+Timer : time_advance_point_particles
+------------------------------
+Last Time Max     :2.7895e-05
+Accum. Time Max   :2.7895e-05
+------------------------------
+
+Timer : time_iteration_loop
+------------------------------
+Last Time Max     :0.0867581
+Accum. Time Max   :0.0867581
+------------------------------
+
+Timer : update_boundaries
+------------------------------
+Last Time Max     :0.00133705
+Accum. Time Max   :0.00416899
+------------------------------
+
+Timer : update_previous_state_conserved_variables
+------------------------------
+Last Time Max     :3.12328e-05
+Accum. Time Max   :3.12328e-05
+------------------------------
+
+Timer : update_time_averaged_quantities
+------------------------------
+Last Time Max     :1.19209e-06
+Accum. Time Max   :1.19209e-06
+------------------------------
+
+Timer : calculate_inviscid_fluxes
+------------------------------
+Last Time Max     :0.000467062
+Accum. Time Max   :0.00473499
+------------------------------
+
+Timer : calculate_source_terms
+------------------------------
+Last Time Max     :2.69413e-05
+Accum. Time Max   :0.000174046
+------------------------------
+
+Timer : calculate_thermodynamics_from_primitive_variables
+------------------------------
+Last Time Max     :3.60012e-05
+Accum. Time Max   :0.000263929
+------------------------------
+
+Timer : calculate_thermophysical_properties
+------------------------------
+Last Time Max     :2.5034e-05
+Accum. Time Max   :0.000185966
+------------------------------
+
+Timer : calculate_time_step
+------------------------------
+Last Time Max     :0.000102997
+Accum. Time Max   :0.00205207
+------------------------------
+
+Timer : calculate_viscous_fluxes
+------------------------------
+Last Time Max     :0.00011301
+Accum. Time Max   :0.000726461
+------------------------------
+
+Timer : conserved_to_primitive_variables
+------------------------------
+Last Time Max     :2.88486e-05
+Accum. Time Max   :0.000192404
+------------------------------
+
+Timer : execute
+------------------------------
+Last Time Max     :0.026813
+Accum. Time Max   :0.152206
+------------------------------
+
+Timer : immersed_boundary_method
+------------------------------
+Last Time Max     :9.53674e-07
+Accum. Time Max   :3.33786e-06
+------------------------------
+
+Timer : output_solver_state
+------------------------------
+Last Time Max     :2.00272e-05
+Accum. Time Max   :0.0402622
+------------------------------
+
+Timer : rk_iteration_loop
+------------------------------
+Last Time Max     :0.0240538
+Accum. Time Max   :0.050581
+------------------------------
+
+Timer : temporal_hook_function
+------------------------------
+Last Time Max     :9.53674e-07
+Accum. Time Max   :9.53674e-07
+------------------------------
+
+Timer : time_advance_conserved_variables
+------------------------------
+Last Time Max     :0.00665498
+Accum. Time Max   :0.0343542
+------------------------------
+
+Timer : time_advance_point_particles
+------------------------------
+Last Time Max     :1.19209e-06
+Accum. Time Max   :2.81334e-05
+------------------------------
+
+Timer : time_iteration_loop
+------------------------------
+Last Time Max     :0.0934479
+Accum. Time Max   :0.0934479
+------------------------------
+
+Timer : update_boundaries
+------------------------------
+Last Time Max     :0.00132108
+Accum. Time Max   :0.00868201
+------------------------------
+
+Timer : update_previous_state_conserved_variables
+------------------------------
+Last Time Max     :3.00407e-05
+Accum. Time Max   :6.10352e-05
+------------------------------
+
+Timer : update_time_averaged_quantities
+------------------------------
+Last Time Max     :9.53674e-07
+Accum. Time Max   :2.14577e-06
+------------------------------
+
+Timer : calculate_inviscid_fluxes
+------------------------------
+Last Time Max     :0.000177145
+Accum. Time Max   :0.00509429
+------------------------------
+
+Timer : calculate_source_terms
+------------------------------
+Last Time Max     :2.71797e-05
+Accum. Time Max   :0.00103307
+------------------------------
+
+Timer : calculate_thermodynamics_from_primitive_variables
+------------------------------
+Last Time Max     :3.60012e-05
+Accum. Time Max   :0.00113177
+------------------------------
+
+Timer : calculate_thermophysical_properties
+------------------------------
+Last Time Max     :2.5034e-05
+Accum. Time Max   :0.000787973
+------------------------------
+
+Timer : calculate_time_step
+------------------------------
+Last Time Max     :9.29832e-05
+Accum. Time Max   :0.00125766
+------------------------------
+
+Timer : calculate_viscous_fluxes
+------------------------------
+Last Time Max     :6.10352e-05
+Accum. Time Max   :0.00176144
+------------------------------
+
+Timer : conserved_to_primitive_variables
+------------------------------
+Last Time Max     :2.88486e-05
+Accum. Time Max   :0.000891447
+------------------------------
+
+Timer : execute
+------------------------------
+Last Time Max     :0.023464
+Accum. Time Max   :0.888546
+------------------------------
+
+Timer : immersed_boundary_method
+------------------------------
+Last Time Max     :0
+Accum. Time Max   :7.62939e-06
+------------------------------
+
+Timer : output_solver_state
+------------------------------
+Last Time Max     :1.28746e-05
+Accum. Time Max   :0.0433373
+------------------------------
+
+Timer : rk_iteration_loop
+------------------------------
+Last Time Max     :0.0366459
+Accum. Time Max   :0.298529
+------------------------------
+
+Timer : temporal_hook_function
+------------------------------
+Last Time Max     :9.53674e-07
+Accum. Time Max   :5.72205e-06
+------------------------------
+
+Timer : time_advance_conserved_variables
+------------------------------
+Last Time Max     :0.0196228
+Accum. Time Max   :0.239805
+------------------------------
+
+Timer : time_advance_point_particles
+------------------------------
+Last Time Max     :0
+Accum. Time Max   :3.79086e-05
+------------------------------
+
+Timer : time_iteration_loop
+------------------------------
+Last Time Max     :0.345351
+Accum. Time Max   :0.345351
+------------------------------
+
+Timer : update_boundaries
+------------------------------
+Last Time Max     :0.00125194
+Accum. Time Max   :0.0411608
+------------------------------
+
+Timer : update_previous_state_conserved_variables
+------------------------------
+Last Time Max     :3.00407e-05
+Accum. Time Max   :0.000317097
+------------------------------
+
+Timer : update_time_averaged_quantities
+------------------------------
+Last Time Max     :9.53674e-07
+Accum. Time Max   :6.19888e-06
+------------------------------
+
+Timer : calculate_inviscid_fluxes
+------------------------------
+Last Time Max     :0.000463009
+Accum. Time Max   :0.00472617
+------------------------------
+
+Timer : calculate_source_terms
+------------------------------
+Last Time Max     :2.69413e-05
+Accum. Time Max   :0.000164986
+------------------------------
+
+Timer : calculate_thermodynamics_from_primitive_variables
+------------------------------
+Last Time Max     :3.69549e-05
+Accum. Time Max   :0.000255823
+------------------------------
+
+Timer : calculate_thermophysical_properties
+------------------------------
+Last Time Max     :2.38419e-05
+Accum. Time Max   :0.000185728
+------------------------------
+
+Timer : calculate_time_step
+------------------------------
+Last Time Max     :9.89437e-05
+Accum. Time Max   :0.00209117
+------------------------------
+
+Timer : calculate_viscous_fluxes
+------------------------------
+Last Time Max     :0.000113964
+Accum. Time Max   :0.000702858
+------------------------------
+
+Timer : conserved_to_primitive_variables
+------------------------------
+Last Time Max     :2.88486e-05
+Accum. Time Max   :0.000184774
+------------------------------
+
+Timer : execute
+------------------------------
+Last Time Max     :0.0267019
+Accum. Time Max   :0.15175
+------------------------------
+
+Timer : immersed_boundary_method
+------------------------------
+Last Time Max     :1.19209e-06
+Accum. Time Max   :2.14577e-06
+------------------------------
+
+Timer : output_solver_state
+------------------------------
+Last Time Max     :2.09808e-05
+Accum. Time Max   :0.0424991
+------------------------------
+
+Timer : rk_iteration_loop
+------------------------------
+Last Time Max     :0.024035
+Accum. Time Max   :0.0504448
+------------------------------
+
+Timer : temporal_hook_function
+------------------------------
+Last Time Max     :0
+Accum. Time Max   :9.53674e-07
+------------------------------
+
+Timer : time_advance_conserved_variables
+------------------------------
+Last Time Max     :0.00712895
+Accum. Time Max   :0.0345237
+------------------------------
+
+Timer : time_advance_point_particles
+------------------------------
+Last Time Max     :9.53674e-07
+Accum. Time Max   :2.81334e-05
+------------------------------
+
+Timer : time_iteration_loop
+------------------------------
+Last Time Max     :0.0955729
+Accum. Time Max   :0.0955729
+------------------------------
+
+Timer : update_boundaries
+------------------------------
+Last Time Max     :0.00130105
+Accum. Time Max   :0.0083828
+------------------------------
+
+Timer : update_previous_state_conserved_variables
+------------------------------
+Last Time Max     :3.00407e-05
+Accum. Time Max   :6.10352e-05
+------------------------------
+
+Timer : update_time_averaged_quantities
+------------------------------
+Last Time Max     :1.19209e-06
+Accum. Time Max   :2.14577e-06
+------------------------------
+
+Timer : calculate_inviscid_fluxes
+------------------------------
+Last Time Max     :0.000468969
+Accum. Time Max   :0.00516701
+------------------------------
+
+Timer : calculate_source_terms
+------------------------------
+Last Time Max     :2.81334e-05
+Accum. Time Max   :0.000168085
+------------------------------
+
+Timer : calculate_thermodynamics_from_primitive_variables
+------------------------------
+Last Time Max     :3.71933e-05
+Accum. Time Max   :0.000266552
+------------------------------
+
+Timer : calculate_thermophysical_properties
+------------------------------
+Last Time Max     :2.59876e-05
+Accum. Time Max   :0.000204086
+------------------------------
+
+Timer : calculate_time_step
+------------------------------
+Last Time Max     :0.000101805
+Accum. Time Max   :0.00203586
+------------------------------
+
+Timer : calculate_viscous_fluxes
+------------------------------
+Last Time Max     :0.000113964
+Accum. Time Max   :0.000730991
+------------------------------
+
+Timer : conserved_to_primitive_variables
+------------------------------
+Last Time Max     :2.98023e-05
+Accum. Time Max   :0.000189066
+------------------------------
+
+Timer : execute
+------------------------------
+Last Time Max     :0.0279059
+Accum. Time Max   :0.15382
+------------------------------
+
+Timer : immersed_boundary_method
+------------------------------
+Last Time Max     :0
+Accum. Time Max   :4.05312e-06
+------------------------------
+
+Timer : output_solver_state
+------------------------------
+Last Time Max     :2.5034e-05
+Accum. Time Max   :0.0436411
+------------------------------
+
+Timer : rk_iteration_loop
+------------------------------
+Last Time Max     :0.0244679
+Accum. Time Max   :0.0520799
+------------------------------
+
+Timer : temporal_hook_function
+------------------------------
+Last Time Max     :9.53674e-07
+Accum. Time Max   :1.90735e-06
+------------------------------
+
+Timer : time_advance_conserved_variables
+------------------------------
+Last Time Max     :0.00717807
+Accum. Time Max   :0.0354979
+------------------------------
+
+Timer : time_advance_point_particles
+------------------------------
+Last Time Max     :1.19209e-06
+Accum. Time Max   :2.59876e-05
+------------------------------
+
+Timer : time_iteration_loop
+------------------------------
+Last Time Max     :0.0983429
+Accum. Time Max   :0.0983429
+------------------------------
+
+Timer : update_boundaries
+------------------------------
+Last Time Max     :0.00133705
+Accum. Time Max   :0.00841761
+------------------------------
+
+Timer : update_previous_state_conserved_variables
+------------------------------
+Last Time Max     :3.60012e-05
+Accum. Time Max   :6.69956e-05
+------------------------------
+
+Timer : update_time_averaged_quantities
+------------------------------
+Last Time Max     :1.19209e-06
+Accum. Time Max   :2.14577e-06
+------------------------------
+
+Timer : calculate_inviscid_fluxes
+------------------------------
+Last Time Max     :0.00285292
+Accum. Time Max   :0.0127699
+------------------------------
+
+Timer : calculate_source_terms
+------------------------------
+Last Time Max     :0.00239396
+Accum. Time Max   :0.00784707
+------------------------------
+
+Timer : calculate_thermodynamics_from_primitive_variables
+------------------------------
+Last Time Max     :0.000265121
+Accum. Time Max   :0.00842619
+------------------------------
+
+Timer : calculate_thermophysical_properties
+------------------------------
+Last Time Max     :0.002388
+Accum. Time Max   :0.00730395
+------------------------------
+
+Timer : calculate_time_step
+------------------------------
+Last Time Max     :0.000132084
+Accum. Time Max   :0.0454202
+------------------------------
+
+Timer : calculate_viscous_fluxes
+------------------------------
+Last Time Max     :0.00249314
+Accum. Time Max   :0.00821233
+------------------------------
+
+Timer : conserved_to_primitive_variables
+------------------------------
+Last Time Max     :0.000210047
+Accum. Time Max   :0.00743508
+------------------------------
+
+Timer : execute
+------------------------------
+Last Time Max     :0.430214
+Accum. Time Max   :0.837379
+------------------------------
+
+Timer : immersed_boundary_method
+------------------------------
+Last Time Max     :9.53674e-07
+Accum. Time Max   :4.76837e-06
+------------------------------
+
+Timer : output_solver_state
+------------------------------
+Last Time Max     :6.8903e-05
+Accum. Time Max   :0.0474219
+------------------------------
+
+Timer : rk_iteration_loop
+------------------------------
+Last Time Max     :0.606951
+Accum. Time Max   :1.03678
+------------------------------
+
+Timer : temporal_hook_function
+------------------------------
+Last Time Max     :9.53674e-07
+Accum. Time Max   :1.90735e-06
+------------------------------
+
+Timer : time_advance_conserved_variables
+------------------------------
+Last Time Max     :0.164807
+Accum. Time Max   :0.653415
+------------------------------
+
+Timer : time_advance_point_particles
+------------------------------
+Last Time Max     :1.90735e-06
+Accum. Time Max   :2.71797e-05
+------------------------------
+
+Timer : time_iteration_loop
+------------------------------
+Last Time Max     :1.13409
+Accum. Time Max   :1.13409
+------------------------------
+
+Timer : update_boundaries
+------------------------------
+Last Time Max     :0.0344169
+Accum. Time Max   :0.329235
+------------------------------
+
+Timer : update_previous_state_conserved_variables
+------------------------------
+Last Time Max     :0.00160193
+Accum. Time Max   :0.00164485
+------------------------------
+
+Timer : update_time_averaged_quantities
+------------------------------
+Last Time Max     :1.19209e-06
+Accum. Time Max   :2.14577e-06
+------------------------------
+
+Timer : calculate_inviscid_fluxes
+------------------------------
+Last Time Max     :0.00046587
+Accum. Time Max   :0.00465584
+------------------------------
+
+Timer : calculate_source_terms
+------------------------------
+Last Time Max     :2.7895e-05
+Accum. Time Max   :0.000176191
+------------------------------
+
+Timer : calculate_thermodynamics_from_primitive_variables
+------------------------------
+Last Time Max     :3.71933e-05
+Accum. Time Max   :0.000260115
+------------------------------
+
+Timer : calculate_thermophysical_properties
+------------------------------
+Last Time Max     :2.40803e-05
+Accum. Time Max   :0.000194311
+------------------------------
+
+Timer : calculate_time_step
+------------------------------
+Last Time Max     :0.000189066
+Accum. Time Max   :0.00230908
+------------------------------
+
+Timer : calculate_viscous_fluxes
+------------------------------
+Last Time Max     :0.000114202
+Accum. Time Max   :0.000716209
+------------------------------
+
+Timer : conserved_to_primitive_variables
+------------------------------
+Last Time Max     :2.90871e-05
+Accum. Time Max   :0.000195265
+------------------------------
+
+Timer : execute
+------------------------------
+Last Time Max     :0.0264499
+Accum. Time Max   :0.151518
+------------------------------
+
+Timer : immersed_boundary_method
+------------------------------
+Last Time Max     :0
+Accum. Time Max   :4.05312e-06
+------------------------------
+
+Timer : output_solver_state
+------------------------------
+Last Time Max     :1.09673e-05
+Accum. Time Max   :0.0398421
+------------------------------
+
+Timer : rk_iteration_loop
+------------------------------
+Last Time Max     :0.0248771
+Accum. Time Max   :0.0509388
+------------------------------
+
+Timer : temporal_hook_function
+------------------------------
+Last Time Max     :9.53674e-07
+Accum. Time Max   :9.53674e-07
+------------------------------
+
+Timer : time_advance_conserved_variables
+------------------------------
+Last Time Max     :0.00692892
+Accum. Time Max   :0.0348978
+------------------------------
+
+Timer : time_advance_point_particles
+------------------------------
+Last Time Max     :9.53674e-07
+Accum. Time Max   :2.71797e-05
+------------------------------
+
+Timer : time_iteration_loop
+------------------------------
+Last Time Max     :0.093611
+Accum. Time Max   :0.093611
+------------------------------
+
+Timer : update_boundaries
+------------------------------
+Last Time Max     :0.00161314
+Accum. Time Max   :0.0085299
+------------------------------
+
+Timer : update_previous_state_conserved_variables
+------------------------------
+Last Time Max     :3.09944e-05
+Accum. Time Max   :6.31809e-05
+------------------------------
+
+Timer : update_time_averaged_quantities
+------------------------------
+Last Time Max     :1.19209e-06
+Accum. Time Max   :2.14577e-06
+------------------------------
+
+Timer : calculate_inviscid_fluxes
+------------------------------
+Last Time Max     :0.000345945
+Accum. Time Max   :0.0126436
+------------------------------
+
+Timer : calculate_source_terms
+------------------------------
+Last Time Max     :2.5034e-05
+Accum. Time Max   :0.000829458
+------------------------------
+
+Timer : calculate_thermodynamics_from_primitive_variables
+------------------------------
+Last Time Max     :3.71933e-05
+Accum. Time Max   :0.00115466
+------------------------------
+
+Timer : calculate_thermophysical_properties
+------------------------------
+Last Time Max     :2.31266e-05
+Accum. Time Max   :0.000788689
+------------------------------
+
+Timer : calculate_time_step
+------------------------------
+Last Time Max     :0.000175953
+Accum. Time Max   :0.00360131
+------------------------------
+
+Timer : calculate_viscous_fluxes
+------------------------------
+Last Time Max     :0.000112057
+Accum. Time Max   :0.00340748
+------------------------------
+
+Timer : conserved_to_primitive_variables
+------------------------------
+Last Time Max     :2.88486e-05
+Accum. Time Max   :0.000915289
+------------------------------
+
+Timer : execute
+------------------------------
+Last Time Max     :0.023041
+Accum. Time Max   :0.373846
+------------------------------
+
+Timer : immersed_boundary_method
+------------------------------
+Last Time Max     :9.53674e-07
+Accum. Time Max   :1.4782e-05
+------------------------------
+
+Timer : output_solver_state
+------------------------------
+Last Time Max     :9.05991e-06
+Accum. Time Max   :0.0534942
+------------------------------
+
+Timer : rk_iteration_loop
+------------------------------
+Last Time Max     :0.0316782
+Accum. Time Max   :0.27573
+------------------------------
+
+Timer : temporal_hook_function
+------------------------------
+Last Time Max     :9.53674e-07
+Accum. Time Max   :4.76837e-06
+------------------------------
+
+Timer : time_advance_conserved_variables
+------------------------------
+Last Time Max     :0.0049572
+Accum. Time Max   :0.203839
+------------------------------
+
+Timer : time_advance_point_particles
+------------------------------
+Last Time Max     :0
+Accum. Time Max   :2.38419e-05
+------------------------------
+
+Timer : time_iteration_loop
+------------------------------
+Last Time Max     :0.335149
+Accum. Time Max   :0.335149
+------------------------------
+
+Timer : update_boundaries
+------------------------------
+Last Time Max     :0.00131392
+Accum. Time Max   :0.045645
+------------------------------
+
+Timer : update_previous_state_conserved_variables
+------------------------------
+Last Time Max     :3.09944e-05
+Accum. Time Max   :0.000309944
+------------------------------
+
+Timer : update_time_averaged_quantities
+------------------------------
+Last Time Max     :1.19209e-06
+Accum. Time Max   :5.24521e-06
+------------------------------
+
+Timer : calculate_inviscid_fluxes
+------------------------------
+Last Time Max     :0.000349045
+Accum. Time Max   :0.012681
+------------------------------
+
+Timer : calculate_source_terms
+------------------------------
+Last Time Max     :2.59876e-05
+Accum. Time Max   :0.000836372
+------------------------------
+
+Timer : calculate_thermodynamics_from_primitive_variables
+------------------------------
+Last Time Max     :3.69549e-05
+Accum. Time Max   :0.00114799
+------------------------------
+
+Timer : calculate_thermophysical_properties
+------------------------------
+Last Time Max     :2.90871e-05
+Accum. Time Max   :0.000799417
+------------------------------
+
+Timer : calculate_time_step
+------------------------------
+Last Time Max     :9.60827e-05
+Accum. Time Max   :0.00272584
+------------------------------
+
+Timer : calculate_viscous_fluxes
+------------------------------
+Last Time Max     :0.000111103
+Accum. Time Max   :0.0034287
+------------------------------
+
+Timer : conserved_to_primitive_variables
+------------------------------
+Last Time Max     :2.90871e-05
+Accum. Time Max   :0.000916004
+------------------------------
+
+Timer : execute
+------------------------------
+Last Time Max     :0.0231819
+Accum. Time Max   :0.385844
+------------------------------
+
+Timer : immersed_boundary_method
+------------------------------
+Last Time Max     :1.19209e-06
+Accum. Time Max   :1.16825e-05
+------------------------------
+
+Timer : output_solver_state
+------------------------------
+Last Time Max     :1.50204e-05
+Accum. Time Max   :0.0408273
+------------------------------
+
+Timer : rk_iteration_loop
+------------------------------
+Last Time Max     :0.0332839
+Accum. Time Max   :0.291082
+------------------------------
+
+Timer : temporal_hook_function
+------------------------------
+Last Time Max     :1.19209e-06
+Accum. Time Max   :5.96046e-06
+------------------------------
+
+Timer : time_advance_conserved_variables
+------------------------------
+Last Time Max     :0.00507402
+Accum. Time Max   :0.220564
+------------------------------
+
+Timer : time_advance_point_particles
+------------------------------
+Last Time Max     :1.19209e-06
+Accum. Time Max   :2.21729e-05
+------------------------------
+
+Timer : time_iteration_loop
+------------------------------
+Last Time Max     :0.336539
+Accum. Time Max   :0.336539
+------------------------------
+
+Timer : update_boundaries
+------------------------------
+Last Time Max     :0.00132799
+Accum. Time Max   :0.0454803
+------------------------------
+
+Timer : update_previous_state_conserved_variables
+------------------------------
+Last Time Max     :3.09944e-05
+Accum. Time Max   :0.000308037
+------------------------------
+
+Timer : update_time_averaged_quantities
+------------------------------
+Last Time Max     :0
+Accum. Time Max   :8.10623e-06
+------------------------------

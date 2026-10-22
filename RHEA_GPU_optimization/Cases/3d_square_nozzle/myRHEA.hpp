@@ -39,7 +39,7 @@ class myRHEA : public FlowSolverRHEA {
 
     protected:
     
-        DistributedArray det_Jacobian_field;		/// 3-D field of the determinant of Jacobian 
+    //DistributedArray det_Jacobian_field;		/// 3-D field of the determinant of Jacobian MOVE TO FLOWSOLVERRHEA
 
 
     private:

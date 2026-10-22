@@ -1,0 +1,7 @@
+<map id="BaseRootFindingMinimization" name="BaseRootFindingMinimization">
+<area shape="rect" id="node1" title="BFGS." alt="" coords="53,5,269,32"/>
+<area shape="rect" id="node2" href="$classBFGS.html" title=" " alt="" coords="5,80,63,107"/>
+<area shape="rect" id="node3" href="$classBrent.html" title=" " alt="" coords="87,80,144,107"/>
+<area shape="rect" id="node4" href="$classBroyden.html" title=" " alt="" coords="168,80,244,107"/>
+<area shape="rect" id="node5" href="$classNewtonRaphson.html" title=" " alt="" coords="269,80,397,107"/>
+</map>

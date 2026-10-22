@@ -52,7 +52,7 @@ problem_parameters:
    L_x: 2.0                        					# Size of domain in x-direction [m]
    L_y: 1.0                          					# Size of domain in y-direction [m]
    L_z: 0.001                         					# Size of domain in z-direction [m]
-   final_time: 50.0                        				# Final time [s]
+   final_time: 50000000.0                        				# Final time [s]
 
 
 ##### COMPUTATIONAL PARAMETERS #####
@@ -77,7 +77,7 @@ computational_parameters:
    # Artificially decrease the velocity of acoustic waves: FALSE, TRUE
    artificial_compressibility_method: 'FALSE'  	          		# Artificially decrease velocity of acoustic waves
    epsilon_acm: 0.01                                                    # Relative error of artificial compressibility method 
-   final_time_iter: 1000000       					# Final time iteration
+   final_time_iter: 10       					# Final time iteration
 
 
 ##### BOUNDARY CONDITIONS #####
@@ -105,9 +105,9 @@ immersed_boundary_method:
 
 ##### PRINT/WRITE/READ PARAMETERS #####
 print_write_read_parameters:
-   print_frequency_iter: 1000 	             				# Print information iteration frequency
+   print_frequency_iter: 1 	             				# Print information iteration frequency
    output_data_file_name: '2d_axisymmetric_nozzle'	  		# Name of output data file
-   output_frequency_iter: 5000   	     				# Data output iteration frequency
+   output_frequency_iter: 10   	     				# Data output iteration frequency
    generate_xdmf_file: 'TRUE'               				# Generate xdmf file reader
    use_restart: 'FALSE'                					# Use restart to initialize problem
    restart_data_file: '2d_axisymmetric_nozzle_100000.h5' 	        # Restart data file

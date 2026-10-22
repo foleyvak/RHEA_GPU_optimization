@@ -1,0 +1,24 @@
+name: build and run tests
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: checkout submodules
+      run: git submodule update --init --recursive
+    - name: mkdir
+      run: mkdir -p multicomplex/build && cd multicomplex/build
+    - name: cmake config
+      run: cd multicomplex/build && cmake .. -DCMAKE_BUILD_TYPE=Release -DMULTICOMPLEX_NO_PYTHON=ON
+    - name: cmake make
+      run: cmake --build multicomplex/build --config Release
+    - name: run Catch tests
+      run: cd multicomplex/build && ctest --verbose

@@ -1,0 +1,5899 @@
+#include "ParallelTopology.hpp"
+
+using namespace std;
+
+ParallelTopology::ParallelTopology(ComputationalDomain* dom, int nprocsx, int nprocsy, int nprocsz)
+{
+    mymesh = dom;
+
+    RHEA_3DCOMM = MPI_COMM_WORLD;    
+    //MPI_Comm_dup(MPI_COMM_WORLD, &RHEA_3DCOMM);
+    MPI_Comm_rank(RHEA_3DCOMM, &rank);
+    MPI_Comm_size(RHEA_3DCOMM, &np);
+
+
+    npx= nprocsx;
+    npy= nprocsy;
+    npz= nprocsz;
+
+    if( np != npx*npy*npz ){
+
+        cout<<"Mismatched in the ComputationalDomain partition and number of procs launched"<<endl;
+        MPI_Abort(RHEA_3DCOMM,0);
+    }
+
+    //cout<<"testing 1"<<endl;
+    MPI_Barrier(MPI_COMM_WORLD);
+    int cellsx=dom->getGNx();
+    int localNx= cellsx/npx;
+    int divx = cellsx%npx;
+
+    if(rank%npx < divx) 
+        lNx=localNx+1;
+    else
+        lNx=localNx;
+
+
+    lNx = lNx + 2;
+    //cout<<"testing 2"<<endl;
+    int cellsy=dom->getGNy();
+    int localNy= cellsy/npy;
+    int divy = cellsy%npy;
+
+    int plane_rank= rank%(npx*npy);
+
+    if(plane_rank/npx < divy) 
+        lNy=localNy+1;
+    else
+        lNy=localNy;
+
+
+    lNy = lNy + 2;
+    //cout<<"testing 3"<<endl;
+    int cellsz=dom->getGNz();
+    int localNz= cellsz/npz;
+    int divz = cellsz%npz;
+
+    if(rank/(npx*npy) < divz) 
+        lNz=localNz+1;
+    else
+        lNz=localNz;
+
+    lNz = lNz + 2;
+
+
+    len = lNx * lNy * lNz; 
+
+    /// Set local mesh values for I1D macro
+    _ls_  = getlNx()*getlNy()*getlNz();  
+
+    int mpirank;
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &mpirank);
+    //cout<<" Rank Rhea "<<rank<<endl;
+    //cout<<" Rank MPI  "<<mpirank<<endl;
+
+
+
+
+    //Finding surface neighbours
+    //By default there is no connection with other sub-ComputationalDomains
+    for(int nb = 0 ; nb < 26 ; nb++)
+        neighb[nb] = _NO_NEIGHBOUR_;
+
+    is_inix=0;
+    is_iniy=0;
+    is_iniz=0;
+    is_endx=0;
+    is_endy=0;
+    is_endz=0;
+
+    int periodic_x;
+    if(dom->getBoco(_WEST_) == _PERIODIC_)
+        periodic_x = 1;
+    else
+        periodic_x = 0;
+
+    //Direction X 
+    //WEST
+    if( rank%npx !=  0 ){
+        neighb[_WEST_] = rank - 1;
+    }
+    else{
+        if( periodic_x == 1 ) {
+            neighb[_WEST_] = rank + npx - 1;
+        }
+        is_inix=1;
+    }
+    //EAST
+    if(rank%npx != (npx - 1) ){
+        neighb[_EAST_] = rank + 1;
+    }
+    else{
+        if( periodic_x == 1 ){
+            neighb[_EAST_] = rank - npx + 1;
+            is_endx = 1;
+        }
+    }
+
+   int periodic_y;
+   if(dom->getBoco(_SOUTH_) == _PERIODIC_)
+        periodic_y = 1;
+   else
+        periodic_y = 0;
+
+
+    //SOUTH
+    plane_rank = rank%(npx*npy);
+    if(plane_rank/npx != 0)
+    {
+        neighb[_SOUTH_] = rank - npx;
+    }
+    else{
+        if(periodic_y == 1) {
+            neighb[_SOUTH_] = rank + (npy-1)*npx;
+            is_iniy = 1;
+        }
+    }
+
+    //NORTH
+    if(plane_rank/npx != npy - 1){
+        neighb[_NORTH_] = rank + npx;
+    }
+    else{
+        if(periodic_y == 1) {
+            neighb[_NORTH_] = rank - (npy-1)*npx;
+            is_endy = 1;
+        }
+    }
+
+    //BACK
+    int periodic_z;
+    if(dom->getBoco(_BACK_) == _PERIODIC_)
+        periodic_z = 1;
+    else
+        periodic_z = 0;
+
+
+    proc_z_start = 0;
+    proc_z_end   = 0;
+
+
+    plane_rank = rank/(npx*npy);
+    if(plane_rank != 0){
+        neighb[_BACK_] = rank - npx*npy;
+    }
+    else{
+        if(periodic_z == 1 ){
+            neighb[_BACK_] = rank + (npx*npy)*(npz-1);
+            proc_z_start = 1;
+            is_iniz = 1;
+        }
+    }
+
+    //FRONT;
+    if(plane_rank != npz-1){
+        neighb[_FRONT_] = rank + npx*npy;
+    }
+    else{
+        if(periodic_z == 1){
+            neighb[_FRONT_] = rank - (npx*npy)*(npz-1);
+            proc_z_end = 1;
+            is_endz = 1;
+        }
+    }
+
+
+    //Calculating Id offsets /* this should be updated to include the case with imbalanced partitions ... done!
+
+    //offset x
+    //int factx = rank%npx;
+    //offx = factx*(lNx - 2);
+    int r_x, lNx_r, offx_r;
+    for( int k = 0; k < npz; k++ ) {
+        for( int j = 0; j < npy; j++ ) {
+	    offx_r = 0;
+            for( int i = 0; i < npx; i++ ) {
+	        r_x = i + j*npx + k*npx*npy;
+                lNx_r = localNx;
+                if( r_x%npx < divx ) lNx_r = localNx + 1;
+	        if( r_x == rank ) offx = offx_r;
+	        offx_r += lNx_r;
+            }
+        }
+    }
+    //cout << rank << "  " << offx << endl;
+
+    //offset y
+    //int facty = (rank%(npx*npy));
+    //facty = (facty/npx);
+    //offy = facty*(lNy - 2);
+    int r_y, lNy_r, offy_r;
+    for( int k = 0; k < npz; k++ ) {
+        for( int i = 0; i < npx; i++ ) {
+	    offy_r = 0;
+            for( int j = 0; j < npy; j++ ) {
+	        r_y = i + j*npx + k*npx*npy;
+                lNy_r = localNy;
+                if( ( r_y%( npx*npy ) )/npx < divy ) lNy_r = localNy + 1;
+	        if( r_y == rank ) offy = offy_r;
+	        offy_r += lNy_r;
+            }
+        }
+    }    
+    //cout << rank << "  " << offy << endl;
+
+    //offset z
+    //int factz = (rank/(npx*npy));
+    //offz = factz*(lNz - 2);
+    int r_z, lNz_r, offz_r;
+    for( int i = 0; i < npx; i++ ) {
+        for( int j = 0; j < npy; j++ ) {
+	    offz_r = 0;
+            for( int k = 0; k < npz; k++ ) {
+	        r_z = i + j*npx + k*npx*npy;
+                lNz_r = localNz;
+                if( r_z/( npx*npy ) < divz ) lNz_r = localNz + 1;
+	        if( r_z == rank ) offz = offz_r;
+	        offz_r += lNz_r;
+            }
+        }
+    }    
+    //cout << rank << "  " << offz << endl;
+
+
+    create_common_iters();
+    create_halo_iters();
+    create_basic_bound_iters();
+    create_toRecv_iters();
+    create_toSend_iters();
+    create_global_iters();
+    create_comm_arrays();
+
+    dom->calculateLocalGrid(lNx,lNy,lNz);
+
+    int l=0;
+    for(int i=iter_glob_ind[_INIX_];i<=iter_glob_ind[_ENDX_];i++){
+        dom->set_x( l, dom->getGlobx(i) );
+        l++;
+    }
+
+    l=0;
+    for(int j=iter_glob_ind[_INIY_];j<=iter_glob_ind[_ENDY_];j++){
+        dom->set_y( l, dom->getGloby(j) );
+        l++;
+    }
+
+    l=0;
+    for(int k=iter_glob_ind[_INIZ_];k<=iter_glob_ind[_ENDZ_];k++){
+        dom->set_z( l, dom->getGlobz(k) );
+        l++;
+    }
+
+    // To create the extra connections
+    
+    calculate_tags();
+    exchange_2nd_level_neighbour_info();
+    find_extra_neighbours();
+    create_complex_bound_iters();
+    create_complex_halo_iters();
+    create_complex_toRecv_iters();
+    create_complex_toSend_iters();
+    create_complex_comm_arrays();
+
+/*    printCommSchemeToFile(3);
+    printCommSchemeToFile(0);
+    printCommSchemeToFile(1);
+    printCommSchemeToFile(2);
+*/
+
+    // Copy topology to GPU
+    #pragma acc enter data copyin(this)	// ... added for OpenACC
+
+}
+
+ParallelTopology::~ParallelTopology() {	// ... added for OpenACC
+    #pragma acc exit data delete(this)
+}
+
+void ParallelTopology::calculate_tags()
+{
+
+//Calculating localbounds
+
+    //if your doimain is located at the left
+    if( rank%npx == 0 ){
+        lbounds[_WEST_] = mymesh->getBoco(_WEST_);
+    }
+    else{
+        lbounds[_WEST_] = _NO_BOCO_ ;
+    }
+
+    //if your doimain is located at the right
+    if( rank%npx == (npx-1) ){
+        lbounds[_EAST_] = mymesh->getBoco(_EAST_);
+    }
+    else{
+        lbounds[_EAST_] = _NO_BOCO_ ;
+    }
+
+    //if your doimain is located at the bottom
+    if( ((rank%(npx*npy))/npx) == 0 ){
+        lbounds[_SOUTH_] = mymesh->getBoco(_SOUTH_);
+    }
+    else{
+        lbounds[_SOUTH_] = _NO_BOCO_ ;
+    }
+
+    //if your doimain is located at the top
+    if( ((rank%(npx*npy))/npx) == (npy-1) ){
+        lbounds[_NORTH_] = mymesh->getBoco(_NORTH_);
+    }
+    else{
+        lbounds[_NORTH_] = _NO_BOCO_ ;
+    }
+
+    //if your doimain is located at the back
+    if ((rank/(npx*npy)) == 0 ){
+        lbounds[_BACK_] = mymesh->getBoco(_BACK_);
+    }
+    else{
+        lbounds[_BACK_] = _NO_BOCO_ ;
+    }
+
+    //if your doimain is located at the front
+    if ((rank/(npx*npy)) == (npz-1) ){
+        lbounds[_FRONT_] = mymesh->getBoco(_FRONT_);
+    }
+    else{
+        lbounds[_FRONT_] = _NO_BOCO_ ;
+    }
+
+
+
+
+
+//  Tags for simple communication (3D)
+    tagid_s[_WEST_] = _WEST_;
+    tagid_r[_WEST_] = _EAST_;
+
+    tagid_s[_EAST_] = _EAST_;
+    tagid_r[_EAST_] = _WEST_;
+
+    tagid_s[_SOUTH_] = _SOUTH_;
+    tagid_r[_SOUTH_] = _NORTH_;
+
+    tagid_s[_NORTH_] = _NORTH_;
+    tagid_r[_NORTH_] = _SOUTH_;
+
+    tagid_s[_BACK_] = _BACK_;
+    tagid_r[_BACK_] = _FRONT_;
+
+    tagid_s[_FRONT_] = _FRONT_;
+    tagid_r[_FRONT_] = _BACK_;
+
+// Tags for 2D communications
+
+    tagid_s[_WEST_S_] = _WEST_S_;
+    tagid_s[_WEST_N_] = _WEST_N_;
+    tagid_s[_WEST_B_] = _WEST_B_;
+    tagid_s[_WEST_F_] = _WEST_F_;
+
+    tagid_s[_EAST_S_] = _EAST_S_;
+    tagid_s[_EAST_N_] = _EAST_N_;
+    tagid_s[_EAST_B_] = _EAST_B_;
+    tagid_s[_EAST_F_] = _EAST_F_;
+
+
+    // WEST SOUTH
+    if((lbounds[_WEST_] == _PERIODIC_ || lbounds[_WEST_] == _NO_BOCO_) && ( lbounds[_SOUTH_] != _PERIODIC_ && lbounds[_SOUTH_] != _NO_BOCO_) ){
+       tagid_r[_WEST_S_] = _EAST_S_;
+    }
+    else  if((lbounds[_SOUTH_] == _PERIODIC_  || lbounds[_SOUTH_] == _NO_BOCO_) && (lbounds[_WEST_] != _PERIODIC_ && lbounds[_WEST_] != _NO_BOCO_) ){
+       tagid_r[_WEST_S_] = _WEST_N_;
+    }
+    else{ //In case double periodic or internals no periodic
+      tagid_r[_WEST_S_] = _EAST_N_;
+    }
+
+    // EAST SOUTH
+    if((lbounds[_EAST_] == _PERIODIC_ || lbounds[_EAST_] == _NO_BOCO_) && ( lbounds[_SOUTH_] != _PERIODIC_ && lbounds[_SOUTH_] != _NO_BOCO_) ){
+       tagid_r[_EAST_S_] = _WEST_S_;
+    }
+    else  if((lbounds[_SOUTH_] == _PERIODIC_ || lbounds[_SOUTH_] == _NO_BOCO_) &&( lbounds[_EAST_] != _PERIODIC_ && lbounds[_EAST_] != _NO_BOCO_) ){
+       tagid_r[_EAST_S_] = _EAST_N_;
+    }
+    else{ //In case double periodic or internals no periodic
+      tagid_r[_EAST_S_] = _WEST_N_;
+    }
+
+
+
+    // WEST NORTH
+    if((lbounds[_WEST_] == _PERIODIC_  || lbounds[_WEST_] == _NO_BOCO_) && (lbounds[_NORTH_] != _PERIODIC_ && lbounds[_NORTH_] != _NO_BOCO_) ){
+       tagid_r[_WEST_N_] = _EAST_N_;
+    }
+    else if((lbounds[_NORTH_] == _PERIODIC_  || lbounds[_NORTH_] == _NO_BOCO_) && ( lbounds[_WEST_] != _PERIODIC_  && lbounds[_WEST_] != _NO_BOCO_)){
+       tagid_r[_WEST_N_] = _WEST_S_;
+    }
+    else{ //In case double periodic or internals no periodic
+      tagid_r[_WEST_N_] = _EAST_S_;
+    }
+
+    // EAST NORTH
+    if((lbounds[_EAST_] == _PERIODIC_  || lbounds[_EAST_] == _NO_BOCO_) && (lbounds[_NORTH_] != _PERIODIC_  && lbounds[_NORTH_] != _NO_BOCO_)){
+       tagid_r[_EAST_N_] = _WEST_N_;
+    }
+    else if((lbounds[_NORTH_] == _PERIODIC_ || lbounds[_NORTH_] == _NO_BOCO_) && (lbounds[_EAST_] != _PERIODIC_  && lbounds[_EAST_] != _NO_BOCO_)){
+       tagid_r[_EAST_N_] = _EAST_S_;
+    }
+    else{ //In case double periodic or internals no periodic
+      tagid_r[_EAST_N_] = _WEST_S_;
+    }
+
+
+
+    // WEST BACK
+    if((lbounds[_WEST_] == _PERIODIC_ || lbounds[_WEST_] == _NO_BOCO_) && (lbounds[_BACK_] != _PERIODIC_ && lbounds[_BACK_] != _NO_BOCO_)){
+       tagid_r[_WEST_B_] = _EAST_B_;
+    }
+    else if((lbounds[_BACK_] == _PERIODIC_ || lbounds[_BACK_] == _NO_BOCO_) && (lbounds[_WEST_] != _PERIODIC_  && lbounds[_WEST_] != _NO_BOCO_)){
+       tagid_r[_WEST_B_] = _WEST_F_;
+    }
+    else{ //In case double periodic or internals no periodic
+      tagid_r[_WEST_B_] = _EAST_F_;
+    }
+
+    // EAST BACK
+    if((lbounds[_EAST_] == _PERIODIC_ || lbounds[_EAST_] == _NO_BOCO_) && (lbounds[_BACK_] != _PERIODIC_  && lbounds[_BACK_] != _NO_BOCO_)){
+       tagid_r[_EAST_B_] = _WEST_B_;
+    }
+    else if((lbounds[_BACK_] == _PERIODIC_ || lbounds[_BACK_] == _NO_BOCO_) && (lbounds[_EAST_] != _PERIODIC_  && lbounds[_EAST_] != _NO_BOCO_)){
+       tagid_r[_EAST_B_] = _EAST_F_;
+    }
+    else{ //In case double periodic or internals no periodic
+      tagid_r[_EAST_B_] = _WEST_F_;
+    }
+
+
+    // WEST FRONT
+    if((lbounds[_WEST_] == _PERIODIC_ || lbounds[_WEST_] == _NO_BOCO_) && ( lbounds[_FRONT_] != _PERIODIC_  && lbounds[_FRONT_] != _NO_BOCO_)){
+       tagid_r[_WEST_F_] = _EAST_F_;
+    }
+    else if((lbounds[_FRONT_] == _PERIODIC_ || lbounds[_FRONT_] == _NO_BOCO_) && (lbounds[_WEST_] != _PERIODIC_  && lbounds[_WEST_] != _NO_BOCO_)){
+       tagid_r[_WEST_F_] = _WEST_B_;
+    }
+    else{ //In case double periodic or internals no periodic
+      tagid_r[_WEST_F_] = _EAST_B_;
+    }
+
+    // EAST FRONT
+    if((lbounds[_EAST_] == _PERIODIC_ || lbounds[_EAST_] == _NO_BOCO_) && ( lbounds[_FRONT_] != _PERIODIC_  && lbounds[_FRONT_] != _NO_BOCO_)){
+       tagid_r[_EAST_F_] = _WEST_F_;
+    }
+    else if((lbounds[_FRONT_] == _PERIODIC_ || lbounds[_FRONT_] == _NO_BOCO_) && (lbounds[_EAST_] != _PERIODIC_  && lbounds[_EAST_] != _NO_BOCO_)){
+       tagid_r[_EAST_F_] = _EAST_B_;
+    }
+    else{ //In case double periodic or internals no periodic
+      tagid_r[_EAST_F_] = _WEST_B_;
+    }
+
+
+    tagid_s[_SOUTH_B_] = _SOUTH_B_;
+    tagid_s[_SOUTH_F_] = _SOUTH_F_;
+    tagid_s[_NORTH_B_] = _NORTH_B_;
+    tagid_s[_NORTH_F_] = _NORTH_F_;
+
+
+    // SOUTH BACK
+    if((lbounds[_SOUTH_] == _PERIODIC_ || lbounds[_SOUTH_] == _NO_BOCO_) && ( lbounds[_BACK_] != _PERIODIC_ && lbounds[_BACK_] != _NO_BOCO_) ){
+       tagid_r[_SOUTH_B_] = _NORTH_B_;
+    }
+    else if((lbounds[_BACK_] == _PERIODIC_ || lbounds[_BACK_] == _NO_BOCO_) && ( lbounds[_SOUTH_] != _PERIODIC_ && lbounds[_SOUTH_] != _NO_BOCO_) ){
+       tagid_r[_SOUTH_B_] = _SOUTH_F_;
+    }
+    else{ //In case double periodic or internals no periodic
+      tagid_r[_SOUTH_B_] = _NORTH_F_;
+
+    }
+ 
+    // NORTH BACK
+    if((lbounds[_NORTH_] == _PERIODIC_ || lbounds[_NORTH_] == _NO_BOCO_) && (lbounds[_BACK_] != _PERIODIC_ && lbounds[_BACK_] != _NO_BOCO_)){
+       tagid_r[_NORTH_B_] = _SOUTH_B_;
+    }
+    else  if((lbounds[_BACK_] == _PERIODIC_ || lbounds[_BACK_] == _NO_BOCO_) && (lbounds[_NORTH_] != _PERIODIC_ && lbounds[_NORTH_] != _NO_BOCO_)){
+       tagid_r[_NORTH_B_] = _NORTH_F_;
+    }
+    else{ //In case double periodic or internals no periodic
+      tagid_r[_NORTH_B_] = _SOUTH_F_;
+    }
+ 
+    // SOUTH FRONT
+    if((lbounds[_SOUTH_] == _PERIODIC_  || lbounds[_SOUTH_] == _NO_BOCO_)  && (lbounds[_FRONT_] != _PERIODIC_  && lbounds[_FRONT_] != _NO_BOCO_)  ){
+       tagid_r[_SOUTH_F_] = _NORTH_F_;
+    }
+    else  if((lbounds[_FRONT_] == _PERIODIC_  || lbounds[_FRONT_] == _NO_BOCO_) && (lbounds[_SOUTH_] != _PERIODIC_  && lbounds[_SOUTH_] != _NO_BOCO_) ){
+       tagid_r[_SOUTH_F_] = _SOUTH_B_;
+    }
+    else{ //In case double periodic or internals no periodic
+      tagid_r[_SOUTH_F_] = _NORTH_B_;
+    }
+ 
+    // NORTH FRONT
+    if((lbounds[_NORTH_] == _PERIODIC_ || lbounds[_NORTH_] == _NO_BOCO_) && (lbounds[_FRONT_] != _PERIODIC_  && lbounds[_FRONT_] != _NO_BOCO_)){
+       tagid_r[_NORTH_F_] = _SOUTH_F_;
+    }
+    else  if((lbounds[_FRONT_] == _PERIODIC_ || lbounds[_FRONT_] == _NO_BOCO_) && (lbounds[_NORTH_] != _PERIODIC_ && lbounds[_NORTH_] != _NO_BOCO_)){
+       tagid_r[_NORTH_F_] = _NORTH_B_;
+    }
+    else{ //In case double periodic or internals no periodic
+      tagid_r[_NORTH_F_] = _SOUTH_B_;
+    }
+ 
+
+// point communications
+
+    tagid_s[_WEST_S_B_] = _WEST_S_B_;
+    tagid_s[_WEST_S_F_] = _WEST_S_F_;
+    tagid_s[_WEST_N_B_] = _WEST_N_B_;
+    tagid_s[_WEST_N_F_] = _WEST_N_F_;
+
+    tagid_s[_EAST_S_B_] = _EAST_S_B_;
+    tagid_s[_EAST_S_F_] = _EAST_S_F_;
+    tagid_s[_EAST_N_B_] = _EAST_N_B_;
+    tagid_s[_EAST_N_F_] = _EAST_N_F_;
+
+
+    // WEST SOUTH BACK
+    if((lbounds[_WEST_] == _PERIODIC_ || lbounds[_WEST_] == _NO_BOCO_)  && (lbounds[_SOUTH_] != _PERIODIC_ && lbounds[_SOUTH_] != _NO_BOCO_) && ( lbounds[_BACK_] != _PERIODIC_ && lbounds[_BACK_] != _NO_BOCO_ ) ){
+       tagid_r[_WEST_S_B_] = _EAST_S_B_;
+    }
+    else if((lbounds[_SOUTH_] == _PERIODIC_ || lbounds[_SOUTH_] == _NO_BOCO_)  && (lbounds[_WEST_] != _PERIODIC_ && lbounds[_WEST_] != _NO_BOCO_ ) && (lbounds[_BACK_] != _PERIODIC_ && lbounds[_BACK_] != _NO_BOCO_ )){
+       tagid_r[_WEST_S_B_] = _WEST_N_B_;
+    }
+    else  if((lbounds[_BACK_] == _PERIODIC_ || lbounds[_BACK_] == _NO_BOCO_)  && (lbounds[_WEST_] != _PERIODIC_ && lbounds[_WEST_] != _NO_BOCO_) && (lbounds[_SOUTH_] != _PERIODIC_ && lbounds[_SOUTH_] != _NO_BOCO_)){
+       tagid_r[_WEST_S_B_] = _WEST_S_F_;
+    }
+    else if((lbounds[_WEST_] == _PERIODIC_ || lbounds[_WEST_] == _NO_BOCO_)  && (lbounds[_SOUTH_] == _PERIODIC_ || lbounds[_SOUTH_] == _NO_BOCO_) &&  ( lbounds[_BACK_] != _PERIODIC_ &&  lbounds[_BACK_] != _NO_BOCO_)){
+       tagid_r[_WEST_S_B_] = _EAST_N_B_;
+    }
+    else if((lbounds[_WEST_] == _PERIODIC_ || lbounds[_WEST_] == _NO_BOCO_) && ( lbounds[_SOUTH_] != _PERIODIC_ &&  lbounds[_SOUTH_] != _NO_BOCO_ ) && ( lbounds[_BACK_] == _PERIODIC_ || lbounds[_BACK_] == _NO_BOCO_)){
+       tagid_r[_WEST_S_B_] = _EAST_S_F_;
+    }
+    else if((lbounds[_WEST_] != _PERIODIC_ &&  lbounds[_WEST_] != _NO_BOCO_)  && (lbounds[_SOUTH_] == _PERIODIC_ || lbounds[_SOUTH_] == _NO_BOCO_) &&  (lbounds[_BACK_] == _PERIODIC_ || lbounds[_BACK_] == _NO_BOCO_)){
+       tagid_r[_WEST_S_B_] = _WEST_N_F_;
+    }
+    else{ //In case double periodic or internals no periodic
+      tagid_r[_WEST_S_B_] = _EAST_N_F_;
+    }
+
+    // WEST SOUTH FRONT
+    if((lbounds[_WEST_] == _PERIODIC_ || lbounds[_WEST_] == _NO_BOCO_) && (lbounds[_SOUTH_] != _PERIODIC_ && lbounds[_SOUTH_] != _NO_BOCO_) && ( lbounds[_FRONT_] != _PERIODIC_ && lbounds[_FRONT_] != _NO_BOCO_ ) ){
+       tagid_r[_WEST_S_F_] = _EAST_S_F_;
+    }
+    else if((lbounds[_SOUTH_] == _PERIODIC_ || lbounds[_SOUTH_] == _NO_BOCO_) && (lbounds[_WEST_] != _PERIODIC_ && lbounds[_WEST_] != _NO_BOCO_ ) && (lbounds[_FRONT_] != _PERIODIC_ && lbounds[_FRONT_] != _NO_BOCO_ )){
+       tagid_r[_WEST_S_F_] = _WEST_N_F_;
+    }
+    else if((lbounds[_FRONT_] == _PERIODIC_ || lbounds[_FRONT_] == _NO_BOCO_) && (lbounds[_WEST_] != _PERIODIC_ && lbounds[_WEST_] != _NO_BOCO_) && (lbounds[_SOUTH_] != _PERIODIC_ && lbounds[_SOUTH_] != _NO_BOCO_)){
+       tagid_r[_WEST_S_F_] = _WEST_S_B_;
+    }
+    else if((lbounds[_WEST_] == _PERIODIC_ || lbounds[_WEST_] == _NO_BOCO_) && (lbounds[_SOUTH_] == _PERIODIC_ || lbounds[_SOUTH_] == _NO_BOCO_) &&  ( lbounds[_FRONT_] != _PERIODIC_ &&  lbounds[_FRONT_] != _NO_BOCO_)){
+       tagid_r[_WEST_S_F_] = _EAST_N_F_;
+    }
+    else if((lbounds[_WEST_] == _PERIODIC_ || lbounds[_WEST_] == _NO_BOCO_) && ( lbounds[_SOUTH_] != _PERIODIC_ &&  lbounds[_SOUTH_] != _NO_BOCO_ ) && ( lbounds[_FRONT_] == _PERIODIC_ || lbounds[_FRONT_] == _NO_BOCO_)){
+       tagid_r[_WEST_S_F_] = _EAST_S_B_;
+    }
+    else if((lbounds[_WEST_] != _PERIODIC_ &&  lbounds[_WEST_] != _NO_BOCO_)  && (lbounds[_SOUTH_] == _PERIODIC_ || lbounds[_SOUTH_] == _NO_BOCO_)  &&  (lbounds[_FRONT_] == _PERIODIC_ || lbounds[_FRONT_] == _NO_BOCO_)){
+       tagid_r[_WEST_S_F_] = _WEST_N_B_;
+    }
+    else{ //In case double periodic or internals no periodic
+      tagid_r[_WEST_S_F_] = _EAST_N_B_;
+    }
+
+    // WEST NORTH BACK
+    if((lbounds[_WEST_] == _PERIODIC_ || lbounds[_WEST_] == _NO_BOCO_) && (lbounds[_NORTH_] != _PERIODIC_ && lbounds[_NORTH_] != _NO_BOCO_) && ( lbounds[_BACK_] != _PERIODIC_ && lbounds[_BACK_] != _NO_BOCO_ ) ){
+       tagid_r[_WEST_N_B_] = _EAST_N_B_;
+    }
+    else  if((lbounds[_NORTH_] == _PERIODIC_ || lbounds[_NORTH_] == _NO_BOCO_) && (lbounds[_WEST_] != _PERIODIC_ && lbounds[_WEST_] != _NO_BOCO_ ) && (lbounds[_BACK_] != _PERIODIC_ && lbounds[_BACK_] != _NO_BOCO_ )){
+       tagid_r[_WEST_N_B_] = _WEST_S_B_;
+    }
+    else  if((lbounds[_BACK_] == _PERIODIC_ || lbounds[_BACK_] == _NO_BOCO_) && (lbounds[_WEST_] != _PERIODIC_ && lbounds[_WEST_] != _NO_BOCO_) && (lbounds[_NORTH_] != _PERIODIC_ && lbounds[_NORTH_] != _NO_BOCO_)){
+       tagid_r[_WEST_N_B_] = _WEST_N_F_;
+    }
+    else if((lbounds[_WEST_] == _PERIODIC_ || lbounds[_WEST_] == _NO_BOCO_) && (lbounds[_NORTH_] == _PERIODIC_ || lbounds[_NORTH_] == _NO_BOCO_) &&  ( lbounds[_BACK_] != _PERIODIC_ &&  lbounds[_BACK_] != _NO_BOCO_)){
+       tagid_r[_WEST_N_B_] = _EAST_S_B_;
+    }
+    else if((lbounds[_WEST_] == _PERIODIC_ || lbounds[_WEST_] == _NO_BOCO_) && ( lbounds[_NORTH_] != _PERIODIC_ &&  lbounds[_NORTH_] != _NO_BOCO_ ) && ( lbounds[_BACK_] == _PERIODIC_ || lbounds[_BACK_] == _NO_BOCO_)){
+       tagid_r[_WEST_N_B_] = _EAST_N_F_;
+    }
+    else if((lbounds[_WEST_] != _PERIODIC_ &&  lbounds[_WEST_] != _NO_BOCO_)  && (lbounds[_NORTH_] == _PERIODIC_ || lbounds[_NORTH_] == _NO_BOCO_) &&  (lbounds[_BACK_] == _PERIODIC_ || lbounds[_BACK_] == _NO_BOCO_)){
+       tagid_r[_WEST_N_B_] = _WEST_S_F_;
+    }
+    else{ //In case double periodic or internals no periodic
+      tagid_r[_WEST_N_B_] = _EAST_S_F_;
+    }
+
+    // WEST NORTH FRONT
+    if((lbounds[_WEST_] == _PERIODIC_ || lbounds[_WEST_] == _NO_BOCO_) && (lbounds[_NORTH_] != _PERIODIC_ && lbounds[_NORTH_] != _NO_BOCO_) && ( lbounds[_FRONT_] != _PERIODIC_ && lbounds[_FRONT_] != _NO_BOCO_ ) ){
+       tagid_r[_WEST_N_F_] = _EAST_N_F_;
+    }
+    else  if((lbounds[_NORTH_] == _PERIODIC_ || lbounds[_NORTH_] == _NO_BOCO_) && (lbounds[_WEST_] != _PERIODIC_ && lbounds[_WEST_] != _NO_BOCO_ ) && (lbounds[_FRONT_] != _PERIODIC_ && lbounds[_FRONT_] != _NO_BOCO_ )){
+       tagid_r[_WEST_N_F_] = _WEST_S_F_;
+    }
+    else  if((lbounds[_FRONT_] == _PERIODIC_ || lbounds[_FRONT_] == _NO_BOCO_) && (lbounds[_WEST_] != _PERIODIC_ && lbounds[_WEST_] != _NO_BOCO_) && (lbounds[_NORTH_] != _PERIODIC_ && lbounds[_NORTH_] != _NO_BOCO_)){
+       tagid_r[_WEST_N_F_] = _WEST_N_B_;
+    }
+    else if((lbounds[_WEST_] == _PERIODIC_ || lbounds[_WEST_] == _NO_BOCO_) && (lbounds[_NORTH_] == _PERIODIC_ || lbounds[_NORTH_] == _NO_BOCO_) &&  ( lbounds[_FRONT_] != _PERIODIC_ &&  lbounds[_FRONT_] != _NO_BOCO_)){
+       tagid_r[_WEST_N_F_] = _EAST_S_F_;
+    }
+    else if((lbounds[_WEST_] == _PERIODIC_ || lbounds[_WEST_] == _NO_BOCO_) && ( lbounds[_NORTH_] != _PERIODIC_ &&  lbounds[_NORTH_] != _NO_BOCO_ ) && ( lbounds[_FRONT_] == _PERIODIC_ || lbounds[_FRONT_] == _NO_BOCO_)){
+       tagid_r[_WEST_N_F_] = _EAST_N_B_;
+    }
+    else if((lbounds[_WEST_] != _PERIODIC_ &&  lbounds[_WEST_] != _NO_BOCO_)  && (lbounds[_NORTH_] == _PERIODIC_ || lbounds[_NORTH_] == _NO_BOCO_) &&  (lbounds[_FRONT_] == _PERIODIC_ || lbounds[_FRONT_] == _NO_BOCO_)){
+       tagid_r[_WEST_N_F_] = _WEST_S_B_;
+    }
+    else{ //In case double periodic or internals no periodic
+      tagid_r[_WEST_N_F_] = _EAST_S_B_;
+    }
+
+    // EAST SOUTH BACK
+    if((lbounds[_EAST_] == _PERIODIC_ || lbounds[_EAST_] == _NO_BOCO_) && (lbounds[_SOUTH_] != _PERIODIC_ && lbounds[_SOUTH_] != _NO_BOCO_) && ( lbounds[_BACK_] != _PERIODIC_ && lbounds[_BACK_] != _NO_BOCO_ ) ){
+       tagid_r[_EAST_S_B_] = _WEST_S_B_;
+    }
+    else  if((lbounds[_SOUTH_] == _PERIODIC_ || lbounds[_SOUTH_] == _NO_BOCO_)  && (lbounds[_EAST_] != _PERIODIC_ && lbounds[_EAST_] != _NO_BOCO_ ) && (lbounds[_BACK_] != _PERIODIC_ && lbounds[_BACK_] != _NO_BOCO_ )){
+       tagid_r[_EAST_S_B_] = _EAST_N_B_;
+    }
+    else  if((lbounds[_BACK_] == _PERIODIC_ || lbounds[_BACK_] == _NO_BOCO_)  && (lbounds[_EAST_] != _PERIODIC_ && lbounds[_EAST_] != _NO_BOCO_) && (lbounds[_SOUTH_] != _PERIODIC_ && lbounds[_SOUTH_] != _NO_BOCO_)){
+       tagid_r[_EAST_S_B_] = _EAST_S_F_;
+    }
+    else if((lbounds[_EAST_] == _PERIODIC_ || lbounds[_EAST_] == _NO_BOCO_)  && (lbounds[_SOUTH_] == _PERIODIC_ || lbounds[_SOUTH_] == _NO_BOCO_)  &&  ( lbounds[_BACK_] != _PERIODIC_ &&  lbounds[_BACK_] != _NO_BOCO_)){
+       tagid_r[_EAST_S_B_] = _WEST_N_B_;
+    }
+    else if((lbounds[_EAST_] == _PERIODIC_ || lbounds[_EAST_] == _NO_BOCO_)  && ( lbounds[_SOUTH_] != _PERIODIC_ &&  lbounds[_SOUTH_] != _NO_BOCO_ ) &&  (lbounds[_BACK_] == _PERIODIC_ || lbounds[_BACK_] == _NO_BOCO_) ){
+       tagid_r[_EAST_S_B_] = _WEST_S_F_;
+    }
+    else if((lbounds[_EAST_] != _PERIODIC_ &&  lbounds[_EAST_] != _NO_BOCO_)  && (lbounds[_SOUTH_] == _PERIODIC_ || lbounds[_SOUTH_] == _NO_BOCO_)  &&  (lbounds[_BACK_] == _PERIODIC_ || lbounds[_BACK_] == _NO_BOCO_) ){
+       tagid_r[_EAST_S_B_] = _EAST_N_F_;
+    }
+    else{ //In case double periodic or internals no periodic
+      tagid_r[_EAST_S_B_] = _WEST_N_F_;
+    }
+
+    // EAST SOUTH FRONT
+    if((lbounds[_EAST_] == _PERIODIC_ || lbounds[_EAST_] == _NO_BOCO_)  && (lbounds[_SOUTH_] != _PERIODIC_ && lbounds[_SOUTH_] != _NO_BOCO_) && ( lbounds[_FRONT_] != _PERIODIC_ && lbounds[_FRONT_] != _NO_BOCO_ ) ){
+       tagid_r[_EAST_S_F_] = _WEST_S_F_;
+    }
+    else  if((lbounds[_SOUTH_] == _PERIODIC_ || lbounds[_SOUTH_] == _NO_BOCO_)  && (lbounds[_EAST_] != _PERIODIC_ && lbounds[_EAST_] != _NO_BOCO_ ) && (lbounds[_FRONT_] != _PERIODIC_ && lbounds[_FRONT_] != _NO_BOCO_ )){
+       tagid_r[_EAST_S_F_] = _EAST_N_F_;
+    }
+    else  if((lbounds[_FRONT_] == _PERIODIC_ || lbounds[_FRONT_] == _NO_BOCO_)  && (lbounds[_EAST_] != _PERIODIC_ && lbounds[_EAST_] != _NO_BOCO_) && (lbounds[_SOUTH_] != _PERIODIC_ && lbounds[_SOUTH_] != _NO_BOCO_)){
+       tagid_r[_EAST_S_F_] = _EAST_S_B_;
+    }
+    else if((lbounds[_EAST_] == _PERIODIC_ || lbounds[_EAST_] == _NO_BOCO_)  && (lbounds[_SOUTH_] == _PERIODIC_ || lbounds[_SOUTH_] == _NO_BOCO_)  &&  ( lbounds[_FRONT_] != _PERIODIC_ &&  lbounds[_FRONT_] != _NO_BOCO_)){
+       tagid_r[_EAST_S_F_] = _WEST_N_F_;
+    }
+    else if((lbounds[_EAST_] == _PERIODIC_ || lbounds[_EAST_] == _NO_BOCO_)  && ( lbounds[_SOUTH_] != _PERIODIC_ &&  lbounds[_SOUTH_] != _NO_BOCO_ ) && ( lbounds[_FRONT_] == _PERIODIC_ || lbounds[_FRONT_] == _NO_BOCO_) ){
+       tagid_r[_EAST_S_F_] = _WEST_S_B_;
+    }
+    else if((lbounds[_EAST_] != _PERIODIC_ &&  lbounds[_EAST_] != _NO_BOCO_)  && (lbounds[_SOUTH_] == _PERIODIC_ || lbounds[_SOUTH_] == _NO_BOCO_)  &&  (lbounds[_FRONT_] == _PERIODIC_ || lbounds[_FRONT_] == _NO_BOCO_) ){
+       tagid_r[_EAST_S_F_] = _EAST_N_B_;
+    }
+    else{ //In case double periodic or internals no periodic
+      tagid_r[_EAST_S_F_] = _WEST_N_B_;
+    }
+
+    // EAST NORTH BACK
+    if((lbounds[_EAST_] == _PERIODIC_ || lbounds[_EAST_] == _NO_BOCO_)  && (lbounds[_NORTH_] != _PERIODIC_ && lbounds[_NORTH_] != _NO_BOCO_) && ( lbounds[_BACK_] != _PERIODIC_ && lbounds[_BACK_] != _NO_BOCO_ ) ){
+       tagid_r[_EAST_N_B_] = _WEST_N_B_;
+    }
+    else  if((lbounds[_NORTH_] == _PERIODIC_ || lbounds[_NORTH_] == _NO_BOCO_)  && (lbounds[_EAST_] != _PERIODIC_ && lbounds[_EAST_] != _NO_BOCO_ ) && (lbounds[_BACK_] != _PERIODIC_ && lbounds[_BACK_] != _NO_BOCO_ )){
+       tagid_r[_EAST_N_B_] = _EAST_S_B_;
+    }
+    else  if((lbounds[_BACK_] == _PERIODIC_ || lbounds[_BACK_] == _NO_BOCO_)  && (lbounds[_EAST_] != _PERIODIC_ && lbounds[_EAST_] != _NO_BOCO_) && (lbounds[_NORTH_] != _PERIODIC_ && lbounds[_NORTH_] != _NO_BOCO_)){
+       tagid_r[_EAST_N_B_] = _EAST_N_F_;
+    }
+    else if((lbounds[_EAST_] == _PERIODIC_ || lbounds[_EAST_] == _NO_BOCO_)  && (lbounds[_NORTH_] == _PERIODIC_ || lbounds[_NORTH_] == _NO_BOCO_)  &&  ( lbounds[_BACK_] != _PERIODIC_ &&  lbounds[_BACK_] != _NO_BOCO_)){
+       tagid_r[_EAST_N_B_] = _WEST_S_B_;
+    }
+    else if((lbounds[_EAST_] == _PERIODIC_ || lbounds[_EAST_] == _NO_BOCO_)  && ( lbounds[_NORTH_] != _PERIODIC_ &&  lbounds[_NORTH_] != _NO_BOCO_ ) && ( lbounds[_BACK_] == _PERIODIC_ || lbounds[_BACK_] == _NO_BOCO_) ){
+       tagid_r[_EAST_N_B_] = _WEST_N_F_;
+    }
+    else if((lbounds[_EAST_] != _PERIODIC_ &&  lbounds[_EAST_] != _NO_BOCO_)  && (lbounds[_NORTH_] == _PERIODIC_ || lbounds[_NORTH_] == _NO_BOCO_)  && ( lbounds[_BACK_] == _PERIODIC_ || lbounds[_BACK_] == _NO_BOCO_) ){
+       tagid_r[_EAST_N_B_] = _EAST_S_F_;
+    }
+    else{ //In case double periodic or internals no periodic
+      tagid_r[_EAST_N_B_] = _WEST_S_F_;
+    }
+
+  // EAST NORTH FRONT
+    if((lbounds[_EAST_] == _PERIODIC_ || lbounds[_EAST_] == _NO_BOCO_)  && (lbounds[_NORTH_] != _PERIODIC_ && lbounds[_NORTH_] != _NO_BOCO_) && ( lbounds[_FRONT_] != _PERIODIC_ && lbounds[_FRONT_] != _NO_BOCO_ ) ){
+       tagid_r[_EAST_N_F_] = _WEST_N_F_;
+    }
+    else  if((lbounds[_NORTH_] == _PERIODIC_ || lbounds[_NORTH_] == _NO_BOCO_)  && (lbounds[_EAST_] != _PERIODIC_ && lbounds[_EAST_] != _NO_BOCO_ ) && (lbounds[_FRONT_] != _PERIODIC_ && lbounds[_FRONT_] != _NO_BOCO_ )){
+       tagid_r[_EAST_N_F_] = _EAST_S_F_;
+    }
+    else  if((lbounds[_FRONT_] == _PERIODIC_ || lbounds[_FRONT_] == _NO_BOCO_)  && (lbounds[_EAST_] != _PERIODIC_ && lbounds[_EAST_] != _NO_BOCO_) && (lbounds[_NORTH_] != _PERIODIC_ && lbounds[_NORTH_] != _NO_BOCO_)){
+       tagid_r[_EAST_N_F_] = _EAST_N_B_;
+    }
+    else if((lbounds[_EAST_] == _PERIODIC_ || lbounds[_EAST_] == _NO_BOCO_)  && (lbounds[_NORTH_] == _PERIODIC_ || lbounds[_NORTH_] == _NO_BOCO_)  &&  ( lbounds[_FRONT_] != _PERIODIC_ &&  lbounds[_FRONT_] != _NO_BOCO_)){
+       tagid_r[_EAST_N_F_] = _WEST_S_F_;
+    }
+    else if((lbounds[_EAST_] == _PERIODIC_ || lbounds[_EAST_] == _NO_BOCO_)  && ( lbounds[_NORTH_] != _PERIODIC_ &&  lbounds[_NORTH_] != _NO_BOCO_ ) && ( lbounds[_FRONT_] == _PERIODIC_ || lbounds[_FRONT_] == _NO_BOCO_) ){
+       tagid_r[_EAST_N_F_] = _WEST_N_B_;
+    }
+    else if((lbounds[_EAST_] != _PERIODIC_ &&  lbounds[_EAST_] != _NO_BOCO_)  && (lbounds[_NORTH_] == _PERIODIC_ || lbounds[_NORTH_] == _NO_BOCO_)  && ( lbounds[_FRONT_] == _PERIODIC_ || lbounds[_FRONT_] == _NO_BOCO_) ){
+       tagid_r[_EAST_N_F_] = _EAST_S_B_;
+    }
+    else{ //In case double periodic or internals no periodic
+      tagid_r[_EAST_N_F_] = _WEST_S_B_;
+    }
+
+
+/*
+
+    // WEST SOUTH
+    if(lbounds[_WEST_] == _PERIODIC_ && lbounds[_SOUTH_] != _PERIODIC_ &&  lbounds[_BACK_] != _PERIODIC_){
+       tagid_r[_WEST_S_B_] = _EAST_S_B_;
+       tagid_r[_EAST_S_B_] = _WEST_S_B_;
+       tagid_r[_WEST_N_B_] = _EAST_N_B_;
+       tagid_r[_EAST_N_B_] = _WEST_N_B_;
+ 
+       tagid_r[_WEST_S_F_] = _EAST_S_F_;
+       tagid_r[_EAST_S_F_] = _WEST_S_F_;
+       tagid_r[_WEST_N_F_] = _EAST_N_F_;
+       tagid_r[_EAST_N_F_] = _WEST_N_F_;
+    }
+    else  if(lbounds[_SOUTH_] == _PERIODIC_ && lbounds[_WEST_] != _PERIODIC_ && lbounds[_BACK_] != _PERIODIC_ ){
+       tagid_r[_WEST_S_B_] = _WEST_N_B_;
+       tagid_r[_EAST_S_B_] = _EAST_N_B_;
+       tagid_r[_WEST_N_B_] = _WEST_S_B_;
+       tagid_r[_EAST_N_B_] = _EAST_S_B_;
+ 
+       tagid_r[_WEST_S_F_] = _WEST_N_F_;
+       tagid_r[_EAST_S_F_] = _EAST_N_F_;
+       tagid_r[_WEST_N_F_] = _WEST_S_F_;
+       tagid_r[_EAST_N_F_] = _EAST_S_F_;
+    }
+    else  if(lbounds[_BACK_] == _PERIODIC_ && lbounds[_WEST_] != _PERIODIC_ && lbounds[_SOUTH_] != _PERIODIC_ ){
+       tagid_r[_WEST_S_B_] = _WEST_S_F_;
+       tagid_r[_EAST_S_B_] = _EAST_S_F_;
+       tagid_r[_WEST_N_B_] = _WEST_N_F_;
+       tagid_r[_EAST_N_B_] = _EAST_N_F_;
+ 
+       tagid_r[_WEST_S_F_] = _WEST_S_B_;
+       tagid_r[_EAST_S_F_] = _EAST_S_B_;
+       tagid_r[_WEST_N_F_] = _WEST_N_B_;
+       tagid_r[_EAST_N_F_] = _EAST_N_B_;
+    }
+    if(lbounds[_WEST_] == _PERIODIC_ && lbounds[_SOUTH_] == _PERIODIC_ &&  lbounds[_BACK_] != _PERIODIC_){
+       tagid_r[_WEST_S_B_] = _EAST_N_B_;
+       tagid_r[_EAST_S_B_] = _WEST_N_B_;
+       tagid_r[_WEST_N_B_] = _EAST_S_B_;
+       tagid_r[_EAST_N_B_] = _WEST_S_B_;
+ 
+       tagid_r[_WEST_S_F_] = _EAST_N_F_;
+       tagid_r[_EAST_S_F_] = _WEST_N_F_;
+       tagid_r[_WEST_N_F_] = _EAST_S_F_;
+       tagid_r[_EAST_N_F_] = _WEST_S_F_;
+    }
+    if(lbounds[_WEST_] == _PERIODIC_ && lbounds[_SOUTH_] != _PERIODIC_ &&  lbounds[_BACK_] == _PERIODIC_){
+       tagid_r[_WEST_S_B_] = _EAST_S_F_;
+       tagid_r[_EAST_S_B_] = _WEST_S_F_;
+       tagid_r[_WEST_N_B_] = _EAST_N_F_;
+       tagid_r[_EAST_N_B_] = _WEST_N_F_;
+ 
+       tagid_r[_WEST_S_F_] = _EAST_S_B_;
+       tagid_r[_EAST_S_F_] = _WEST_S_B_;
+       tagid_r[_WEST_N_F_] = _EAST_N_B_;
+       tagid_r[_EAST_N_F_] = _WEST_N_B_;
+    }
+    if(lbounds[_WEST_] != _PERIODIC_ && lbounds[_SOUTH_] == _PERIODIC_ &&  lbounds[_BACK_] == _PERIODIC_){
+       tagid_r[_WEST_S_B_] = _WEST_N_F_;
+       tagid_r[_EAST_S_B_] = _EAST_N_F_;
+       tagid_r[_WEST_N_B_] = _WEST_S_F_;
+       tagid_r[_EAST_N_B_] = _EAST_S_F_;
+ 
+       tagid_r[_WEST_S_F_] = _WEST_N_B_;
+       tagid_r[_EAST_S_F_] = _EAST_N_B_;
+       tagid_r[_WEST_N_F_] = _WEST_S_B_;
+       tagid_r[_EAST_N_F_] = _EAST_S_B_;
+    }
+    else{ //In case double periodic or internals no periodic
+      tagid_r[_WEST_S_B_] = _EAST_N_F_;
+      tagid_r[_EAST_S_B_] = _WEST_N_F_;
+      tagid_r[_WEST_N_B_] = _EAST_S_F_;
+      tagid_r[_EAST_N_B_] = _WEST_S_F_;
+ 
+      tagid_r[_WEST_S_F_] = _EAST_N_B_;
+      tagid_r[_EAST_S_F_] = _WEST_N_B_;
+      tagid_r[_WEST_N_F_] = _EAST_S_B_;
+      tagid_r[_EAST_N_F_] = _WEST_S_B_;
+    }
+*/
+
+
+
+} 
+void ParallelTopology::exchange_2nd_level_neighbour_info()
+{
+    int pack[6];
+    
+    int count_nb=0; // number of 1st level neighbours
+
+    MPI_Barrier(RHEA_3DCOMM);
+
+    //Counting with whom am I connected
+    for(int nb =_WEST_ ; nb <= _FRONT_ ; nb++){
+        if( neighb[nb] != _NO_NEIGHBOUR_ ){
+            off_nb[nb] = count_nb*6;
+            count_nb++;
+        }
+    }
+     
+    //Packs the message that is sent to all the 1st level neighbours
+    for(int l=_WEST_;l<=_FRONT_;l++)
+        pack[l] = neighb[l];
+
+    //int* recv_data;
+    info_2nd = new int[count_nb*6];
+
+    
+    MPI_Request req_s[6];
+    MPI_Request req_r[6];
+
+    MPI_Status  stat_s[6];
+    MPI_Status  stat_r[6];
+
+
+
+    if(getNB(_WEST_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(&pack[0], 6, MPI_INT, getNB(_WEST_), tagid_s[_WEST_], RHEA_3DCOMM, &req_s[_WEST_]);
+
+    if(getNB(_EAST_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(&pack[0], 6, MPI_INT, getNB(_EAST_), tagid_s[_EAST_], RHEA_3DCOMM, &req_s[_EAST_]);
+
+    if(getNB(_SOUTH_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(&pack[0], 6, MPI_INT, getNB(_SOUTH_), tagid_s[_SOUTH_], RHEA_3DCOMM, &req_s[_SOUTH_]);
+
+    if(getNB(_NORTH_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(&pack[0], 6, MPI_INT, getNB(_NORTH_), tagid_s[_NORTH_], RHEA_3DCOMM, &req_s[_NORTH_]);
+
+    if(getNB(_BACK_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(&pack[0], 6, MPI_INT, getNB(_BACK_), tagid_s[_BACK_], RHEA_3DCOMM, &req_s[_BACK_]);
+
+    if(getNB(_FRONT_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(&pack[0], 6, MPI_INT, getNB(_FRONT_), tagid_s[_FRONT_], RHEA_3DCOMM, &req_s[_FRONT_]);
+
+
+    if(getNB(_WEST_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(&info_2nd[off_nb[_WEST_]], 6, MPI_INT, getNB(_WEST_), tagid_r[_WEST_], RHEA_3DCOMM, &req_r[_WEST_]);
+
+    if(getNB(_EAST_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(&info_2nd[off_nb[_EAST_]], 6, MPI_INT, getNB(_EAST_), tagid_r[_EAST_], RHEA_3DCOMM, &req_r[_EAST_]);
+
+    if(getNB(_SOUTH_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(&info_2nd[off_nb[_SOUTH_]], 6, MPI_INT, getNB(_SOUTH_), tagid_r[_SOUTH_], RHEA_3DCOMM, &req_r[_SOUTH_]);
+
+    if(getNB(_NORTH_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(&info_2nd[off_nb[_NORTH_]], 6, MPI_INT, getNB(_NORTH_), tagid_r[_NORTH_], RHEA_3DCOMM, &req_r[_NORTH_]);
+
+    if(getNB(_BACK_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(&info_2nd[off_nb[_BACK_]], 6, MPI_INT, getNB(_BACK_), tagid_r[_BACK_], RHEA_3DCOMM, &req_r[_BACK_]);
+
+    if(getNB(_FRONT_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(&info_2nd[off_nb[_FRONT_]], 6, MPI_INT, getNB(_FRONT_), tagid_r[_FRONT_], RHEA_3DCOMM, &req_r[_FRONT_]);
+
+
+    if(getNB(_WEST_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_WEST_], &stat_r[_WEST_]);
+        MPI_Wait(&req_s[_WEST_], &stat_s[_WEST_]);
+    }
+    if(getNB(_EAST_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_EAST_], &stat_r[_EAST_]);
+        MPI_Wait(&req_s[_EAST_], &stat_s[_EAST_]);
+    }
+    if(getNB(_SOUTH_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_SOUTH_], &stat_r[_SOUTH_]);
+        MPI_Wait(&req_s[_SOUTH_], &stat_s[_SOUTH_]);
+    }
+    if(getNB(_NORTH_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_NORTH_], &stat_r[_NORTH_]);
+        MPI_Wait(&req_s[_NORTH_], &stat_s[_NORTH_]);
+    }
+    if(getNB(_BACK_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_BACK_], &stat_r[_BACK_]);
+        MPI_Wait(&req_s[_BACK_], &stat_s[_BACK_]);
+    }
+    if(getNB(_FRONT_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_FRONT_], &stat_r[_FRONT_]);
+        MPI_Wait(&req_s[_FRONT_], &stat_s[_FRONT_]);
+    }
+}
+
+
+void ParallelTopology::find_extra_neighbours()
+{
+
+// Lineal neighbours 
+
+    //WEST SOUTH
+    neighb[_WEST_S_] = neighb[_WEST_]; 
+    if( neighb[_WEST_]  != _NO_NEIGHBOUR_ && neighb[_SOUTH_] != _NO_NEIGHBOUR_)
+    {    
+        neighb[_WEST_S_] =  info_2nd[ off_nb[_WEST_] + _SOUTH_ ]; 
+    }
+    else if ( neighb[_SOUTH_] != _NO_NEIGHBOUR_)
+    {
+        neighb[_WEST_S_] =  neighb[_SOUTH_]; 
+    } 
+
+    //WEST NORTH 
+    neighb[_WEST_N_] = neighb[_WEST_]; 
+    if( neighb[_WEST_]  != _NO_NEIGHBOUR_ && neighb[_NORTH_] != _NO_NEIGHBOUR_)
+    {
+        neighb[_WEST_N_] =  info_2nd[ off_nb[_WEST_] + _NORTH_ ]; 
+    }
+    else if ( neighb[_NORTH_] != _NO_NEIGHBOUR_)
+    {
+        neighb[_WEST_N_] =  neighb[_NORTH_]; 
+    } 
+
+
+    //WEST BACK 
+    neighb[_WEST_B_] = neighb[_WEST_]; 
+    if( neighb[_WEST_]  != _NO_NEIGHBOUR_ && neighb[_BACK_] != _NO_NEIGHBOUR_)
+    {
+        neighb[_WEST_B_] =  info_2nd[ off_nb[_WEST_] + _BACK_ ]; 
+    }
+    else if ( neighb[_BACK_] != _NO_NEIGHBOUR_)
+    {
+        neighb[_WEST_B_] =  neighb[_BACK_]; 
+    } 
+
+
+    //WEST FRONT 
+    neighb[_WEST_F_] = neighb[_WEST_]; 
+    if( neighb[_WEST_]  != _NO_NEIGHBOUR_ && neighb[_FRONT_] != _NO_NEIGHBOUR_)
+    {
+        neighb[_WEST_F_] =  info_2nd[ off_nb[_WEST_] + _FRONT_ ]; 
+    }
+    else if ( neighb[_FRONT_] != _NO_NEIGHBOUR_)
+    {
+        neighb[_WEST_F_] =  neighb[_FRONT_]; 
+    } 
+
+
+
+    //EAST SOUTH 
+    neighb[_EAST_S_] = neighb[_EAST_]; 
+    if( neighb[_EAST_]  != _NO_NEIGHBOUR_ && neighb[_SOUTH_] != _NO_NEIGHBOUR_)
+    {
+        neighb[_EAST_S_] = info_2nd[ off_nb[_EAST_] + _SOUTH_ ]; 
+    }
+    else if ( neighb[_SOUTH_] != _NO_NEIGHBOUR_)
+    {
+        neighb[_EAST_S_] =  neighb[_SOUTH_]; 
+    } 
+
+
+    //EAST NORTH 
+    neighb[_EAST_N_] = neighb[_EAST_]; 
+    if( neighb[_EAST_]  != _NO_NEIGHBOUR_ && neighb[_NORTH_] != _NO_NEIGHBOUR_)
+    {
+        neighb[_EAST_N_] = info_2nd[ off_nb[_EAST_] + _NORTH_ ]; 
+
+    }
+    else if ( neighb[_NORTH_] != _NO_NEIGHBOUR_)
+    {
+        neighb[_EAST_N_] =  neighb[_NORTH_]; 
+    } 
+
+
+    //EAST BACK 
+    neighb[_EAST_B_] = neighb[_EAST_]; 
+    if( neighb[_EAST_]  != _NO_NEIGHBOUR_ && neighb[_BACK_] != _NO_NEIGHBOUR_)
+    {
+        neighb[_EAST_B_] = info_2nd[ off_nb[_EAST_] + _BACK_ ]; 
+
+    }
+    else if ( neighb[_BACK_] != _NO_NEIGHBOUR_)
+    {
+        neighb[_EAST_B_] =  neighb[_BACK_]; 
+    } 
+
+
+    //EAST FRONT 
+    neighb[_EAST_F_] = neighb[_EAST_]; 
+    if( neighb[_EAST_]  != _NO_NEIGHBOUR_ && neighb[_FRONT_] != _NO_NEIGHBOUR_)
+    {
+        neighb[_EAST_F_] = info_2nd[ off_nb[_EAST_] + _FRONT_ ]; 
+
+    }
+    else if ( neighb[_FRONT_] != _NO_NEIGHBOUR_)
+    {
+        neighb[_EAST_F_] =  neighb[_FRONT_]; 
+    } 
+
+
+
+    //SOUTH BACK
+    neighb[_SOUTH_B_] = neighb[_SOUTH_]; 
+    if( neighb[_SOUTH_]  != _NO_NEIGHBOUR_ && neighb[_BACK_] != _NO_NEIGHBOUR_)
+    {
+        neighb[_SOUTH_B_] = info_2nd[ off_nb[_SOUTH_] + _BACK_ ];  
+    }
+    else if ( neighb[_BACK_] != _NO_NEIGHBOUR_)
+    {
+        neighb[_SOUTH_B_] =  neighb[_BACK_]; 
+    } 
+
+
+    //SOUTH FRONT
+    neighb[_SOUTH_F_] = neighb[_SOUTH_]; 
+    if( neighb[_SOUTH_]  != _NO_NEIGHBOUR_ && neighb[_FRONT_] != _NO_NEIGHBOUR_)
+    {
+        neighb[_SOUTH_F_] = info_2nd[ off_nb[_SOUTH_] + _FRONT_ ];  
+
+    }
+    else if ( neighb[_FRONT_] != _NO_NEIGHBOUR_)
+    {
+        neighb[_SOUTH_F_] =  neighb[_FRONT_]; 
+    } 
+
+
+    //NORTH BACK
+    neighb[_NORTH_B_] = neighb[_NORTH_]; 
+    if( neighb[_NORTH_]  != _NO_NEIGHBOUR_ && neighb[_BACK_] != _NO_NEIGHBOUR_)
+    {
+        neighb[_NORTH_B_] = info_2nd[ off_nb[_NORTH_] + _BACK_ ]; 
+    }
+    else if ( neighb[_BACK_] != _NO_NEIGHBOUR_)
+    {
+        neighb[_NORTH_B_] =  neighb[_BACK_]; 
+    } 
+
+
+    //NORTH FRONT
+    neighb[_NORTH_F_] = neighb[_NORTH_]; 
+    if( neighb[_NORTH_]  != _NO_NEIGHBOUR_ && neighb[_FRONT_] != _NO_NEIGHBOUR_)
+    {
+        neighb[_NORTH_F_] =  info_2nd[ off_nb[_NORTH_] + _FRONT_ ]; 
+    }
+    else if ( neighb[_FRONT_] != _NO_NEIGHBOUR_)
+    {
+        neighb[_NORTH_F_] =  neighb[_FRONT_]; 
+    } 
+
+
+
+    //3er level conexions
+    int* lconx;
+    int pack[6];
+    //Packs the message that is sent to all the 1st level neighbours
+    for(int l=_WEST_;l<=_FRONT_;l++)
+        pack[l] = neighb[l];
+
+   
+    lconx = new int[6*npx*npy*npz]; // For each proc saves the 6 neighbours
+
+    MPI_Allgather(pack, 6, MPI_INT, lconx, 6, MPI_INT, MPI_COMM_WORLD);
+
+
+    //Point Neighbours
+
+    //WEST SOUTH and NORTH BACK
+
+    neighb[_WEST_S_B_] = neighb[_WEST_B_]; 
+    neighb[_WEST_N_B_] = neighb[_WEST_B_]; 
+    if( neighb[_WEST_B_] != _NO_NEIGHBOUR_)
+    {
+        if( lconx[neighb[_WEST_B_]*6 + _SOUTH_ ] != _NO_NEIGHBOUR_) 
+            neighb[_WEST_S_B_] = lconx[neighb[_WEST_B_]*6 + _SOUTH_ ] ; 
+
+        if( lconx[neighb[_WEST_B_]*6 + _NORTH_ ] != _NO_NEIGHBOUR_) 
+            neighb[_WEST_N_B_] = lconx[neighb[_WEST_B_]*6 + _NORTH_ ] ; 
+    }
+
+    //WEST SOUTH and NORTH FRONT
+    neighb[_WEST_S_F_] = neighb[_WEST_F_];
+    neighb[_WEST_N_F_] = neighb[_WEST_F_];
+    if( neighb[_WEST_F_] != _NO_NEIGHBOUR_)
+    {
+        if( lconx[neighb[_WEST_F_]*6 + _SOUTH_ ] != _NO_NEIGHBOUR_) 
+            neighb[_WEST_S_F_] = lconx[neighb[_WEST_F_]*6 + _SOUTH_ ] ; 
+ 
+        if( lconx[neighb[_WEST_F_]*6 + _NORTH_ ] != _NO_NEIGHBOUR_) 
+            neighb[_WEST_N_F_] = lconx[neighb[_WEST_F_]*6 + _NORTH_ ] ; 
+    }
+
+    //EAST SOUTH and NORTH BACK
+    neighb[_EAST_S_B_] = neighb[_EAST_B_];  
+    neighb[_EAST_N_B_] = neighb[_EAST_B_];  
+    if( neighb[_EAST_B_] != _NO_NEIGHBOUR_)
+    {
+        if( lconx[neighb[_EAST_B_]*6 + _SOUTH_ ] != _NO_NEIGHBOUR_) 
+            neighb[_EAST_S_B_] = lconx[neighb[_EAST_B_]*6 + _SOUTH_ ] ; 
+
+        if( lconx[neighb[_EAST_B_]*6 + _NORTH_ ] != _NO_NEIGHBOUR_) 
+            neighb[_EAST_N_B_] = lconx[neighb[_EAST_B_]*6 + _NORTH_ ] ; 
+    }
+
+    //EAST SOUTH and NORTH FRONT 
+    neighb[_EAST_S_F_] = neighb[_EAST_F_];  
+    neighb[_EAST_N_F_] = neighb[_EAST_F_];  
+    if( neighb[_EAST_F_] != _NO_NEIGHBOUR_)
+    {
+        if( lconx[neighb[_EAST_F_]*6 + _SOUTH_ ] != _NO_NEIGHBOUR_) 
+           neighb[_EAST_S_F_] = lconx[neighb[_EAST_F_]*6 + _SOUTH_ ] ; 
+ 
+        if( lconx[neighb[_EAST_F_]*6 + _NORTH_ ] != _NO_NEIGHBOUR_) 
+            neighb[_EAST_N_F_] = lconx[neighb[_EAST_F_]*6 + _NORTH_ ] ; 
+    }
+
+
+    delete[] lconx; 
+
+}
+
+
+void ParallelTopology::printCommScheme(int proc)
+{
+
+    if(rank==proc){
+        cout<<endl;
+        cout<<"rank "<<rank<<endl;
+        cout<<"lNx  "<<lNx<<" lNy "<<lNy<<" lNz "<<lNz<<endl;
+        cout<<" X : WEST  "<<neighb[0]<<" EAST  "<<neighb[1]<<endl;
+        cout<<" Y : SOUTH "<<neighb[2]<<" NORTH "<<neighb[3]<<endl;
+        cout<<" Z : BACK  "<<neighb[4]<<" FRONT "<<neighb[5]<<endl;
+
+     }
+    MPI_Barrier(RHEA_3DCOMM);
+}
+
+void ParallelTopology::printCommSchemeToFile(int proc)
+{
+    char filename[100];
+    sprintf(filename,"topo-%d.info",rank);
+    if(rank==proc){
+        ofstream myfile (filename);
+        if(myfile.is_open()){
+            myfile<<"--------"<<endl;
+            myfile<<" Processor"<<endl;
+            myfile<<" Rank "<<rank<<endl;
+            myfile<<"--------"<<endl;
+            myfile<<" Number of local cells"<<endl;
+            myfile<<" lNx "<<lNx<<endl;
+            myfile<<" lNy "<<lNy<<endl;
+            myfile<<" lNz "<<lNz<<endl;
+            myfile<<"--------"<<endl;
+            myfile<<" Lboco ids: "<<endl;
+            myfile<<" X  : WEST  "<<lbounds[_WEST_] <<" EAST  "<<lbounds[_EAST_]<<endl;
+            myfile<<" Y  : SOUTH "<<lbounds[_SOUTH_]<<" NORTH "<<lbounds[_NORTH_]<<endl;
+            myfile<<" Z  : BACK  "<<lbounds[_BACK_] <<" FRONT "<<lbounds[_FRONT_]<<endl;
+            myfile<<" Neighbour ids: "<<endl;
+            myfile<<" X  : WEST  "<<neighb[_WEST_] <<" EAST  "<<neighb[_EAST_]<<endl;
+            myfile<<" Y  : SOUTH "<<neighb[_SOUTH_]<<" NORTH "<<neighb[_NORTH_]<<endl;
+            myfile<<" Z  : BACK  "<<neighb[_BACK_] <<" FRONT "<<neighb[_FRONT_]<<endl;
+            myfile<<" 2nd level connections: "<<endl;
+            myfile<<" XY : WEST  SOUTH  "<<neighb[_WEST_S_]  <<"  WEST NORTH "<<neighb[_WEST_N_]<<endl;
+            myfile<<" XZ : WEST  BACK   "<<neighb[_WEST_B_]  <<"  WEST FRONT "<<neighb[_WEST_F_]<<endl;
+            myfile<<" XY : EAST  SOUTH  "<<neighb[_EAST_S_]  <<"  EAST NORTH "<<neighb[_EAST_N_]<<endl;
+            myfile<<" XZ : EAST  BACK   "<<neighb[_EAST_B_]  <<"  EAST FRONT "<<neighb[_EAST_F_]<<endl;
+            myfile<<" YZ : SOUTH BACK   "<<neighb[_SOUTH_B_] <<" SOUTH FRONT "<<neighb[_SOUTH_F_]<<endl;
+            myfile<<" YZ : NORTH BACK   "<<neighb[_NORTH_B_] <<" NORTH FRONT "<<neighb[_NORTH_F_]<<endl;
+            myfile<<" 3er level connections: "<<endl;
+            myfile<<" XYZ : WEST SOUTH BACK  "<<neighb[_WEST_S_B_]  <<"  WEST NORTH BACK  "<<neighb[_WEST_N_B_]<<endl;
+            myfile<<" XYZ : WEST SOUTH FRONT "<<neighb[_WEST_S_F_]  <<"  WEST NORTH FRONT "<<neighb[_WEST_N_F_]<<endl;
+            myfile<<" XYZ : EAST SOUTH BACK  "<<neighb[_EAST_S_B_]  <<"  EAST NORTH BACK  "<<neighb[_EAST_N_B_]<<endl;
+            myfile<<" XYZ : EAST SOUTH FRONT "<<neighb[_EAST_S_F_]  <<"  EAST NORTH FRONT "<<neighb[_EAST_N_F_]<<endl;
+            myfile<<"--------"<<endl;
+            myfile<<" Internal iterators: "<<endl;
+            myfile<<" INI_X  "<<iter_common[_INNER_][_INIX_]<<" END_X "<<iter_common[_INNER_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_common[_INNER_][_INIY_]<<" END_Y "<<iter_common[_INNER_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_common[_INNER_][_INIZ_]<<" END_Z "<<iter_common[_INNER_][_ENDZ_]<<endl;
+            myfile<<" Total ComputationalDomain iterators: "<<endl;
+            myfile<<" INI_X  "<<iter_common[_ALL_][_INIX_]<<" END_X "<<iter_common[_ALL_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_common[_ALL_][_INIY_]<<" END_Y "<<iter_common[_ALL_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_common[_ALL_][_INIZ_]<<" END_Z "<<iter_common[_ALL_][_ENDZ_]<<endl;
+            myfile<<"--------"<<endl;
+            myfile<<" Boundary iterators: "<<endl;
+            myfile<<" WEST: "<<endl;
+            myfile<<" INI_X  "<<iter_bound[_WEST_][_INIX_]<<" END_X "<<iter_bound[_WEST_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_bound[_WEST_][_INIY_]<<" END_Y "<<iter_bound[_WEST_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_bound[_WEST_][_INIZ_]<<" END_Z "<<iter_bound[_WEST_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" EAST: "<<endl;
+            myfile<<" INI_X  "<<iter_bound[_EAST_][_INIX_]<<" END_X "<<iter_bound[_EAST_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_bound[_EAST_][_INIY_]<<" END_Y "<<iter_bound[_EAST_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_bound[_EAST_][_INIZ_]<<" END_Z "<<iter_bound[_EAST_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" SOUTH: "<<endl;
+            myfile<<" INI_X  "<<iter_bound[_SOUTH_][_INIX_]<<" END_X "<<iter_bound[_SOUTH_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_bound[_SOUTH_][_INIY_]<<" END_Y "<<iter_bound[_SOUTH_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_bound[_SOUTH_][_INIZ_]<<" END_Z "<<iter_bound[_SOUTH_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" NORTH: "<<endl;
+            myfile<<" INI_X  "<<iter_bound[_NORTH_][_INIX_]<<" END_X "<<iter_bound[_NORTH_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_bound[_NORTH_][_INIY_]<<" END_Y "<<iter_bound[_NORTH_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_bound[_NORTH_][_INIZ_]<<" END_Z "<<iter_bound[_NORTH_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" BACK: "<<endl;
+            myfile<<" INI_X  "<<iter_bound[_BACK_][_INIX_]<<" END_X "<<iter_bound[_BACK_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_bound[_BACK_][_INIY_]<<" END_Y "<<iter_bound[_BACK_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_bound[_BACK_][_INIZ_]<<" END_Z "<<iter_bound[_BACK_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" FRONT: "<<endl;
+            myfile<<" INI_X  "<<iter_bound[_FRONT_][_INIX_]<<" END_X "<<iter_bound[_FRONT_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_bound[_FRONT_][_INIY_]<<" END_Y "<<iter_bound[_FRONT_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_bound[_FRONT_][_INIZ_]<<" END_Z "<<iter_bound[_FRONT_][_ENDZ_]<<endl;
+            myfile<<"--------"<<endl;
+            myfile<<" Send iterators: "<<endl;
+            myfile<<" WEST: "<<endl;
+            myfile<<" INI_X  "<<iter_toSend[_WEST_][_INIX_]<<" END_X "<<iter_toSend[_WEST_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toSend[_WEST_][_INIY_]<<" END_Y "<<iter_toSend[_WEST_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toSend[_WEST_][_INIZ_]<<" END_Z "<<iter_toSend[_WEST_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" EAST: "<<endl;
+            myfile<<" INI_X  "<<iter_toSend[_EAST_][_INIX_]<<" END_X "<<iter_toSend[_EAST_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toSend[_EAST_][_INIY_]<<" END_Y "<<iter_toSend[_EAST_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toSend[_EAST_][_INIZ_]<<" END_Z "<<iter_toSend[_EAST_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" SOUTH: "<<endl;
+            myfile<<" INI_X  "<<iter_toSend[_SOUTH_][_INIX_]<<" END_X "<<iter_toSend[_SOUTH_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toSend[_SOUTH_][_INIY_]<<" END_Y "<<iter_toSend[_SOUTH_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toSend[_SOUTH_][_INIZ_]<<" END_Z "<<iter_toSend[_SOUTH_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" NORTH: "<<endl;
+            myfile<<" INI_X  "<<iter_toSend[_NORTH_][_INIX_]<<" END_X "<<iter_toSend[_NORTH_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toSend[_NORTH_][_INIY_]<<" END_Y "<<iter_toSend[_NORTH_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toSend[_NORTH_][_INIZ_]<<" END_Z "<<iter_toSend[_NORTH_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" BACK: "<<endl;
+            myfile<<" INI_X  "<<iter_toSend[_BACK_][_INIX_]<<" END_X "<<iter_toSend[_BACK_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toSend[_BACK_][_INIY_]<<" END_Y "<<iter_toSend[_BACK_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toSend[_BACK_][_INIZ_]<<" END_Z "<<iter_toSend[_BACK_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" FRONT: "<<endl;
+            myfile<<" INI_X  "<<iter_toSend[_FRONT_][_INIX_]<<" END_X "<<iter_toSend[_FRONT_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toSend[_FRONT_][_INIY_]<<" END_Y "<<iter_toSend[_FRONT_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toSend[_FRONT_][_INIZ_]<<" END_Z "<<iter_toSend[_FRONT_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" WEST_S: "<<tagid_r[_WEST_S_]<<" tags_s "<<tagid_s[_WEST_S_]<<endl;
+            myfile<<" INI_X  "<<iter_toSend[_WEST_S_][_INIX_]<<" END_X "<<iter_toSend[_WEST_S_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toSend[_WEST_S_][_INIY_]<<" END_Y "<<iter_toSend[_WEST_S_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toSend[_WEST_S_][_INIZ_]<<" END_Z "<<iter_toSend[_WEST_S_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" WEST_N: "<<tagid_r[_WEST_N_]<<" tags_s "<<tagid_s[_WEST_N_]<<endl;
+            myfile<<" INI_X  "<<iter_toSend[_WEST_N_][_INIX_]<<" END_X "<<iter_toSend[_WEST_N_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toSend[_WEST_N_][_INIY_]<<" END_Y "<<iter_toSend[_WEST_N_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toSend[_WEST_N_][_INIZ_]<<" END_Z "<<iter_toSend[_WEST_N_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" WEST_B: "<<tagid_r[_WEST_B_]<<" tags_s "<<tagid_s[_WEST_B_]<<endl;
+            myfile<<" INI_X  "<<iter_toSend[_WEST_B_][_INIX_]<<" END_X "<<iter_toSend[_WEST_B_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toSend[_WEST_B_][_INIY_]<<" END_Y "<<iter_toSend[_WEST_B_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toSend[_WEST_B_][_INIZ_]<<" END_Z "<<iter_toSend[_WEST_B_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" WEST_F: "<<tagid_r[_WEST_F_]<<" tags_s "<<tagid_s[_WEST_F_]<<endl;
+            myfile<<" INI_X  "<<iter_toSend[_WEST_F_][_INIX_]<<" END_X "<<iter_toSend[_WEST_F_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toSend[_WEST_F_][_INIY_]<<" END_Y "<<iter_toSend[_WEST_F_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toSend[_WEST_F_][_INIZ_]<<" END_Z "<<iter_toSend[_WEST_F_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" EAST_S: "<<tagid_r[_EAST_S_]<<" tags_s "<<tagid_s[_EAST_S_]<<endl;
+            myfile<<" INI_X  "<<iter_toSend[_EAST_S_][_INIX_]<<" END_X "<<iter_toSend[_EAST_S_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toSend[_EAST_S_][_INIY_]<<" END_Y "<<iter_toSend[_EAST_S_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toSend[_EAST_S_][_INIZ_]<<" END_Z "<<iter_toSend[_EAST_S_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" EAST_N: "<<tagid_r[_EAST_N_]<<" tags_s "<<tagid_s[_EAST_N_]<<endl;
+            myfile<<" INI_X  "<<iter_toSend[_EAST_N_][_INIX_]<<" END_X "<<iter_toSend[_EAST_N_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toSend[_EAST_N_][_INIY_]<<" END_Y "<<iter_toSend[_EAST_N_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toSend[_EAST_N_][_INIZ_]<<" END_Z "<<iter_toSend[_EAST_N_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" EAST_B: "<<tagid_r[_EAST_B_]<<" tags_s "<<tagid_s[_EAST_B_]<<endl;
+            myfile<<" INI_X  "<<iter_toSend[_EAST_B_][_INIX_]<<" END_X "<<iter_toSend[_EAST_B_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toSend[_EAST_B_][_INIY_]<<" END_Y "<<iter_toSend[_EAST_B_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toSend[_EAST_B_][_INIZ_]<<" END_Z "<<iter_toSend[_EAST_B_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" EAST_F: "<<tagid_r[_EAST_F_]<<" tags_s "<<tagid_s[_EAST_F_]<<endl;
+            myfile<<" INI_X  "<<iter_toSend[_EAST_F_][_INIX_]<<" END_X "<<iter_toSend[_EAST_F_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toSend[_EAST_F_][_INIY_]<<" END_Y "<<iter_toSend[_EAST_F_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toSend[_EAST_F_][_INIZ_]<<" END_Z "<<iter_toSend[_EAST_F_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" SOUTH_B: tags_r "<<tagid_r[_SOUTH_B_]<<" tags_s "<<tagid_s[_SOUTH_B_]<<endl;
+            myfile<<" INI_X  "<<iter_toSend[_SOUTH_B_][_INIX_]<<" END_X "<<iter_toSend[_SOUTH_B_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toSend[_SOUTH_B_][_INIY_]<<" END_Y "<<iter_toSend[_SOUTH_B_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toSend[_SOUTH_B_][_INIZ_]<<" END_Z "<<iter_toSend[_SOUTH_B_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" SOUTH_F: tags_r "<<tagid_r[_SOUTH_F_]<<" tags_s "<<tagid_s[_SOUTH_F_]<<endl;
+            myfile<<" INI_X  "<<iter_toSend[_SOUTH_F_][_INIX_]<<" END_X "<<iter_toSend[_SOUTH_F_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toSend[_SOUTH_F_][_INIY_]<<" END_Y "<<iter_toSend[_SOUTH_F_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toSend[_SOUTH_F_][_INIZ_]<<" END_Z "<<iter_toSend[_SOUTH_F_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" NORTH_B: tags_r "<<tagid_r[_NORTH_B_]<<" tags_s "<<tagid_s[_NORTH_B_]<<endl;
+            myfile<<" INI_X  "<<iter_toSend[_NORTH_B_][_INIX_]<<" END_X "<<iter_toSend[_NORTH_B_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toSend[_NORTH_B_][_INIY_]<<" END_Y "<<iter_toSend[_NORTH_B_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toSend[_NORTH_B_][_INIZ_]<<" END_Z "<<iter_toSend[_NORTH_B_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" NORTH_F:  tags_r "<<tagid_r[_NORTH_F_]<<" tags_s "<<tagid_s[_NORTH_F_]<<endl;
+            myfile<<" INI_X  "<<iter_toSend[_NORTH_F_][_INIX_]<<" END_X "<<iter_toSend[_NORTH_F_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toSend[_NORTH_F_][_INIY_]<<" END_Y "<<iter_toSend[_NORTH_F_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toSend[_NORTH_F_][_INIZ_]<<" END_Z "<<iter_toSend[_NORTH_F_][_ENDZ_]<<endl;
+  
+
+
+
+
+            myfile<<"--------"<<endl;
+            myfile<<" Recv iterators: "<<endl;
+            myfile<<" WEST: "<<endl;
+            myfile<<" INI_X  "<<iter_toRecv[_WEST_][_INIX_]<<" END_X "<<iter_toRecv[_WEST_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toRecv[_WEST_][_INIY_]<<" END_Y "<<iter_toRecv[_WEST_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toRecv[_WEST_][_INIZ_]<<" END_Z "<<iter_toRecv[_WEST_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" EAST: "<<endl;
+            myfile<<" INI_X  "<<iter_toRecv[_EAST_][_INIX_]<<" END_X "<<iter_toRecv[_EAST_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toRecv[_EAST_][_INIY_]<<" END_Y "<<iter_toRecv[_EAST_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toRecv[_EAST_][_INIZ_]<<" END_Z "<<iter_toRecv[_EAST_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" SOUTH: "<<endl;
+            myfile<<" INI_X  "<<iter_toRecv[_SOUTH_][_INIX_]<<" END_X "<<iter_toRecv[_SOUTH_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toRecv[_SOUTH_][_INIY_]<<" END_Y "<<iter_toRecv[_SOUTH_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toRecv[_SOUTH_][_INIZ_]<<" END_Z "<<iter_toRecv[_SOUTH_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" NORTH: "<<endl;
+            myfile<<" INI_X  "<<iter_toRecv[_NORTH_][_INIX_]<<" END_X "<<iter_toRecv[_NORTH_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toRecv[_NORTH_][_INIY_]<<" END_Y "<<iter_toRecv[_NORTH_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toRecv[_NORTH_][_INIZ_]<<" END_Z "<<iter_toRecv[_NORTH_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" BACK: "<<endl;
+            myfile<<" INI_X  "<<iter_toRecv[_BACK_][_INIX_]<<" END_X "<<iter_toRecv[_BACK_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toRecv[_BACK_][_INIY_]<<" END_Y "<<iter_toRecv[_BACK_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toRecv[_BACK_][_INIZ_]<<" END_Z "<<iter_toRecv[_BACK_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" FRONT: "<<endl;
+            myfile<<" INI_X  "<<iter_toRecv[_FRONT_][_INIX_]<<" END_X "<<iter_toRecv[_FRONT_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toRecv[_FRONT_][_INIY_]<<" END_Y "<<iter_toRecv[_FRONT_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toRecv[_FRONT_][_INIZ_]<<" END_Z "<<iter_toRecv[_FRONT_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" WEST_S: "<<endl;
+            myfile<<" INI_X  "<<iter_toRecv[_WEST_S_][_INIX_]<<" END_X "<<iter_toRecv[_WEST_S_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toRecv[_WEST_S_][_INIY_]<<" END_Y "<<iter_toRecv[_WEST_S_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toRecv[_WEST_S_][_INIZ_]<<" END_Z "<<iter_toRecv[_WEST_S_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" WEST_N: "<<endl;
+            myfile<<" INI_X  "<<iter_toRecv[_WEST_N_][_INIX_]<<" END_X "<<iter_toRecv[_WEST_N_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toRecv[_WEST_N_][_INIY_]<<" END_Y "<<iter_toRecv[_WEST_N_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toRecv[_WEST_N_][_INIZ_]<<" END_Z "<<iter_toRecv[_WEST_N_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" WEST_B: "<<endl;
+            myfile<<" INI_X  "<<iter_toRecv[_WEST_B_][_INIX_]<<" END_X "<<iter_toRecv[_WEST_B_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toRecv[_WEST_B_][_INIY_]<<" END_Y "<<iter_toRecv[_WEST_B_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toRecv[_WEST_B_][_INIZ_]<<" END_Z "<<iter_toRecv[_WEST_B_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" WEST_F: "<<endl;
+            myfile<<" INI_X  "<<iter_toRecv[_WEST_F_][_INIX_]<<" END_X "<<iter_toRecv[_WEST_F_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toRecv[_WEST_F_][_INIY_]<<" END_Y "<<iter_toRecv[_WEST_F_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toRecv[_WEST_F_][_INIZ_]<<" END_Z "<<iter_toRecv[_WEST_F_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" EAST_S: "<<endl;
+            myfile<<" INI_X  "<<iter_toRecv[_EAST_S_][_INIX_]<<" END_X "<<iter_toRecv[_EAST_S_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toRecv[_EAST_S_][_INIY_]<<" END_Y "<<iter_toRecv[_EAST_S_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toRecv[_EAST_S_][_INIZ_]<<" END_Z "<<iter_toRecv[_EAST_S_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" EAST_N: "<<endl;
+            myfile<<" INI_X  "<<iter_toRecv[_EAST_N_][_INIX_]<<" END_X "<<iter_toRecv[_EAST_N_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toRecv[_EAST_N_][_INIY_]<<" END_Y "<<iter_toRecv[_EAST_N_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toRecv[_EAST_N_][_INIZ_]<<" END_Z "<<iter_toRecv[_EAST_N_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" EAST_B: "<<endl;
+            myfile<<" INI_X  "<<iter_toRecv[_EAST_B_][_INIX_]<<" END_X "<<iter_toRecv[_EAST_B_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toRecv[_EAST_B_][_INIY_]<<" END_Y "<<iter_toRecv[_EAST_B_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toRecv[_EAST_B_][_INIZ_]<<" END_Z "<<iter_toRecv[_EAST_B_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" EAST_F: "<<endl;
+            myfile<<" INI_X  "<<iter_toRecv[_EAST_F_][_INIX_]<<" END_X "<<iter_toRecv[_EAST_F_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toRecv[_EAST_F_][_INIY_]<<" END_Y "<<iter_toRecv[_EAST_F_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toRecv[_EAST_F_][_INIZ_]<<" END_Z "<<iter_toRecv[_EAST_F_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" SOUTH_B: "<<endl;
+            myfile<<" INI_X  "<<iter_toRecv[_SOUTH_B_][_INIX_]<<" END_X "<<iter_toRecv[_SOUTH_B_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toRecv[_SOUTH_B_][_INIY_]<<" END_Y "<<iter_toRecv[_SOUTH_B_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toRecv[_SOUTH_B_][_INIZ_]<<" END_Z "<<iter_toRecv[_SOUTH_B_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" SOUTH_F: "<<endl;
+            myfile<<" INI_X  "<<iter_toRecv[_SOUTH_F_][_INIX_]<<" END_X "<<iter_toRecv[_SOUTH_F_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toRecv[_SOUTH_F_][_INIY_]<<" END_Y "<<iter_toRecv[_SOUTH_F_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toRecv[_SOUTH_F_][_INIZ_]<<" END_Z "<<iter_toRecv[_SOUTH_F_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" NORTH_B: "<<endl;
+            myfile<<" INI_X  "<<iter_toRecv[_NORTH_B_][_INIX_]<<" END_X "<<iter_toRecv[_NORTH_B_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toRecv[_NORTH_B_][_INIY_]<<" END_Y "<<iter_toRecv[_NORTH_B_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toRecv[_NORTH_B_][_INIZ_]<<" END_Z "<<iter_toRecv[_NORTH_B_][_ENDZ_]<<endl;
+            myfile<<endl;
+            myfile<<" NORTH_F: "<<endl;
+            myfile<<" INI_X  "<<iter_toRecv[_NORTH_F_][_INIX_]<<" END_X "<<iter_toRecv[_NORTH_F_][_ENDX_]<<endl;
+            myfile<<" INI_Y  "<<iter_toRecv[_NORTH_F_][_INIY_]<<" END_Y "<<iter_toRecv[_NORTH_F_][_ENDY_]<<endl;
+            myfile<<" INI_Z  "<<iter_toRecv[_NORTH_F_][_INIZ_]<<" END_Z "<<iter_toRecv[_NORTH_F_][_ENDZ_]<<endl;
+  
+
+
+
+
+            myfile.close();
+        }
+        else{
+            cout<<"Unable to create file: "<<filename<<endl;
+        }
+
+       
+     }
+    MPI_Barrier(RHEA_3DCOMM);
+}
+
+
+/* This part assumes halo size 1*/
+void ParallelTopology::create_common_iters()
+{
+    // By default non halos are created
+    for(int bd=_INNER_; bd<= _ALL_; bd++)
+    {
+        iter_common[bd][_INIX_] =   0;
+        iter_common[bd][_ENDX_] =  -1;
+        iter_common[bd][_INIY_] =   0;
+        iter_common[bd][_ENDY_] =  -1;
+        iter_common[bd][_INIZ_] =   0;
+        iter_common[bd][_ENDZ_] =  -1;
+    }
+
+
+    //INNER
+    iter_common[_INNER_][_INIX_] =   1;
+    iter_common[_INNER_][_ENDX_] = lNx-2;
+    iter_common[_INNER_][_INIY_] =   1;
+    iter_common[_INNER_][_ENDY_] = lNy-2;
+    iter_common[_INNER_][_INIZ_] =   1;
+    iter_common[_INNER_][_ENDZ_] = lNz-2;
+
+    //ALL
+    iter_common[_ALL_][_INIX_] =   0;
+    iter_common[_ALL_][_ENDX_] = lNx-1;
+    iter_common[_ALL_][_INIY_] =   0;
+    iter_common[_ALL_][_ENDY_] = lNy-1;
+    iter_common[_ALL_][_INIZ_] =   0;
+    iter_common[_ALL_][_ENDZ_] = lNz-1;
+
+}
+
+
+/* This part assumes halo size 1*/
+void ParallelTopology::create_basic_bound_iters()
+{
+    // By default non halos are created
+    for(int bd=_WEST_; bd<= _EAST_N_F_; bd++)
+    {
+        iter_bound[bd][_INIX_] =   0;
+        iter_bound[bd][_ENDX_] =  -1;
+        iter_bound[bd][_INIY_] =   0;
+        iter_bound[bd][_ENDY_] =  -1;
+        iter_bound[bd][_INIZ_] =   0;
+        iter_bound[bd][_ENDZ_] =  -1;
+    }
+
+
+    //WEST
+    if(neighb[_WEST_]== _NO_NEIGHBOUR_) {
+        iter_bound[_WEST_][_INIX_] =   0;
+        iter_bound[_WEST_][_ENDX_] =   0;
+        iter_bound[_WEST_][_INIY_] =   1;
+        iter_bound[_WEST_][_ENDY_] = lNy-2;
+        iter_bound[_WEST_][_INIZ_] =   1;
+        iter_bound[_WEST_][_ENDZ_] = lNz-2;
+    }
+
+    //EAST
+    if(neighb[_EAST_]== _NO_NEIGHBOUR_) {
+        iter_bound[_EAST_][_INIX_] = lNx-1;
+        iter_bound[_EAST_][_ENDX_] = lNx-1;
+        iter_bound[_EAST_][_INIY_] =   1;
+        iter_bound[_EAST_][_ENDY_] = lNy-2;
+        iter_bound[_EAST_][_INIZ_] =   1;
+        iter_bound[_EAST_][_ENDZ_] = lNz-2;
+    }
+
+    //SOUTH
+    if(neighb[_SOUTH_]== _NO_NEIGHBOUR_) {
+        iter_bound[_SOUTH_][_INIX_] =   1;
+        iter_bound[_SOUTH_][_ENDX_] = lNx-2;
+        iter_bound[_SOUTH_][_INIY_] =   0;
+        iter_bound[_SOUTH_][_ENDY_] =   0;
+        iter_bound[_SOUTH_][_INIZ_] =   1;
+        iter_bound[_SOUTH_][_ENDZ_] = lNz-2;
+    }
+
+    //NORTH
+    if(neighb[_NORTH_]== _NO_NEIGHBOUR_) {
+        iter_bound[_NORTH_][_INIX_] =   1;
+        iter_bound[_NORTH_][_ENDX_] =   lNx-2;
+        iter_bound[_NORTH_][_INIY_] =   lNy-1;
+        iter_bound[_NORTH_][_ENDY_] =   lNy-1;
+        iter_bound[_NORTH_][_INIZ_] =   1;
+        iter_bound[_NORTH_][_ENDZ_] = lNz-2;
+    }
+
+    //BACK
+    if(neighb[_BACK_]== _NO_NEIGHBOUR_) {
+        iter_bound[_BACK_][_INIX_] =   1;
+        iter_bound[_BACK_][_ENDX_] =   lNx-2;
+        iter_bound[_BACK_][_INIY_] =   1;
+        iter_bound[_BACK_][_ENDY_] =   lNy-2;
+        iter_bound[_BACK_][_INIZ_] =   0;
+        iter_bound[_BACK_][_ENDZ_] =   0;
+    }
+
+    //FRONT
+    if(neighb[_FRONT_]== _NO_NEIGHBOUR_) {
+        iter_bound[_FRONT_][_INIX_] =   1;
+        iter_bound[_FRONT_][_ENDX_] =   lNx-2;
+        iter_bound[_FRONT_][_INIY_] =   1;
+        iter_bound[_FRONT_][_ENDY_] =   lNy-2;
+        iter_bound[_FRONT_][_INIZ_] =   lNz-1;
+        iter_bound[_FRONT_][_ENDZ_] =   lNz-1;
+    }
+}
+    
+void ParallelTopology::create_complex_bound_iters(){
+
+    // 2nd Level (lines)
+    //WEST SOUTH
+    if(neighb[_WEST_S_]== _NO_NEIGHBOUR_) {
+        iter_bound[_WEST_S_][_INIX_] =   0;
+        iter_bound[_WEST_S_][_ENDX_] =   0;
+        iter_bound[_WEST_S_][_INIY_] =   0;
+        iter_bound[_WEST_S_][_ENDY_] =   0;
+        iter_bound[_WEST_S_][_INIZ_] =   1;
+        iter_bound[_WEST_S_][_ENDZ_] = lNz-2;
+    }
+
+    //WEST NORTH
+    if(neighb[_WEST_N_]== _NO_NEIGHBOUR_) {
+        iter_bound[_WEST_N_][_INIX_] =   0;
+        iter_bound[_WEST_N_][_ENDX_] =   0;
+        iter_bound[_WEST_N_][_INIY_] = lNy-1;
+        iter_bound[_WEST_N_][_ENDY_] = lNy-1;
+        iter_bound[_WEST_N_][_INIZ_] =   1;
+        iter_bound[_WEST_N_][_ENDZ_] = lNz-2;
+    }
+
+    //WEST BACK
+    if(neighb[_WEST_B_]== _NO_NEIGHBOUR_) {
+        iter_bound[_WEST_B_][_INIX_] =   0;
+        iter_bound[_WEST_B_][_ENDX_] =   0;
+        iter_bound[_WEST_B_][_INIY_] =   1;
+        iter_bound[_WEST_B_][_ENDY_] = lNy-2;
+        iter_bound[_WEST_B_][_INIZ_] =   0;
+        iter_bound[_WEST_B_][_ENDZ_] =   0;
+    }
+
+    //WEST FRONT
+    if(neighb[_WEST_F_]== _NO_NEIGHBOUR_) {
+        iter_bound[_WEST_F_][_INIX_] =   0;
+        iter_bound[_WEST_F_][_ENDX_] =   0;
+        iter_bound[_WEST_F_][_INIY_] =   1;
+        iter_bound[_WEST_F_][_ENDY_] = lNy-2;
+        iter_bound[_WEST_F_][_INIZ_] = lNz-1;
+        iter_bound[_WEST_F_][_ENDZ_] = lNz-1;
+    }
+
+
+    //EAST SOUTH
+    if(neighb[_EAST_S_]== _NO_NEIGHBOUR_) {
+        iter_bound[_EAST_S_][_INIX_] = lNx-1;
+        iter_bound[_EAST_S_][_ENDX_] = lNx-1;
+        iter_bound[_EAST_S_][_INIY_] =   0;
+        iter_bound[_EAST_S_][_ENDY_] =   0;
+        iter_bound[_EAST_S_][_INIZ_] =   1;
+        iter_bound[_EAST_S_][_ENDZ_] = lNz-2;
+    }
+
+    //EAST NORTH
+    if(neighb[_EAST_N_]== _NO_NEIGHBOUR_) {
+        iter_bound[_EAST_N_][_INIX_] = lNx-1;
+        iter_bound[_EAST_N_][_ENDX_] = lNx-1;
+        iter_bound[_EAST_N_][_INIY_] = lNy-1;
+        iter_bound[_EAST_N_][_ENDY_] = lNy-1;
+        iter_bound[_EAST_N_][_INIZ_] =   1;
+        iter_bound[_EAST_N_][_ENDZ_] = lNz-2;
+    }
+
+    //EAST BACK
+    if(neighb[_EAST_B_]== _NO_NEIGHBOUR_) {
+        iter_bound[_EAST_B_][_INIX_] = lNx-1;
+        iter_bound[_EAST_B_][_ENDX_] = lNx-1;
+        iter_bound[_EAST_B_][_INIY_] =   1;
+        iter_bound[_EAST_B_][_ENDY_] = lNy-2;
+        iter_bound[_EAST_B_][_INIZ_] =   0;
+        iter_bound[_EAST_B_][_ENDZ_] =   0;
+    }
+
+    //EAST FRONT
+    if(neighb[_EAST_F_]== _NO_NEIGHBOUR_) {
+        iter_bound[_EAST_F_][_INIX_] = lNx-1;
+        iter_bound[_EAST_F_][_ENDX_] = lNx-1;
+        iter_bound[_EAST_F_][_INIY_] =   1;
+        iter_bound[_EAST_F_][_ENDY_] = lNy-2;
+        iter_bound[_EAST_F_][_INIZ_] = lNz-1;
+        iter_bound[_EAST_F_][_ENDZ_] = lNz-1;
+    }
+
+    //SOUTH BACK
+    if(neighb[_SOUTH_B_]== _NO_NEIGHBOUR_) {
+        iter_bound[_SOUTH_B_][_INIX_] =   1;
+        iter_bound[_SOUTH_B_][_ENDX_] = lNx-2;
+        iter_bound[_SOUTH_B_][_INIY_] =   0;
+        iter_bound[_SOUTH_B_][_ENDY_] =   0;
+        iter_bound[_SOUTH_B_][_INIZ_] =   0;
+        iter_bound[_SOUTH_B_][_ENDZ_] =   0;
+    }
+
+    //SOUTH FRONT
+    if(neighb[_SOUTH_F_]== _NO_NEIGHBOUR_) {
+        iter_bound[_SOUTH_F_][_INIX_] =   1;
+        iter_bound[_SOUTH_F_][_ENDX_] = lNx-2;
+        iter_bound[_SOUTH_F_][_INIY_] =   0;
+        iter_bound[_SOUTH_F_][_ENDY_] =   0;
+        iter_bound[_SOUTH_F_][_INIZ_] = lNz-1;
+        iter_bound[_SOUTH_F_][_ENDZ_] = lNz-1;
+    }
+
+
+    //NORTH BACK
+    if(neighb[_NORTH_B_]== _NO_NEIGHBOUR_) {
+        iter_bound[_NORTH_B_][_INIX_] =   1;
+        iter_bound[_NORTH_B_][_ENDX_] = lNx-2;
+        iter_bound[_NORTH_B_][_INIY_] = lNy-1;
+        iter_bound[_NORTH_B_][_ENDY_] = lNy-1;
+        iter_bound[_NORTH_B_][_INIZ_] =   0;
+        iter_bound[_NORTH_B_][_ENDZ_] =   0;
+    }
+
+    //NORTH FRONT
+    if(neighb[_NORTH_F_]== _NO_NEIGHBOUR_) {
+        iter_bound[_NORTH_F_][_INIX_] =   1;
+        iter_bound[_NORTH_F_][_ENDX_] = lNx-2;
+        iter_bound[_NORTH_F_][_INIY_] = lNy-1;
+        iter_bound[_NORTH_F_][_ENDY_] = lNy-1;
+        iter_bound[_NORTH_F_][_INIZ_] = lNz-1;
+        iter_bound[_NORTH_F_][_ENDZ_] = lNz-1;
+    }
+
+// 3er Level (corners)
+
+    //WEST SOUTH BACK
+    if(neighb[_WEST_S_B_]== _NO_NEIGHBOUR_) {
+        iter_bound[_WEST_S_B_][_INIX_] =   0;
+        iter_bound[_WEST_S_B_][_ENDX_] =   0;
+        iter_bound[_WEST_S_B_][_INIY_] =   0;
+        iter_bound[_WEST_S_B_][_ENDY_] =   0;
+        iter_bound[_WEST_S_B_][_INIZ_] =   0;
+        iter_bound[_WEST_S_B_][_ENDZ_] =   0;
+    }
+
+    //WEST NORTH BACK
+    if(neighb[_WEST_N_B_]== _NO_NEIGHBOUR_) {
+        iter_bound[_WEST_N_B_][_INIX_] =   0;
+        iter_bound[_WEST_N_B_][_ENDX_] =   0;
+        iter_bound[_WEST_N_B_][_INIY_] = lNy-1;
+        iter_bound[_WEST_N_B_][_ENDY_] = lNy-1;
+        iter_bound[_WEST_N_B_][_INIZ_] =   0;
+        iter_bound[_WEST_N_B_][_ENDZ_] =   0;
+    }
+
+    //WEST SOUTH FRONT
+    if(neighb[_WEST_S_F_]== _NO_NEIGHBOUR_) {
+        iter_bound[_WEST_S_F_][_INIX_] =   0;
+        iter_bound[_WEST_S_F_][_ENDX_] =   0;
+        iter_bound[_WEST_S_F_][_INIY_] =   0;
+        iter_bound[_WEST_S_F_][_ENDY_] =   0;
+        iter_bound[_WEST_S_F_][_INIZ_] = lNz-1;
+        iter_bound[_WEST_S_F_][_ENDZ_] = lNz-1;
+    }
+
+    //WEST NORTH FRONT
+    if(neighb[_WEST_N_F_]== _NO_NEIGHBOUR_) {
+        iter_bound[_WEST_N_F_][_INIX_] =   0;
+        iter_bound[_WEST_N_F_][_ENDX_] =   0;
+        iter_bound[_WEST_N_F_][_INIY_] = lNy-1;
+        iter_bound[_WEST_N_F_][_ENDY_] = lNy-1;
+        iter_bound[_WEST_N_F_][_INIZ_] = lNz-1;
+        iter_bound[_WEST_N_F_][_ENDZ_] = lNz-1;
+    }
+
+ 
+    //EAST SOUTH BACK
+    if(neighb[_EAST_S_B_]== _NO_NEIGHBOUR_) {
+        iter_bound[_EAST_S_B_][_INIX_] = lNx-1;
+        iter_bound[_EAST_S_B_][_ENDX_] = lNx-1;
+        iter_bound[_EAST_S_B_][_INIY_] =   0;
+        iter_bound[_EAST_S_B_][_ENDY_] =   0;
+        iter_bound[_EAST_S_B_][_INIZ_] =   0;
+        iter_bound[_EAST_S_B_][_ENDZ_] =   0;
+    }
+
+    //EAST NORTH BACK
+    if(neighb[_EAST_N_B_]== _NO_NEIGHBOUR_) {
+        iter_bound[_EAST_N_B_][_INIX_] = lNx-1;
+        iter_bound[_EAST_N_B_][_ENDX_] = lNx-1;
+        iter_bound[_EAST_N_B_][_INIY_] = lNy-1;
+        iter_bound[_EAST_N_B_][_ENDY_] = lNy-1;
+        iter_bound[_EAST_N_B_][_INIZ_] =   0;
+        iter_bound[_EAST_N_B_][_ENDZ_] =   0;
+    }
+
+
+    //EAST SOUTH FRONT
+    if(neighb[_EAST_S_F_]== _NO_NEIGHBOUR_) {
+        iter_bound[_EAST_S_F_][_INIX_] = lNx-1;
+        iter_bound[_EAST_S_F_][_ENDX_] = lNx-1;
+        iter_bound[_EAST_S_F_][_INIY_] =   0;
+        iter_bound[_EAST_S_F_][_ENDY_] =   0;
+        iter_bound[_EAST_S_F_][_INIZ_] = lNz-1;
+        iter_bound[_EAST_S_F_][_ENDZ_] = lNz-1;
+    }
+
+    //EAST NORTH FRONT
+    if(neighb[_EAST_N_F_]== _NO_NEIGHBOUR_) {
+        iter_bound[_EAST_N_F_][_INIX_] = lNx-1;
+        iter_bound[_EAST_N_F_][_ENDX_] = lNx-1;
+        iter_bound[_EAST_N_F_][_INIY_] = lNy-1;
+        iter_bound[_EAST_N_F_][_ENDY_] = lNy-1;
+        iter_bound[_EAST_N_F_][_INIZ_] = lNz-1;
+        iter_bound[_EAST_N_F_][_ENDZ_] = lNz-1;
+    }
+
+
+}
+
+
+/* This part assumes halo size 1*/
+/* This rarely will be used */
+void ParallelTopology::create_halo_iters()
+{
+    // By default non halos are created
+    for(int bd=_WEST_; bd<= _EAST_N_F_; bd++)
+    {
+        iter_halo[bd][_INIX_] =   0;
+        iter_halo[bd][_ENDX_] =  -1;
+        iter_halo[bd][_INIY_] =   0;
+        iter_halo[bd][_ENDY_] =  -1;
+        iter_halo[bd][_INIZ_] =   0;
+        iter_halo[bd][_ENDZ_] =  -1;
+    }
+
+
+    //WEST
+    if(neighb[_WEST_] != _NO_NEIGHBOUR_ ) {
+        iter_halo[_WEST_][_INIX_] =   0;
+        iter_halo[_WEST_][_ENDX_] =   0;
+        iter_halo[_WEST_][_INIY_] =   1;
+        iter_halo[_WEST_][_ENDY_] = lNy-2;
+        iter_halo[_WEST_][_INIZ_] =   1;
+        iter_halo[_WEST_][_ENDZ_] = lNz-2;
+    }
+
+    //EAST
+    if(neighb[_EAST_] != _NO_NEIGHBOUR_ ) {
+        iter_halo[_EAST_][_INIX_] = lNx-1;
+        iter_halo[_EAST_][_ENDX_] = lNx-1;
+        iter_halo[_EAST_][_INIY_] =   1;
+        iter_halo[_EAST_][_ENDY_] = lNy-2;
+        iter_halo[_EAST_][_INIZ_] =   1;
+        iter_halo[_EAST_][_ENDZ_] = lNz-2;
+    }
+
+    //SOUTH
+    if(neighb[_SOUTH_] != _NO_NEIGHBOUR_ ) {
+        iter_halo[_SOUTH_][_INIX_] =   1;
+        iter_halo[_SOUTH_][_ENDX_] = lNx-2;
+        iter_halo[_SOUTH_][_INIY_] =   0;
+        iter_halo[_SOUTH_][_ENDY_] =   0;
+        iter_halo[_SOUTH_][_INIZ_] =   1;
+        iter_halo[_SOUTH_][_ENDZ_] = lNz-2;
+    }
+
+    //NORTH
+    if(neighb[_NORTH_] != _NO_NEIGHBOUR_ ) {
+        iter_halo[_NORTH_][_INIX_] =   1;
+        iter_halo[_NORTH_][_ENDX_] =   lNx-2;
+        iter_halo[_NORTH_][_INIY_] =   lNy-1;
+        iter_halo[_NORTH_][_ENDY_] =   lNy-1;
+        iter_halo[_NORTH_][_INIZ_] =   1;
+        iter_halo[_NORTH_][_ENDZ_] = lNz-2;
+    }
+
+    //BACK
+    if(neighb[_BACK_] != _NO_NEIGHBOUR_ ) {
+        iter_halo[_BACK_][_INIX_] =   1;
+        iter_halo[_BACK_][_ENDX_] =   lNx-2;
+        iter_halo[_BACK_][_INIY_] =   1;
+        iter_halo[_BACK_][_ENDY_] =   lNy-2;
+        iter_halo[_BACK_][_INIZ_] =   0;
+        iter_halo[_BACK_][_ENDZ_] =   0;
+    }
+
+    //FRONT
+    if(neighb[_FRONT_] != _NO_NEIGHBOUR_ ) {
+        iter_halo[_FRONT_][_INIX_] =   1;
+        iter_halo[_FRONT_][_ENDX_] =   lNx-2;
+        iter_halo[_FRONT_][_INIY_] =   1;
+        iter_halo[_FRONT_][_ENDY_] =   lNy-2;
+        iter_halo[_FRONT_][_INIZ_] =   lNz-1;
+        iter_halo[_FRONT_][_ENDZ_] =   lNz-1;
+    }
+}
+
+void ParallelTopology::create_complex_halo_iters()
+{
+
+    //2nd Level Halos (lines)
+    //WEST SOUTH
+    if(neighb[_WEST_S_] != _NO_NEIGHBOUR_) {
+        iter_halo[_WEST_S_][_INIX_] =   0;
+        iter_halo[_WEST_S_][_ENDX_] =   0;
+        iter_halo[_WEST_S_][_INIY_] =   0;
+        iter_halo[_WEST_S_][_ENDY_] =   0;
+        iter_halo[_WEST_S_][_INIZ_] =   1;
+        iter_halo[_WEST_S_][_ENDZ_] = lNz-2;
+    }
+
+    //WEST NORTH
+    if(neighb[_WEST_N_] != _NO_NEIGHBOUR_) {
+        iter_halo[_WEST_N_][_INIX_] =   0;
+        iter_halo[_WEST_N_][_ENDX_] =   0;
+        iter_halo[_WEST_N_][_INIY_] = lNy-1;
+        iter_halo[_WEST_N_][_ENDY_] = lNy-1;
+        iter_halo[_WEST_N_][_INIZ_] =   1;
+        iter_halo[_WEST_N_][_ENDZ_] = lNz-2;
+    }
+
+    //WEST BACK
+    if(neighb[_WEST_B_] != _NO_NEIGHBOUR_) {
+        iter_halo[_WEST_B_][_INIX_] =   0;
+        iter_halo[_WEST_B_][_ENDX_] =   0;
+        iter_halo[_WEST_B_][_INIY_] =   1;
+        iter_halo[_WEST_B_][_ENDY_] = lNy-2;
+        iter_halo[_WEST_B_][_INIZ_] =   0;
+        iter_halo[_WEST_B_][_ENDZ_] =   0;
+    }
+
+    //WEST FRONT
+    if(neighb[_WEST_F_] != _NO_NEIGHBOUR_) {
+        iter_halo[_WEST_F_][_INIX_] =   0;
+        iter_halo[_WEST_F_][_ENDX_] =   0;
+        iter_halo[_WEST_F_][_INIY_] =   1;
+        iter_halo[_WEST_F_][_ENDY_] = lNy-2;
+        iter_halo[_WEST_F_][_INIZ_] = lNz-1;
+        iter_halo[_WEST_F_][_ENDZ_] = lNz-1;
+    }
+
+
+    //EAST SOUTH
+    if(neighb[_EAST_S_] != _NO_NEIGHBOUR_) {
+        iter_halo[_EAST_S_][_INIX_] = lNx-1;
+        iter_halo[_EAST_S_][_ENDX_] = lNx-1;
+        iter_halo[_EAST_S_][_INIY_] =   0;
+        iter_halo[_EAST_S_][_ENDY_] =   0;
+        iter_halo[_EAST_S_][_INIZ_] =   1;
+        iter_halo[_EAST_S_][_ENDZ_] = lNz-2;
+    }
+
+    //EAST NORTH
+    if(neighb[_EAST_N_] != _NO_NEIGHBOUR_) {
+        iter_halo[_EAST_N_][_INIX_] = lNx-1;
+        iter_halo[_EAST_N_][_ENDX_] = lNx-1;
+        iter_halo[_EAST_N_][_INIY_] = lNy-1;
+        iter_halo[_EAST_N_][_ENDY_] = lNy-1;
+        iter_halo[_EAST_N_][_INIZ_] =   1;
+        iter_halo[_EAST_N_][_ENDZ_] = lNz-2;
+    }
+
+    //EAST BACK
+    if(neighb[_EAST_B_] != _NO_NEIGHBOUR_) {
+        iter_halo[_EAST_B_][_INIX_] = lNx-1;
+        iter_halo[_EAST_B_][_ENDX_] = lNx-1;
+        iter_halo[_EAST_B_][_INIY_] =   1;
+        iter_halo[_EAST_B_][_ENDY_] = lNy-2;
+        iter_halo[_EAST_B_][_INIZ_] =   0;
+        iter_halo[_EAST_B_][_ENDZ_] =   0;
+    }
+
+    //EAST FRONT
+    if(neighb[_EAST_F_] != _NO_NEIGHBOUR_) {
+        iter_halo[_EAST_F_][_INIX_] = lNx-1;
+        iter_halo[_EAST_F_][_ENDX_] = lNx-1;
+        iter_halo[_EAST_F_][_INIY_] =   1;
+        iter_halo[_EAST_F_][_ENDY_] = lNy-2;
+        iter_halo[_EAST_F_][_INIZ_] = lNz-1;
+        iter_halo[_EAST_F_][_ENDZ_] = lNz-1;
+    }
+
+    //SOUTH BACK
+    if(neighb[_SOUTH_B_] != _NO_NEIGHBOUR_) {
+        iter_halo[_SOUTH_B_][_INIX_] =   1;
+        iter_halo[_SOUTH_B_][_ENDX_] = lNx-2;
+        iter_halo[_SOUTH_B_][_INIY_] =   0;
+        iter_halo[_SOUTH_B_][_ENDY_] =   0;
+        iter_halo[_SOUTH_B_][_INIZ_] =   0;
+        iter_halo[_SOUTH_B_][_ENDZ_] =   0;
+    }
+
+    //SOUTH FRONT
+    if(neighb[_SOUTH_F_] != _NO_NEIGHBOUR_) {
+        iter_halo[_SOUTH_F_][_INIX_] =   1;
+        iter_halo[_SOUTH_F_][_ENDX_] = lNx-2;
+        iter_halo[_SOUTH_F_][_INIY_] =   0;
+        iter_halo[_SOUTH_F_][_ENDY_] =   0;
+        iter_halo[_SOUTH_F_][_INIZ_] = lNz-1;
+        iter_halo[_SOUTH_F_][_ENDZ_] = lNz-1;
+    }
+
+
+    //NORTH BACK
+    if(neighb[_NORTH_B_] != _NO_NEIGHBOUR_) {
+        iter_halo[_NORTH_B_][_INIX_] =   1;
+        iter_halo[_NORTH_B_][_ENDX_] = lNx-2;
+        iter_halo[_NORTH_B_][_INIY_] = lNy-1;
+        iter_halo[_NORTH_B_][_ENDY_] = lNy-1;
+        iter_halo[_NORTH_B_][_INIZ_] =   0;
+        iter_halo[_NORTH_B_][_ENDZ_] =   0;
+    }
+
+    //NORTH FRONT
+    if(neighb[_NORTH_F_] != _NO_NEIGHBOUR_) {
+        iter_halo[_NORTH_F_][_INIX_] =   1;
+        iter_halo[_NORTH_F_][_ENDX_] = lNx-2;
+        iter_halo[_NORTH_F_][_INIY_] = lNy-1;
+        iter_halo[_NORTH_F_][_ENDY_] = lNy-1;
+        iter_halo[_NORTH_F_][_INIZ_] = lNz-1;
+        iter_halo[_NORTH_F_][_ENDZ_] = lNz-1;
+    }
+
+// 3er Level (corners)
+
+    //WEST SOUTH BACK
+    if(neighb[_WEST_S_B_] != _NO_NEIGHBOUR_) {
+        iter_halo[_WEST_S_B_][_INIX_] =   0;
+        iter_halo[_WEST_S_B_][_ENDX_] =   0;
+        iter_halo[_WEST_S_B_][_INIY_] =   0;
+        iter_halo[_WEST_S_B_][_ENDY_] =   0;
+        iter_halo[_WEST_S_B_][_INIZ_] =   0;
+        iter_halo[_WEST_S_B_][_ENDZ_] =   0;
+    }
+
+    //WEST NORTH BACK
+    if(neighb[_WEST_N_B_] != _NO_NEIGHBOUR_) {
+        iter_halo[_WEST_N_B_][_INIX_] =   0;
+        iter_halo[_WEST_N_B_][_ENDX_] =   0;
+        iter_halo[_WEST_N_B_][_INIY_] = lNy-1;
+        iter_halo[_WEST_N_B_][_ENDY_] = lNy-1;
+        iter_halo[_WEST_N_B_][_INIZ_] =   0;
+        iter_halo[_WEST_N_B_][_ENDZ_] =   0;
+    }
+
+    //WEST SOUTH FRONT
+    if(neighb[_WEST_S_F_] != _NO_NEIGHBOUR_) {
+        iter_halo[_WEST_S_F_][_INIX_] =   0;
+        iter_halo[_WEST_S_F_][_ENDX_] =   0;
+        iter_halo[_WEST_S_F_][_INIY_] =   0;
+        iter_halo[_WEST_S_F_][_ENDY_] =   0;
+        iter_halo[_WEST_S_F_][_INIZ_] = lNz-1;
+        iter_halo[_WEST_S_F_][_ENDZ_] = lNz-1;
+    }
+
+    //WEST NORTH FRONT
+    if(neighb[_WEST_N_F_] != _NO_NEIGHBOUR_) {
+        iter_halo[_WEST_N_F_][_INIX_] =   0;
+        iter_halo[_WEST_N_F_][_ENDX_] =   0;
+        iter_halo[_WEST_N_F_][_INIY_] = lNy-1;
+        iter_halo[_WEST_N_F_][_ENDY_] = lNy-1;
+        iter_halo[_WEST_N_F_][_INIZ_] = lNz-1;
+        iter_halo[_WEST_N_F_][_ENDZ_] = lNz-1;
+    }
+
+ 
+    //EAST SOUTH BACK
+    if(neighb[_EAST_S_B_] != _NO_NEIGHBOUR_) {
+        iter_halo[_EAST_S_B_][_INIX_] = lNx-1;
+        iter_halo[_EAST_S_B_][_ENDX_] = lNx-1;
+        iter_halo[_EAST_S_B_][_INIY_] =   0;
+        iter_halo[_EAST_S_B_][_ENDY_] =   0;
+        iter_halo[_EAST_S_B_][_INIZ_] =   0;
+        iter_halo[_EAST_S_B_][_ENDZ_] =   0;
+    }
+
+    //EAST NORTH BACK
+    if(neighb[_EAST_N_B_] != _NO_NEIGHBOUR_) {
+        iter_halo[_EAST_N_B_][_INIX_] = lNx-1;
+        iter_halo[_EAST_N_B_][_ENDX_] = lNx-1;
+        iter_halo[_EAST_N_B_][_INIY_] = lNy-1;
+        iter_halo[_EAST_N_B_][_ENDY_] = lNy-1;
+        iter_halo[_EAST_N_B_][_INIZ_] =   0;
+        iter_halo[_EAST_N_B_][_ENDZ_] =   0;
+    }
+
+
+    //EAST SOUTH FRONT
+    if(neighb[_EAST_S_F_] != _NO_NEIGHBOUR_) {
+        iter_halo[_EAST_S_F_][_INIX_] = lNx-1;
+        iter_halo[_EAST_S_F_][_ENDX_] = lNx-1;
+        iter_halo[_EAST_S_F_][_INIY_] =   0;
+        iter_halo[_EAST_S_F_][_ENDY_] =   0;
+        iter_halo[_EAST_S_F_][_INIZ_] = lNz-1;
+        iter_halo[_EAST_S_F_][_ENDZ_] = lNz-1;
+    }
+
+    //EAST NORTH FRONT
+    if(neighb[_EAST_N_F_] != _NO_NEIGHBOUR_) {
+        iter_halo[_EAST_N_F_][_INIX_] = lNx-1;
+        iter_halo[_EAST_N_F_][_ENDX_] = lNx-1;
+        iter_halo[_EAST_N_F_][_INIY_] = lNy-1;
+        iter_halo[_EAST_N_F_][_ENDY_] = lNy-1;
+        iter_halo[_EAST_N_F_][_INIZ_] = lNz-1;
+        iter_halo[_EAST_N_F_][_ENDZ_] = lNz-1;
+    }
+
+}
+
+
+/* This part assumes halo size 1*/
+void ParallelTopology::create_toRecv_iters()
+{
+
+    for(int bd=_WEST_; bd<= _EAST_N_F_; bd++)
+    {
+        iter_toRecv[bd][_INIX_] =   0;
+        iter_toRecv[bd][_ENDX_] =  -1;
+        iter_toRecv[bd][_INIY_] =   0;
+        iter_toRecv[bd][_ENDY_] =  -1;
+        iter_toRecv[bd][_INIZ_] =   0;
+        iter_toRecv[bd][_ENDZ_] =  -1;
+    }
+
+    //WEST
+    if(neighb[_WEST_] != _NO_NEIGHBOUR_ ) {
+        iter_toRecv[_WEST_][_INIX_] =   0;
+        iter_toRecv[_WEST_][_ENDX_] =   0;
+        iter_toRecv[_WEST_][_INIY_] =   1;
+        iter_toRecv[_WEST_][_ENDY_] = lNy-2;
+        iter_toRecv[_WEST_][_INIZ_] =   1;
+        iter_toRecv[_WEST_][_ENDZ_] = lNz-2;
+    }
+
+    //EAST
+    if(neighb[_EAST_] != _NO_NEIGHBOUR_ ) {
+        iter_toRecv[_EAST_][_INIX_] = lNx-1;
+        iter_toRecv[_EAST_][_ENDX_] = lNx-1;
+        iter_toRecv[_EAST_][_INIY_] =   1;
+        iter_toRecv[_EAST_][_ENDY_] = lNy-2;
+        iter_toRecv[_EAST_][_INIZ_] =   1;
+        iter_toRecv[_EAST_][_ENDZ_] = lNz-2;
+    }
+
+    //SOUTH
+    if(neighb[_SOUTH_] != _NO_NEIGHBOUR_ ) {
+        iter_toRecv[_SOUTH_][_INIX_] =   1;
+        iter_toRecv[_SOUTH_][_ENDX_] = lNx-2;
+        iter_toRecv[_SOUTH_][_INIY_] =   0;
+        iter_toRecv[_SOUTH_][_ENDY_] =   0;
+        iter_toRecv[_SOUTH_][_INIZ_] =   1;
+        iter_toRecv[_SOUTH_][_ENDZ_] = lNz-2;
+    }
+
+    //NORTH
+    if(neighb[_NORTH_] != _NO_NEIGHBOUR_ ) {
+        iter_toRecv[_NORTH_][_INIX_] =   1;
+        iter_toRecv[_NORTH_][_ENDX_] =   lNx-2;
+        iter_toRecv[_NORTH_][_INIY_] =   lNy-1;
+        iter_toRecv[_NORTH_][_ENDY_] =   lNy-1;
+        iter_toRecv[_NORTH_][_INIZ_] =   1;
+        iter_toRecv[_NORTH_][_ENDZ_] = lNz-2;
+    }
+
+    //BACK
+    if(neighb[_BACK_] != _NO_NEIGHBOUR_ ) {
+        iter_toRecv[_BACK_][_INIX_] =   1;
+        iter_toRecv[_BACK_][_ENDX_] =   lNx-2;
+        iter_toRecv[_BACK_][_INIY_] =   1;
+        iter_toRecv[_BACK_][_ENDY_] =   lNy-2;
+        iter_toRecv[_BACK_][_INIZ_] =   0;
+        iter_toRecv[_BACK_][_ENDZ_] =   0;
+    }
+
+    //FRONT
+    if(neighb[_FRONT_] != _NO_NEIGHBOUR_ ) {
+        iter_toRecv[_FRONT_][_INIX_] =   1;
+        iter_toRecv[_FRONT_][_ENDX_] =   lNx-2;
+        iter_toRecv[_FRONT_][_INIY_] =   1;
+        iter_toRecv[_FRONT_][_ENDY_] =   lNy-2;
+        iter_toRecv[_FRONT_][_INIZ_] =   lNz-1;
+        iter_toRecv[_FRONT_][_ENDZ_] =   lNz-1;
+    }
+
+}
+
+
+void ParallelTopology::create_complex_toRecv_iters()
+{
+    //2nd Level Halos (lines)
+    //WEST SOUTH
+    if(neighb[_WEST_S_] != _NO_NEIGHBOUR_) {
+        iter_toRecv[_WEST_S_][_INIX_] =   0;
+        iter_toRecv[_WEST_S_][_ENDX_] =   0;
+        iter_toRecv[_WEST_S_][_INIY_] =   0;
+        iter_toRecv[_WEST_S_][_ENDY_] =   0;
+        iter_toRecv[_WEST_S_][_INIZ_] =   1;
+        iter_toRecv[_WEST_S_][_ENDZ_] = lNz-2;
+    }
+
+    //WEST NORTH
+    if(neighb[_WEST_N_] != _NO_NEIGHBOUR_) {
+        iter_toRecv[_WEST_N_][_INIX_] =   0;
+        iter_toRecv[_WEST_N_][_ENDX_] =   0;
+        iter_toRecv[_WEST_N_][_INIY_] = lNy-1;
+        iter_toRecv[_WEST_N_][_ENDY_] = lNy-1;
+        iter_toRecv[_WEST_N_][_INIZ_] =   1;
+        iter_toRecv[_WEST_N_][_ENDZ_] = lNz-2;
+    }
+
+    //WEST BACK
+    if(neighb[_WEST_B_] != _NO_NEIGHBOUR_) {
+        iter_toRecv[_WEST_B_][_INIX_] =   0;
+        iter_toRecv[_WEST_B_][_ENDX_] =   0;
+        iter_toRecv[_WEST_B_][_INIY_] =   1;
+        iter_toRecv[_WEST_B_][_ENDY_] = lNy-2;
+        iter_toRecv[_WEST_B_][_INIZ_] =   0;
+        iter_toRecv[_WEST_B_][_ENDZ_] =   0;
+    }
+
+    //WEST FRONT
+    if(neighb[_WEST_F_] != _NO_NEIGHBOUR_) {
+        iter_toRecv[_WEST_F_][_INIX_] =   0;
+        iter_toRecv[_WEST_F_][_ENDX_] =   0;
+        iter_toRecv[_WEST_F_][_INIY_] =   1;
+        iter_toRecv[_WEST_F_][_ENDY_] = lNy-2;
+        iter_toRecv[_WEST_F_][_INIZ_] = lNz-1;
+        iter_toRecv[_WEST_F_][_ENDZ_] = lNz-1;
+    }
+
+
+    //EAST SOUTH
+    if(neighb[_EAST_S_] != _NO_NEIGHBOUR_) {
+        iter_toRecv[_EAST_S_][_INIX_] = lNx-1;
+        iter_toRecv[_EAST_S_][_ENDX_] = lNx-1;
+        iter_toRecv[_EAST_S_][_INIY_] =   0;
+        iter_toRecv[_EAST_S_][_ENDY_] =   0;
+        iter_toRecv[_EAST_S_][_INIZ_] =   1;
+        iter_toRecv[_EAST_S_][_ENDZ_] = lNz-2;
+    }
+
+    //EAST NORTH
+    if(neighb[_EAST_N_] != _NO_NEIGHBOUR_) {
+        iter_toRecv[_EAST_N_][_INIX_] = lNx-1;
+        iter_toRecv[_EAST_N_][_ENDX_] = lNx-1;
+        iter_toRecv[_EAST_N_][_INIY_] = lNy-1;
+        iter_toRecv[_EAST_N_][_ENDY_] = lNy-1;
+        iter_toRecv[_EAST_N_][_INIZ_] =   1;
+        iter_toRecv[_EAST_N_][_ENDZ_] = lNz-2;
+    }
+
+    //EAST BACK
+    if(neighb[_EAST_B_] != _NO_NEIGHBOUR_) {
+        iter_toRecv[_EAST_B_][_INIX_] = lNx-1;
+        iter_toRecv[_EAST_B_][_ENDX_] = lNx-1;
+        iter_toRecv[_EAST_B_][_INIY_] =   1;
+        iter_toRecv[_EAST_B_][_ENDY_] = lNy-2;
+        iter_toRecv[_EAST_B_][_INIZ_] =   0;
+        iter_toRecv[_EAST_B_][_ENDZ_] =   0;
+    }
+
+    //EAST FRONT
+    if(neighb[_EAST_F_] != _NO_NEIGHBOUR_) {
+        iter_toRecv[_EAST_F_][_INIX_] = lNx-1;
+        iter_toRecv[_EAST_F_][_ENDX_] = lNx-1;
+        iter_toRecv[_EAST_F_][_INIY_] =   1;
+        iter_toRecv[_EAST_F_][_ENDY_] = lNy-2;
+        iter_toRecv[_EAST_F_][_INIZ_] = lNz-1;
+        iter_toRecv[_EAST_F_][_ENDZ_] = lNz-1;
+    }
+
+    //SOUTH BACK
+    if(neighb[_SOUTH_B_] != _NO_NEIGHBOUR_) {
+        iter_toRecv[_SOUTH_B_][_INIX_] =   1;
+        iter_toRecv[_SOUTH_B_][_ENDX_] = lNx-2;
+        iter_toRecv[_SOUTH_B_][_INIY_] =   0;
+        iter_toRecv[_SOUTH_B_][_ENDY_] =   0;
+        iter_toRecv[_SOUTH_B_][_INIZ_] =   0;
+        iter_toRecv[_SOUTH_B_][_ENDZ_] =   0;
+    }
+
+    //SOUTH FRONT
+    if(neighb[_SOUTH_F_] != _NO_NEIGHBOUR_) {
+        iter_toRecv[_SOUTH_F_][_INIX_] =   1;
+        iter_toRecv[_SOUTH_F_][_ENDX_] = lNx-2;
+        iter_toRecv[_SOUTH_F_][_INIY_] =   0;
+        iter_toRecv[_SOUTH_F_][_ENDY_] =   0;
+        iter_toRecv[_SOUTH_F_][_INIZ_] = lNz-1;
+        iter_toRecv[_SOUTH_F_][_ENDZ_] = lNz-1;
+    }
+
+
+    //NORTH BACK
+    if(neighb[_NORTH_B_] != _NO_NEIGHBOUR_) {
+        iter_toRecv[_NORTH_B_][_INIX_] =   1;
+        iter_toRecv[_NORTH_B_][_ENDX_] = lNx-2;
+        iter_toRecv[_NORTH_B_][_INIY_] = lNy-1;
+        iter_toRecv[_NORTH_B_][_ENDY_] = lNy-1;
+        iter_toRecv[_NORTH_B_][_INIZ_] =   0;
+        iter_toRecv[_NORTH_B_][_ENDZ_] =   0;
+    }
+
+    //NORTH FRONT
+    if(neighb[_NORTH_F_] != _NO_NEIGHBOUR_) {
+        iter_toRecv[_NORTH_F_][_INIX_] =   1;
+        iter_toRecv[_NORTH_F_][_ENDX_] = lNx-2;
+        iter_toRecv[_NORTH_F_][_INIY_] = lNy-1;
+        iter_toRecv[_NORTH_F_][_ENDY_] = lNy-1;
+        iter_toRecv[_NORTH_F_][_INIZ_] = lNz-1;
+        iter_toRecv[_NORTH_F_][_ENDZ_] = lNz-1;
+    }
+
+// 3er Level (corners)
+
+    //WEST SOUTH BACK
+    if(neighb[_WEST_S_B_] != _NO_NEIGHBOUR_) {
+        iter_toRecv[_WEST_S_B_][_INIX_] =   0;
+        iter_toRecv[_WEST_S_B_][_ENDX_] =   0;
+        iter_toRecv[_WEST_S_B_][_INIY_] =   0;
+        iter_toRecv[_WEST_S_B_][_ENDY_] =   0;
+        iter_toRecv[_WEST_S_B_][_INIZ_] =   0;
+        iter_toRecv[_WEST_S_B_][_ENDZ_] =   0;
+    }
+
+    //WEST NORTH BACK
+    if(neighb[_WEST_N_B_] != _NO_NEIGHBOUR_) {
+        iter_toRecv[_WEST_N_B_][_INIX_] =   0;
+        iter_toRecv[_WEST_N_B_][_ENDX_] =   0;
+        iter_toRecv[_WEST_N_B_][_INIY_] = lNy-1;
+        iter_toRecv[_WEST_N_B_][_ENDY_] = lNy-1;
+        iter_toRecv[_WEST_N_B_][_INIZ_] =   0;
+        iter_toRecv[_WEST_N_B_][_ENDZ_] =   0;
+    }
+
+    //WEST SOUTH FRONT
+    if(neighb[_WEST_S_F_] != _NO_NEIGHBOUR_) {
+        iter_toRecv[_WEST_S_F_][_INIX_] =   0;
+        iter_toRecv[_WEST_S_F_][_ENDX_] =   0;
+        iter_toRecv[_WEST_S_F_][_INIY_] =   0;
+        iter_toRecv[_WEST_S_F_][_ENDY_] =   0;
+        iter_toRecv[_WEST_S_F_][_INIZ_] = lNz-1;
+        iter_toRecv[_WEST_S_F_][_ENDZ_] = lNz-1;
+    }
+
+    //WEST NORTH FRONT
+    if(neighb[_WEST_N_F_] != _NO_NEIGHBOUR_) {
+        iter_toRecv[_WEST_N_F_][_INIX_] =   0;
+        iter_toRecv[_WEST_N_F_][_ENDX_] =   0;
+        iter_toRecv[_WEST_N_F_][_INIY_] = lNy-1;
+        iter_toRecv[_WEST_N_F_][_ENDY_] = lNy-1;
+        iter_toRecv[_WEST_N_F_][_INIZ_] = lNz-1;
+        iter_toRecv[_WEST_N_F_][_ENDZ_] = lNz-1;
+    }
+
+ 
+    //EAST SOUTH BACK
+    if(neighb[_EAST_S_B_] != _NO_NEIGHBOUR_) {
+        iter_toRecv[_EAST_S_B_][_INIX_] = lNx-1;
+        iter_toRecv[_EAST_S_B_][_ENDX_] = lNx-1;
+        iter_toRecv[_EAST_S_B_][_INIY_] =   0;
+        iter_toRecv[_EAST_S_B_][_ENDY_] =   0;
+        iter_toRecv[_EAST_S_B_][_INIZ_] =   0;
+        iter_toRecv[_EAST_S_B_][_ENDZ_] =   0;
+    }
+
+    //EAST NORTH BACK
+    if(neighb[_EAST_N_B_] != _NO_NEIGHBOUR_) {
+        iter_toRecv[_EAST_N_B_][_INIX_] = lNx-1;
+        iter_toRecv[_EAST_N_B_][_ENDX_] = lNx-1;
+        iter_toRecv[_EAST_N_B_][_INIY_] = lNy-1;
+        iter_toRecv[_EAST_N_B_][_ENDY_] = lNy-1;
+        iter_toRecv[_EAST_N_B_][_INIZ_] =   0;
+        iter_toRecv[_EAST_N_B_][_ENDZ_] =   0;
+    }
+
+
+    //EAST SOUTH FRONT
+    if(neighb[_EAST_S_F_] != _NO_NEIGHBOUR_) {
+        iter_toRecv[_EAST_S_F_][_INIX_] = lNx-1;
+        iter_toRecv[_EAST_S_F_][_ENDX_] = lNx-1;
+        iter_toRecv[_EAST_S_F_][_INIY_] =   0;
+        iter_toRecv[_EAST_S_F_][_ENDY_] =   0;
+        iter_toRecv[_EAST_S_F_][_INIZ_] = lNz-1;
+        iter_toRecv[_EAST_S_F_][_ENDZ_] = lNz-1;
+    }
+
+    //EAST NORTH FRONT
+    if(neighb[_EAST_N_F_] != _NO_NEIGHBOUR_) {
+        iter_toRecv[_EAST_N_F_][_INIX_] = lNx-1;
+        iter_toRecv[_EAST_N_F_][_ENDX_] = lNx-1;
+        iter_toRecv[_EAST_N_F_][_INIY_] = lNy-1;
+        iter_toRecv[_EAST_N_F_][_ENDY_] = lNy-1;
+        iter_toRecv[_EAST_N_F_][_INIZ_] = lNz-1;
+        iter_toRecv[_EAST_N_F_][_ENDZ_] = lNz-1;
+    }
+
+
+
+}
+
+/* This part assumes halo size 1*/
+void ParallelTopology::create_toSend_iters()
+{
+
+    for(int bd=_WEST_; bd<= _EAST_N_F_; bd++)
+    {
+        iter_toSend[bd][_INIX_] =   0;
+        iter_toSend[bd][_ENDX_] =  -1;
+        iter_toSend[bd][_INIY_] =   0;
+        iter_toSend[bd][_ENDY_] =  -1;
+        iter_toSend[bd][_INIZ_] =   0;
+        iter_toSend[bd][_ENDZ_] =  -1;
+    }
+
+    //WEST
+    if(neighb[_WEST_] != _NO_NEIGHBOUR_ ) {
+        iter_toSend[_WEST_][_INIX_] =   1;// <= this
+        iter_toSend[_WEST_][_ENDX_] =   1;
+        iter_toSend[_WEST_][_INIY_] =   1;
+        iter_toSend[_WEST_][_ENDY_] = lNy-2;
+        iter_toSend[_WEST_][_INIZ_] =   1;
+        iter_toSend[_WEST_][_ENDZ_] = lNz-2;
+    }
+
+    //EAST
+    if(neighb[_EAST_] != _NO_NEIGHBOUR_ ) {
+        iter_toSend[_EAST_][_INIX_] = lNx-2; // <=this
+        iter_toSend[_EAST_][_ENDX_] = lNx-2;
+        iter_toSend[_EAST_][_INIY_] =   1;
+        iter_toSend[_EAST_][_ENDY_] = lNy-2;
+        iter_toSend[_EAST_][_INIZ_] =   1;
+        iter_toSend[_EAST_][_ENDZ_] = lNz-2;
+    }
+
+    //SOUTH
+    if(neighb[_SOUTH_] != _NO_NEIGHBOUR_ ) {
+        iter_toSend[_SOUTH_][_INIX_] =   1;
+        iter_toSend[_SOUTH_][_ENDX_] = lNx-2;
+        iter_toSend[_SOUTH_][_INIY_] =   1; // <=this
+        iter_toSend[_SOUTH_][_ENDY_] =   1;
+        iter_toSend[_SOUTH_][_INIZ_] =   1;
+        iter_toSend[_SOUTH_][_ENDZ_] = lNz-2;
+    }
+
+    //NORTH
+    if(neighb[_NORTH_] != _NO_NEIGHBOUR_ ) {
+        iter_toSend[_NORTH_][_INIX_] =   1;
+        iter_toSend[_NORTH_][_ENDX_] = lNx-2;
+        iter_toSend[_NORTH_][_INIY_] = lNy-2; //<=this
+        iter_toSend[_NORTH_][_ENDY_] = lNy-2;
+        iter_toSend[_NORTH_][_INIZ_] =   1;
+        iter_toSend[_NORTH_][_ENDZ_] = lNz-2;
+    }
+
+    //BACK
+    if(neighb[_BACK_] != _NO_NEIGHBOUR_ ) {
+        iter_toSend[_BACK_][_INIX_] =   1;
+        iter_toSend[_BACK_][_ENDX_] = lNx-2;
+        iter_toSend[_BACK_][_INIY_] =   1;
+        iter_toSend[_BACK_][_ENDY_] = lNy-2;
+        iter_toSend[_BACK_][_INIZ_] =   1; //<= this
+        iter_toSend[_BACK_][_ENDZ_] =   1;
+    }
+
+    //FRONT
+    if(neighb[_FRONT_] != _NO_NEIGHBOUR_) {
+        iter_toSend[_FRONT_][_INIX_] =   1;
+        iter_toSend[_FRONT_][_ENDX_] = lNx-2;
+        iter_toSend[_FRONT_][_INIY_] =   1;
+        iter_toSend[_FRONT_][_ENDY_] = lNy-2;
+        iter_toSend[_FRONT_][_INIZ_] = lNz-2; //<= this
+        iter_toSend[_FRONT_][_ENDZ_] = lNz-2;
+    }
+
+}
+
+void ParallelTopology::create_complex_toSend_iters()
+{
+
+
+// 2nd Level Sends
+
+    //WEST SOUTH
+    if(neighb[_WEST_S_] != _NO_NEIGHBOUR_ ) {
+        if(neighb[_WEST_] != _NO_NEIGHBOUR_ && neighb[_SOUTH_] != _NO_NEIGHBOUR_){  
+            iter_toSend[_WEST_S_][_INIX_] =   1;// <= this
+            iter_toSend[_WEST_S_][_ENDX_] =   1;
+            iter_toSend[_WEST_S_][_INIY_] =   1;
+            iter_toSend[_WEST_S_][_ENDY_] =   1;
+            iter_toSend[_WEST_S_][_INIZ_] =   1;
+            iter_toSend[_WEST_S_][_ENDZ_] = lNz-2;
+        }
+        else if(neighb[_WEST_] != _NO_NEIGHBOUR_ )
+         {
+
+                iter_toSend[_WEST_S_][_INIX_] =   1;// <= this
+                iter_toSend[_WEST_S_][_ENDX_] =   1;
+                iter_toSend[_WEST_S_][_INIY_] =   0;
+                iter_toSend[_WEST_S_][_ENDY_] =   0;
+                iter_toSend[_WEST_S_][_INIZ_] =   1;
+                iter_toSend[_WEST_S_][_ENDZ_] = lNz-2;
+
+         }
+        else if( neighb[_SOUTH_] != _NO_NEIGHBOUR_)
+         {
+                 iter_toSend[_WEST_S_][_INIX_] =   0;// <= this
+                 iter_toSend[_WEST_S_][_ENDX_] =   0;
+                 iter_toSend[_WEST_S_][_INIY_] =   1;
+                 iter_toSend[_WEST_S_][_ENDY_] =   1;
+                 iter_toSend[_WEST_S_][_INIZ_] =   1;
+                 iter_toSend[_WEST_S_][_ENDZ_] = lNz-2;
+         }
+    }
+    //WEST NORTH
+    if(neighb[_WEST_N_] != _NO_NEIGHBOUR_ ) {
+        if(neighb[_WEST_] != _NO_NEIGHBOUR_ && neighb[_NORTH_] != _NO_NEIGHBOUR_){  
+
+            iter_toSend[_WEST_N_][_INIX_] =   1;// <= this
+            iter_toSend[_WEST_N_][_ENDX_] =   1;
+            iter_toSend[_WEST_N_][_INIY_] = lNy-2;
+            iter_toSend[_WEST_N_][_ENDY_] = lNy-2;
+            iter_toSend[_WEST_N_][_INIZ_] =   1;
+            iter_toSend[_WEST_N_][_ENDZ_] = lNz-2;
+        }
+        else if(neighb[_WEST_]  != _NO_NEIGHBOUR_){  
+
+            iter_toSend[_WEST_N_][_INIX_] =   1;// <= this
+            iter_toSend[_WEST_N_][_ENDX_] =   1;
+            iter_toSend[_WEST_N_][_INIY_] = lNy-1;
+            iter_toSend[_WEST_N_][_ENDY_] = lNy-1;
+            iter_toSend[_WEST_N_][_INIZ_] =   1;
+            iter_toSend[_WEST_N_][_ENDZ_] = lNz-2;
+        }
+        else if(neighb[_NORTH_] != _NO_NEIGHBOUR_){  
+
+            iter_toSend[_WEST_N_][_INIX_] =   0;// <= this
+            iter_toSend[_WEST_N_][_ENDX_] =   0;
+            iter_toSend[_WEST_N_][_INIY_] = lNy-2;
+            iter_toSend[_WEST_N_][_ENDY_] = lNy-2;
+            iter_toSend[_WEST_N_][_INIZ_] =   1;
+            iter_toSend[_WEST_N_][_ENDZ_] = lNz-2;
+
+        }
+    }
+
+
+
+    //WEST BACK
+    if(neighb[_WEST_B_] != _NO_NEIGHBOUR_ ) {
+        if(neighb[_WEST_] != _NO_NEIGHBOUR_ && neighb[_BACK_] != _NO_NEIGHBOUR_){  
+            iter_toSend[_WEST_B_][_INIX_] =   1;// <= this
+            iter_toSend[_WEST_B_][_ENDX_] =   1;    
+            iter_toSend[_WEST_B_][_INIY_] =   1;
+            iter_toSend[_WEST_B_][_ENDY_] = lNy-2;
+            iter_toSend[_WEST_B_][_INIZ_] =   1;
+            iter_toSend[_WEST_B_][_ENDZ_] =   1;
+        }
+        else if(neighb[_WEST_] != _NO_NEIGHBOUR_){  
+            iter_toSend[_WEST_B_][_INIX_] =   1;// <= this
+            iter_toSend[_WEST_B_][_ENDX_] =   1;    
+            iter_toSend[_WEST_B_][_INIY_] =   1;
+            iter_toSend[_WEST_B_][_ENDY_] = lNy-2;
+            iter_toSend[_WEST_B_][_INIZ_] =   0;
+            iter_toSend[_WEST_B_][_ENDZ_] =   0;
+
+        }
+        else if(neighb[_BACK_] != _NO_NEIGHBOUR_){  
+            iter_toSend[_WEST_B_][_INIX_] =   0;// <= this
+            iter_toSend[_WEST_B_][_ENDX_] =   0;    
+            iter_toSend[_WEST_B_][_INIY_] =   1;
+            iter_toSend[_WEST_B_][_ENDY_] = lNy-2;
+            iter_toSend[_WEST_B_][_INIZ_] =   1;
+            iter_toSend[_WEST_B_][_ENDZ_] =   1;
+
+        } 
+    }
+
+    //WEST FRONT
+    if(neighb[_WEST_F_] != _NO_NEIGHBOUR_ ) {
+        if(neighb[_WEST_] != _NO_NEIGHBOUR_ && neighb[_FRONT_] != _NO_NEIGHBOUR_){  
+            iter_toSend[_WEST_F_][_INIX_] =   1;// <= this
+            iter_toSend[_WEST_F_][_ENDX_] =   1;
+            iter_toSend[_WEST_F_][_INIY_] =   1;
+            iter_toSend[_WEST_F_][_ENDY_] = lNy-2;
+            iter_toSend[_WEST_F_][_INIZ_] = lNz-2;
+            iter_toSend[_WEST_F_][_ENDZ_] = lNz-2;
+        }
+        else if(neighb[_WEST_] != _NO_NEIGHBOUR_ ){  
+            iter_toSend[_WEST_F_][_INIX_] =   1;// <= this
+            iter_toSend[_WEST_F_][_ENDX_] =   1;
+            iter_toSend[_WEST_F_][_INIY_] =   1;
+            iter_toSend[_WEST_F_][_ENDY_] = lNy-2;
+            iter_toSend[_WEST_F_][_INIZ_] = lNz-1;
+            iter_toSend[_WEST_F_][_ENDZ_] = lNz-1;
+
+        }
+        else if(neighb[_FRONT_] != _NO_NEIGHBOUR_){  
+            iter_toSend[_WEST_F_][_INIX_] =   0;// <= this
+            iter_toSend[_WEST_F_][_ENDX_] =   0;
+            iter_toSend[_WEST_F_][_INIY_] =   1;
+            iter_toSend[_WEST_F_][_ENDY_] = lNy-2;
+            iter_toSend[_WEST_F_][_INIZ_] = lNz-2;
+            iter_toSend[_WEST_F_][_ENDZ_] = lNz-2;
+
+        }
+ 
+    }
+
+    //EAST SOUTH
+    if(neighb[_EAST_S_] != _NO_NEIGHBOUR_ ) {
+        if(neighb[_EAST_] != _NO_NEIGHBOUR_ && neighb[_SOUTH_] != _NO_NEIGHBOUR_){  
+            iter_toSend[_EAST_S_][_INIX_] = lNx-2; // <=this
+            iter_toSend[_EAST_S_][_ENDX_] = lNx-2;
+            iter_toSend[_EAST_S_][_INIY_] =   1;
+            iter_toSend[_EAST_S_][_ENDY_] =   1;
+            iter_toSend[_EAST_S_][_INIZ_] =   1;
+            iter_toSend[_EAST_S_][_ENDZ_] = lNz-2;
+        }
+        else if(neighb[_EAST_] != _NO_NEIGHBOUR_){ 
+            iter_toSend[_EAST_S_][_INIX_] = lNx-2; // <=this
+            iter_toSend[_EAST_S_][_ENDX_] = lNx-2;
+            iter_toSend[_EAST_S_][_INIY_] =   0;
+            iter_toSend[_EAST_S_][_ENDY_] =   0;
+            iter_toSend[_EAST_S_][_INIZ_] =   1;
+            iter_toSend[_EAST_S_][_ENDZ_] = lNz-2;
+       }
+       else if(neighb[_SOUTH_] != _NO_NEIGHBOUR_){ 
+            iter_toSend[_EAST_S_][_INIX_] = lNx-1; // <=this
+            iter_toSend[_EAST_S_][_ENDX_] = lNx-1;
+            iter_toSend[_EAST_S_][_INIY_] =   1;
+            iter_toSend[_EAST_S_][_ENDY_] =   1;
+            iter_toSend[_EAST_S_][_INIZ_] =   1;
+            iter_toSend[_EAST_S_][_ENDZ_] = lNz-2;
+       } 
+    }
+
+    //EAST NORTH
+    if(neighb[_EAST_N_] != _NO_NEIGHBOUR_ ) {
+        if(neighb[_EAST_] != _NO_NEIGHBOUR_ && neighb[_NORTH_] != _NO_NEIGHBOUR_){  
+            iter_toSend[_EAST_N_][_INIX_] = lNx-2; // <=this
+            iter_toSend[_EAST_N_][_ENDX_] = lNx-2;
+            iter_toSend[_EAST_N_][_INIY_] = lNy-2;
+            iter_toSend[_EAST_N_][_ENDY_] = lNy-2;
+            iter_toSend[_EAST_N_][_INIZ_] =   1;
+            iter_toSend[_EAST_N_][_ENDZ_] = lNz-2;
+        }
+        else if(neighb[_EAST_] != _NO_NEIGHBOUR_){  
+            iter_toSend[_EAST_N_][_INIX_] = lNx-2; // <=this
+            iter_toSend[_EAST_N_][_ENDX_] = lNx-2;
+            iter_toSend[_EAST_N_][_INIY_] = lNy-1;
+            iter_toSend[_EAST_N_][_ENDY_] = lNy-1;
+            iter_toSend[_EAST_N_][_INIZ_] =   1;
+            iter_toSend[_EAST_N_][_ENDZ_] = lNz-2;  
+        }
+        else if(neighb[_NORTH_] != _NO_NEIGHBOUR_){  
+            iter_toSend[_EAST_N_][_INIX_] = lNx-1; // <=this
+            iter_toSend[_EAST_N_][_ENDX_] = lNx-1;
+            iter_toSend[_EAST_N_][_INIY_] = lNy-2;
+            iter_toSend[_EAST_N_][_ENDY_] = lNy-2;
+            iter_toSend[_EAST_N_][_INIZ_] =   1;
+            iter_toSend[_EAST_N_][_ENDZ_] = lNz-2;      
+        }
+    }
+
+    //EAST BACK
+    if(neighb[_EAST_B_] != _NO_NEIGHBOUR_ ) {
+        if(neighb[_EAST_] != _NO_NEIGHBOUR_ && neighb[_BACK_] != _NO_NEIGHBOUR_){  
+            iter_toSend[_EAST_B_][_INIX_] = lNx-2; // <=this
+            iter_toSend[_EAST_B_][_ENDX_] = lNx-2;
+            iter_toSend[_EAST_B_][_INIY_] =   1;
+            iter_toSend[_EAST_B_][_ENDY_] = lNy-2;
+            iter_toSend[_EAST_B_][_INIZ_] =   1;
+            iter_toSend[_EAST_B_][_ENDZ_] =   1;
+        }
+        else if ( neighb[_EAST_] != _NO_NEIGHBOUR_ )
+        {
+            iter_toSend[_EAST_B_][_INIX_] = lNx-2; // <=this
+            iter_toSend[_EAST_B_][_ENDX_] = lNx-2;
+            iter_toSend[_EAST_B_][_INIY_] =   1;
+            iter_toSend[_EAST_B_][_ENDY_] = lNy-2;
+            iter_toSend[_EAST_B_][_INIZ_] =   0;
+            iter_toSend[_EAST_B_][_ENDZ_] =   0;
+
+
+        }
+        else if( neighb[_BACK_] != _NO_NEIGHBOUR_ ){
+            iter_toSend[_EAST_B_][_INIX_] = lNx-1; // <=this
+            iter_toSend[_EAST_B_][_ENDX_] = lNx-1;
+            iter_toSend[_EAST_B_][_INIY_] =   1;
+            iter_toSend[_EAST_B_][_ENDY_] = lNy-2;
+            iter_toSend[_EAST_B_][_INIZ_] =   1;
+            iter_toSend[_EAST_B_][_ENDZ_] =   1;
+        }
+
+    }
+
+    //EAST FRONT
+    if(neighb[_EAST_F_] != _NO_NEIGHBOUR_ ) {
+        if(neighb[_EAST_] != _NO_NEIGHBOUR_ && neighb[_FRONT_] != _NO_NEIGHBOUR_){  
+            iter_toSend[_EAST_F_][_INIX_] = lNx-2; // <=this
+            iter_toSend[_EAST_F_][_ENDX_] = lNx-2;
+            iter_toSend[_EAST_F_][_INIY_] =   1;
+            iter_toSend[_EAST_F_][_ENDY_] = lNy-2;
+            iter_toSend[_EAST_F_][_INIZ_] = lNz-2;
+            iter_toSend[_EAST_F_][_ENDZ_] = lNz-2;
+        }
+        else if(neighb[_EAST_] != _NO_NEIGHBOUR_){ 
+                iter_toSend[_EAST_F_][_INIX_] = lNx-2; // <=this
+                iter_toSend[_EAST_F_][_ENDX_] = lNx-2;
+                iter_toSend[_EAST_F_][_INIY_] =   1;
+                iter_toSend[_EAST_F_][_ENDY_] = lNy-2;
+                iter_toSend[_EAST_F_][_INIZ_] = lNz-1;
+                iter_toSend[_EAST_F_][_ENDZ_] = lNz-1;       
+            } 
+        else if(neighb[_FRONT_] != _NO_NEIGHBOUR_){  
+                iter_toSend[_EAST_F_][_INIX_] = lNx-1; // <=this
+                iter_toSend[_EAST_F_][_ENDX_] = lNx-1;
+                iter_toSend[_EAST_F_][_INIY_] =   1;
+                iter_toSend[_EAST_F_][_ENDY_] = lNy-2;
+                iter_toSend[_EAST_F_][_INIZ_] = lNz-2;
+                iter_toSend[_EAST_F_][_ENDZ_] = lNz-2;      
+            }
+        }
+
+
+    //SOUTH BACK
+    if(neighb[_SOUTH_B_] != _NO_NEIGHBOUR_ ) {
+        if(neighb[_SOUTH_] != _NO_NEIGHBOUR_ && neighb[_BACK_] != _NO_NEIGHBOUR_){  
+            iter_toSend[_SOUTH_B_][_INIX_] =   1;
+            iter_toSend[_SOUTH_B_][_ENDX_] = lNx-2;
+            iter_toSend[_SOUTH_B_][_INIY_] =   1; // <=this
+            iter_toSend[_SOUTH_B_][_ENDY_] =   1;
+            iter_toSend[_SOUTH_B_][_INIZ_] =   1;
+            iter_toSend[_SOUTH_B_][_ENDZ_] =   1;
+        }
+        else if(neighb[_SOUTH_] != _NO_NEIGHBOUR_){  
+            iter_toSend[_SOUTH_B_][_INIX_] =   1;
+            iter_toSend[_SOUTH_B_][_ENDX_] = lNx-2;
+            iter_toSend[_SOUTH_B_][_INIY_] =   1; // <=this
+            iter_toSend[_SOUTH_B_][_ENDY_] =   1;
+            iter_toSend[_SOUTH_B_][_INIZ_] =   0;
+            iter_toSend[_SOUTH_B_][_ENDZ_] =   0;
+
+        }
+        else if(neighb[_BACK_] != _NO_NEIGHBOUR_){  
+            iter_toSend[_SOUTH_B_][_INIX_] =   1;
+            iter_toSend[_SOUTH_B_][_ENDX_] = lNx-2;
+            iter_toSend[_SOUTH_B_][_INIY_] =   0; // <=this
+            iter_toSend[_SOUTH_B_][_ENDY_] =   0;
+            iter_toSend[_SOUTH_B_][_INIZ_] =   1;
+            iter_toSend[_SOUTH_B_][_ENDZ_] =   1;
+
+        } 
+    }
+
+    //SOUTH FRONT
+    if(neighb[_SOUTH_F_] != _NO_NEIGHBOUR_ ) {
+        if(neighb[_SOUTH_] != _NO_NEIGHBOUR_ && neighb[_FRONT_] != _NO_NEIGHBOUR_){  
+            iter_toSend[_SOUTH_F_][_INIX_] =   1;
+            iter_toSend[_SOUTH_F_][_ENDX_] = lNx-2;
+            iter_toSend[_SOUTH_F_][_INIY_] =   1; // <=this
+            iter_toSend[_SOUTH_F_][_ENDY_] =   1;
+            iter_toSend[_SOUTH_F_][_INIZ_] = lNz-2;
+            iter_toSend[_SOUTH_F_][_ENDZ_] = lNz-2;
+        }
+        else if(neighb[_SOUTH_] != _NO_NEIGHBOUR_){  
+            iter_toSend[_SOUTH_F_][_INIX_] =   1;
+            iter_toSend[_SOUTH_F_][_ENDX_] = lNx-2;
+            iter_toSend[_SOUTH_F_][_INIY_] =   1; // <=this
+            iter_toSend[_SOUTH_F_][_ENDY_] =   1;
+            iter_toSend[_SOUTH_F_][_INIZ_] = lNz-1;
+            iter_toSend[_SOUTH_F_][_ENDZ_] = lNz-1;
+        }
+        else if(neighb[_FRONT_] != _NO_NEIGHBOUR_){  
+            iter_toSend[_SOUTH_F_][_INIX_] =   1;
+            iter_toSend[_SOUTH_F_][_ENDX_] = lNx-2;
+            iter_toSend[_SOUTH_F_][_INIY_] =   0; // <=this
+            iter_toSend[_SOUTH_F_][_ENDY_] =   0;
+            iter_toSend[_SOUTH_F_][_INIZ_] = lNz-2;
+            iter_toSend[_SOUTH_F_][_ENDZ_] = lNz-2;
+        }
+    }
+
+
+    //NORTH BACK
+    if(neighb[_NORTH_B_] != _NO_NEIGHBOUR_ ) {
+        if(neighb[_NORTH_] != _NO_NEIGHBOUR_ && neighb[_BACK_] != _NO_NEIGHBOUR_){  
+            iter_toSend[_NORTH_B_][_INIX_] =   1;
+            iter_toSend[_NORTH_B_][_ENDX_] = lNx-2;
+            iter_toSend[_NORTH_B_][_INIY_] = lNy-2; //<=this
+            iter_toSend[_NORTH_B_][_ENDY_] = lNy-2;
+            iter_toSend[_NORTH_B_][_INIZ_] =   1;
+            iter_toSend[_NORTH_B_][_ENDZ_] =   1;
+        }
+        else if(neighb[_NORTH_] != _NO_NEIGHBOUR_){  
+            iter_toSend[_NORTH_B_][_INIX_] =   1;
+            iter_toSend[_NORTH_B_][_ENDX_] = lNx-2;
+            iter_toSend[_NORTH_B_][_INIY_] = lNy-2; //<=this
+            iter_toSend[_NORTH_B_][_ENDY_] = lNy-2;
+            iter_toSend[_NORTH_B_][_INIZ_] =   0;
+            iter_toSend[_NORTH_B_][_ENDZ_] =   0;
+        }
+        else if(neighb[_BACK_] != _NO_NEIGHBOUR_){  
+            iter_toSend[_NORTH_B_][_INIX_] =   1;
+            iter_toSend[_NORTH_B_][_ENDX_] = lNx-2;
+            iter_toSend[_NORTH_B_][_INIY_] = lNy-1; //<=this
+            iter_toSend[_NORTH_B_][_ENDY_] = lNy-1;
+            iter_toSend[_NORTH_B_][_INIZ_] =   1;
+            iter_toSend[_NORTH_B_][_ENDZ_] =   1;
+        }
+    }
+
+    //NORTH FRONT
+    if(neighb[_NORTH_F_] != _NO_NEIGHBOUR_ ) {
+        if(neighb[_NORTH_] != _NO_NEIGHBOUR_ && neighb[_FRONT_] != _NO_NEIGHBOUR_){  
+            iter_toSend[_NORTH_F_][_INIX_] =   1;
+            iter_toSend[_NORTH_F_][_ENDX_] = lNx-2;
+            iter_toSend[_NORTH_F_][_INIY_] = lNy-2; //<=this
+            iter_toSend[_NORTH_F_][_ENDY_] = lNy-2;
+            iter_toSend[_NORTH_F_][_INIZ_] = lNz-2;
+            iter_toSend[_NORTH_F_][_ENDZ_] = lNz-2;
+        }
+        else if(neighb[_NORTH_] != _NO_NEIGHBOUR_){  
+            iter_toSend[_NORTH_F_][_INIX_] =   1;
+            iter_toSend[_NORTH_F_][_ENDX_] = lNx-2;
+            iter_toSend[_NORTH_F_][_INIY_] = lNy-2; //<=this
+            iter_toSend[_NORTH_F_][_ENDY_] = lNy-2;
+            iter_toSend[_NORTH_F_][_INIZ_] = lNz-1;
+            iter_toSend[_NORTH_F_][_ENDZ_] = lNz-1;
+        }
+        else if(neighb[_FRONT_] != _NO_NEIGHBOUR_){  
+            iter_toSend[_NORTH_F_][_INIX_] =   1;
+            iter_toSend[_NORTH_F_][_ENDX_] = lNx-2;
+            iter_toSend[_NORTH_F_][_INIY_] = lNy-1; //<=this
+            iter_toSend[_NORTH_F_][_ENDY_] = lNy-1;
+            iter_toSend[_NORTH_F_][_INIZ_] = lNz-2;
+            iter_toSend[_NORTH_F_][_ENDZ_] = lNz-2;
+        }   
+    }
+
+
+// 3er level
+
+//WEST SOUTH BACK
+    if(neighb[_WEST_S_B_] != _NO_NEIGHBOUR_ ) {
+        if(neighb[_WEST_] != _NO_NEIGHBOUR_ && neighb[_SOUTH_] != _NO_NEIGHBOUR_ &&  neighb[_BACK_] != _NO_NEIGHBOUR_ ){  
+
+            iter_toSend[_WEST_S_B_][_INIX_] =   1;// <= this
+            iter_toSend[_WEST_S_B_][_ENDX_] =   1;
+            iter_toSend[_WEST_S_B_][_INIY_] =   1;
+            iter_toSend[_WEST_S_B_][_ENDY_] =   1;
+            iter_toSend[_WEST_S_B_][_INIZ_] =   1;
+            iter_toSend[_WEST_S_B_][_ENDZ_] =   1;
+        }
+        else
+        {
+            if(neighb[_WEST_S_] != _NO_NEIGHBOUR_ && neighb[_BACK_] == _NO_NEIGHBOUR_ ){ 
+
+                iter_toSend[_WEST_S_B_][_INIX_] =  iter_toSend[_WEST_S_][_INIX_];// <= this
+                iter_toSend[_WEST_S_B_][_ENDX_] =  iter_toSend[_WEST_S_][_ENDX_];
+                iter_toSend[_WEST_S_B_][_INIY_] =  iter_toSend[_WEST_S_][_INIY_];
+                iter_toSend[_WEST_S_B_][_ENDY_] =  iter_toSend[_WEST_S_][_ENDY_];
+                iter_toSend[_WEST_S_B_][_INIZ_] =  0;
+                iter_toSend[_WEST_S_B_][_ENDZ_] =  0;
+            }
+            else if(neighb[_WEST_S_] != _NO_NEIGHBOUR_ && neighb[_BACK_] != _NO_NEIGHBOUR_ ){
+                
+                iter_toSend[_WEST_S_B_][_INIX_] =  iter_toSend[_WEST_S_][_INIX_];// <= this
+                iter_toSend[_WEST_S_B_][_ENDX_] =  iter_toSend[_WEST_S_][_ENDX_];
+                iter_toSend[_WEST_S_B_][_INIY_] =  iter_toSend[_WEST_S_][_INIY_];
+                iter_toSend[_WEST_S_B_][_ENDY_] =  iter_toSend[_WEST_S_][_ENDY_];
+                iter_toSend[_WEST_S_B_][_INIZ_] =  1;
+                iter_toSend[_WEST_S_B_][_ENDZ_] =  1;
+            }
+             if(neighb[_WEST_B_] != _NO_NEIGHBOUR_ && neighb[_SOUTH_] == _NO_NEIGHBOUR_ ){ 
+
+                iter_toSend[_WEST_S_B_][_INIX_] =  iter_toSend[_WEST_B_][_INIX_];// <= this
+                iter_toSend[_WEST_S_B_][_ENDX_] =  iter_toSend[_WEST_B_][_ENDX_];
+                iter_toSend[_WEST_S_B_][_INIY_] =  0;
+                iter_toSend[_WEST_S_B_][_ENDY_] =  0;
+                iter_toSend[_WEST_S_B_][_INIZ_] =  iter_toSend[_WEST_B_][_INIZ_];
+                iter_toSend[_WEST_S_B_][_ENDZ_] =  iter_toSend[_WEST_B_][_ENDZ_];
+            }
+            else if(neighb[_WEST_B_] != _NO_NEIGHBOUR_ && neighb[_SOUTH_] != _NO_NEIGHBOUR_ ){
+                
+                iter_toSend[_WEST_S_B_][_INIX_] =  iter_toSend[_WEST_B_][_INIX_];// <= this
+                iter_toSend[_WEST_S_B_][_ENDX_] =  iter_toSend[_WEST_B_][_ENDX_];
+                iter_toSend[_WEST_S_B_][_INIY_] =  1;
+                iter_toSend[_WEST_S_B_][_ENDY_] =  1;
+                iter_toSend[_WEST_S_B_][_INIZ_] =  iter_toSend[_WEST_B_][_INIZ_];
+                iter_toSend[_WEST_S_B_][_ENDZ_] =  iter_toSend[_WEST_B_][_ENDZ_];
+            }
+             if(neighb[_SOUTH_B_] != _NO_NEIGHBOUR_ && neighb[_WEST_] == _NO_NEIGHBOUR_ ){ 
+
+                iter_toSend[_WEST_S_B_][_INIX_] =  0;// <= this
+                iter_toSend[_WEST_S_B_][_ENDX_] =  0;
+                iter_toSend[_WEST_S_B_][_INIY_] =  iter_toSend[_SOUTH_B_][_INIY_];
+                iter_toSend[_WEST_S_B_][_ENDY_] =  iter_toSend[_SOUTH_B_][_ENDY_];
+                iter_toSend[_WEST_S_B_][_INIZ_] =  iter_toSend[_SOUTH_B_][_INIZ_];
+                iter_toSend[_WEST_S_B_][_ENDZ_] =  iter_toSend[_SOUTH_B_][_ENDZ_];
+            }
+            else if(neighb[_SOUTH_B_] != _NO_NEIGHBOUR_ && neighb[_WEST_] != _NO_NEIGHBOUR_ ){
+                
+                iter_toSend[_WEST_S_B_][_INIX_] =  1;// <= this
+                iter_toSend[_WEST_S_B_][_ENDX_] =  1;
+                iter_toSend[_WEST_S_B_][_INIY_] =  iter_toSend[_SOUTH_B_][_INIY_];
+                iter_toSend[_WEST_S_B_][_ENDY_] =  iter_toSend[_SOUTH_B_][_ENDY_];
+                iter_toSend[_WEST_S_B_][_INIZ_] =  iter_toSend[_SOUTH_B_][_INIZ_];
+                iter_toSend[_WEST_S_B_][_ENDZ_] =  iter_toSend[_SOUTH_B_][_ENDZ_];
+            }
+
+        }
+    }
+
+    //WEST NORTH BACK
+    if(neighb[_WEST_N_B_] != _NO_NEIGHBOUR_ ) {
+         if(neighb[_WEST_] != _NO_NEIGHBOUR_ && neighb[_NORTH_] != _NO_NEIGHBOUR_ &&  neighb[_BACK_] != _NO_NEIGHBOUR_ ){  
+
+       iter_toSend[_WEST_N_B_][_INIX_] =   1;// <= this
+        iter_toSend[_WEST_N_B_][_ENDX_] =   1;
+        iter_toSend[_WEST_N_B_][_INIY_] = lNy-2;
+        iter_toSend[_WEST_N_B_][_ENDY_] = lNy-2;
+        iter_toSend[_WEST_N_B_][_INIZ_] =   1;
+        iter_toSend[_WEST_N_B_][_ENDZ_] =   1;
+         }
+        else
+        {
+            if(neighb[_WEST_N_] != _NO_NEIGHBOUR_ && neighb[_BACK_] == _NO_NEIGHBOUR_ ){ 
+
+                iter_toSend[_WEST_N_B_][_INIX_] =  iter_toSend[_WEST_N_][_INIX_];// <= this
+                iter_toSend[_WEST_N_B_][_ENDX_] =  iter_toSend[_WEST_N_][_ENDX_];
+                iter_toSend[_WEST_N_B_][_INIY_] =  iter_toSend[_WEST_N_][_INIY_];
+                iter_toSend[_WEST_N_B_][_ENDY_] =  iter_toSend[_WEST_N_][_ENDY_];
+                iter_toSend[_WEST_N_B_][_INIZ_] =  0;
+                iter_toSend[_WEST_N_B_][_ENDZ_] =  0;
+            }
+            else if(neighb[_WEST_N_] != _NO_NEIGHBOUR_ && neighb[_BACK_] != _NO_NEIGHBOUR_ ){
+                
+                iter_toSend[_WEST_N_B_][_INIX_] =  iter_toSend[_WEST_N_][_INIX_];// <= this
+                iter_toSend[_WEST_N_B_][_ENDX_] =  iter_toSend[_WEST_N_][_ENDX_];
+                iter_toSend[_WEST_N_B_][_INIY_] =  iter_toSend[_WEST_N_][_INIY_];
+                iter_toSend[_WEST_N_B_][_ENDY_] =  iter_toSend[_WEST_N_][_ENDY_];
+                iter_toSend[_WEST_N_B_][_INIZ_] =  1;
+                iter_toSend[_WEST_N_B_][_ENDZ_] =  1;
+            }
+             if(neighb[_WEST_B_] != _NO_NEIGHBOUR_ && neighb[_NORTH_] == _NO_NEIGHBOUR_ ){ 
+
+                iter_toSend[_WEST_N_B_][_INIX_] =  iter_toSend[_WEST_B_][_INIX_];// <= this
+                iter_toSend[_WEST_N_B_][_ENDX_] =  iter_toSend[_WEST_B_][_ENDX_];
+                iter_toSend[_WEST_N_B_][_INIY_] =  lNy-1;
+                iter_toSend[_WEST_N_B_][_ENDY_] =  lNy-1;
+                iter_toSend[_WEST_N_B_][_INIZ_] =  iter_toSend[_WEST_B_][_INIZ_];
+                iter_toSend[_WEST_N_B_][_ENDZ_] =  iter_toSend[_WEST_B_][_ENDZ_];
+            }
+            else if(neighb[_WEST_B_] != _NO_NEIGHBOUR_ && neighb[_NORTH_] != _NO_NEIGHBOUR_ ){
+                
+                iter_toSend[_WEST_N_B_][_INIX_] =  iter_toSend[_WEST_B_][_INIX_];// <= this
+                iter_toSend[_WEST_N_B_][_ENDX_] =  iter_toSend[_WEST_B_][_ENDX_];
+                iter_toSend[_WEST_N_B_][_INIY_] =  lNy-2;
+                iter_toSend[_WEST_N_B_][_ENDY_] =  lNy-2;
+                iter_toSend[_WEST_N_B_][_INIZ_] =  iter_toSend[_WEST_B_][_INIZ_];
+                iter_toSend[_WEST_N_B_][_ENDZ_] =  iter_toSend[_WEST_B_][_ENDZ_];
+            }
+             if(neighb[_NORTH_B_] != _NO_NEIGHBOUR_ && neighb[_WEST_] == _NO_NEIGHBOUR_ ){ 
+
+                iter_toSend[_WEST_N_B_][_INIX_] =  0;// <= this
+                iter_toSend[_WEST_N_B_][_ENDX_] =  0;
+                iter_toSend[_WEST_N_B_][_INIY_] =  iter_toSend[_NORTH_B_][_INIY_];
+                iter_toSend[_WEST_N_B_][_ENDY_] =  iter_toSend[_NORTH_B_][_ENDY_];
+                iter_toSend[_WEST_N_B_][_INIZ_] =  iter_toSend[_NORTH_B_][_INIZ_];
+                iter_toSend[_WEST_N_B_][_ENDZ_] =  iter_toSend[_NORTH_B_][_ENDZ_];
+            }
+            else if(neighb[_NORTH_B_] != _NO_NEIGHBOUR_ && neighb[_WEST_] != _NO_NEIGHBOUR_ ){
+                
+                iter_toSend[_WEST_N_B_][_INIX_] =  1;// <= this
+                iter_toSend[_WEST_N_B_][_ENDX_] =  1;
+                iter_toSend[_WEST_N_B_][_INIY_] =  iter_toSend[_NORTH_B_][_INIY_];
+                iter_toSend[_WEST_N_B_][_ENDY_] =  iter_toSend[_NORTH_B_][_ENDY_];
+                iter_toSend[_WEST_N_B_][_INIZ_] =  iter_toSend[_NORTH_B_][_INIZ_];
+                iter_toSend[_WEST_N_B_][_ENDZ_] =  iter_toSend[_NORTH_B_][_ENDZ_];
+            }
+
+        }
+
+    }
+
+    //WEST SOUTH FRONT
+    if(neighb[_WEST_S_F_] != _NO_NEIGHBOUR_ ) {
+        if(neighb[_WEST_] != _NO_NEIGHBOUR_ && neighb[_SOUTH_] != _NO_NEIGHBOUR_ &&  neighb[_FRONT_] != _NO_NEIGHBOUR_ ){  
+
+            iter_toSend[_WEST_S_F_][_INIX_] =   1;// <= this
+            iter_toSend[_WEST_S_F_][_ENDX_] =   1;
+            iter_toSend[_WEST_S_F_][_INIY_] =   1;
+            iter_toSend[_WEST_S_F_][_ENDY_] =   1;
+            iter_toSend[_WEST_S_F_][_INIZ_] = lNz-2;
+            iter_toSend[_WEST_S_F_][_ENDZ_] = lNz-2;
+        }
+        else
+        {
+            if(neighb[_WEST_S_] != _NO_NEIGHBOUR_ && neighb[_FRONT_] == _NO_NEIGHBOUR_ ){ 
+
+                iter_toSend[_WEST_S_F_][_INIX_] =  iter_toSend[_WEST_S_][_INIX_];// <= this
+                iter_toSend[_WEST_S_F_][_ENDX_] =  iter_toSend[_WEST_S_][_ENDX_];
+                iter_toSend[_WEST_S_F_][_INIY_] =  iter_toSend[_WEST_S_][_INIY_];
+                iter_toSend[_WEST_S_F_][_ENDY_] =  iter_toSend[_WEST_S_][_ENDY_];
+                iter_toSend[_WEST_S_F_][_INIZ_] =  lNz-1;
+                iter_toSend[_WEST_S_F_][_ENDZ_] =  lNz-1;
+            }
+            else if(neighb[_WEST_S_] != _NO_NEIGHBOUR_ && neighb[_FRONT_] != _NO_NEIGHBOUR_ ){
+
+                iter_toSend[_WEST_S_F_][_INIX_] =  iter_toSend[_WEST_S_][_INIX_];// <= this
+                iter_toSend[_WEST_S_F_][_ENDX_] =  iter_toSend[_WEST_S_][_ENDX_];
+                iter_toSend[_WEST_S_F_][_INIY_] =  iter_toSend[_WEST_S_][_INIY_];
+                iter_toSend[_WEST_S_F_][_ENDY_] =  iter_toSend[_WEST_S_][_ENDY_];
+                iter_toSend[_WEST_S_F_][_INIZ_] =  lNz-2;
+                iter_toSend[_WEST_S_F_][_ENDZ_] =  lNz-2;
+            }
+            if(neighb[_WEST_F_] != _NO_NEIGHBOUR_ && neighb[_SOUTH_] == _NO_NEIGHBOUR_ ){ 
+
+                iter_toSend[_WEST_S_F_][_INIX_] =  iter_toSend[_WEST_F_][_INIX_];// <= this
+                iter_toSend[_WEST_S_F_][_ENDX_] =  iter_toSend[_WEST_F_][_ENDX_];
+                iter_toSend[_WEST_S_F_][_INIY_] =  0;
+                iter_toSend[_WEST_S_F_][_ENDY_] =  0;
+                iter_toSend[_WEST_S_F_][_INIZ_] =  iter_toSend[_WEST_F_][_INIZ_];
+                iter_toSend[_WEST_S_F_][_ENDZ_] =  iter_toSend[_WEST_F_][_ENDZ_];
+            }
+            else if(neighb[_WEST_F_] != _NO_NEIGHBOUR_ && neighb[_SOUTH_] != _NO_NEIGHBOUR_ ){
+
+                iter_toSend[_WEST_S_F_][_INIX_] =  iter_toSend[_WEST_F_][_INIX_];// <= this
+                iter_toSend[_WEST_S_F_][_ENDX_] =  iter_toSend[_WEST_F_][_ENDX_];
+                iter_toSend[_WEST_S_F_][_INIY_] =  1;
+                iter_toSend[_WEST_S_F_][_ENDY_] =  1;
+                iter_toSend[_WEST_S_F_][_INIZ_] =  iter_toSend[_WEST_F_][_INIZ_];
+                iter_toSend[_WEST_S_F_][_ENDZ_] =  iter_toSend[_WEST_F_][_ENDZ_];
+            }
+            if(neighb[_SOUTH_F_] != _NO_NEIGHBOUR_ && neighb[_WEST_] == _NO_NEIGHBOUR_ ){ 
+
+                iter_toSend[_WEST_S_F_][_INIX_] =  0;// <= this
+                iter_toSend[_WEST_S_F_][_ENDX_] =  0;
+                iter_toSend[_WEST_S_F_][_INIY_] =  iter_toSend[_SOUTH_F_][_INIY_];
+                iter_toSend[_WEST_S_F_][_ENDY_] =  iter_toSend[_SOUTH_F_][_ENDY_];
+                iter_toSend[_WEST_S_F_][_INIZ_] =  iter_toSend[_SOUTH_F_][_INIZ_];
+                iter_toSend[_WEST_S_F_][_ENDZ_] =  iter_toSend[_SOUTH_F_][_ENDZ_];
+            }
+            else if(neighb[_SOUTH_F_] != _NO_NEIGHBOUR_ && neighb[_WEST_] != _NO_NEIGHBOUR_ ){
+
+                iter_toSend[_WEST_S_F_][_INIX_] =  1;// <= this
+                iter_toSend[_WEST_S_F_][_ENDX_] =  1;
+                iter_toSend[_WEST_S_F_][_INIY_] =  iter_toSend[_SOUTH_F_][_INIY_];
+                iter_toSend[_WEST_S_F_][_ENDY_] =  iter_toSend[_SOUTH_F_][_ENDY_];
+                iter_toSend[_WEST_S_F_][_INIZ_] =  iter_toSend[_SOUTH_F_][_INIZ_];
+                iter_toSend[_WEST_S_F_][_ENDZ_] =  iter_toSend[_SOUTH_F_][_ENDZ_];
+            }
+
+        }
+
+    }
+
+    //WEST NORTH FRONT
+    if(neighb[_WEST_N_F_] != _NO_NEIGHBOUR_ ) {
+         if(neighb[_WEST_] != _NO_NEIGHBOUR_ && neighb[_NORTH_] != _NO_NEIGHBOUR_ &&  neighb[_FRONT_] != _NO_NEIGHBOUR_ ){  
+
+       iter_toSend[_WEST_N_F_][_INIX_] =   1;// <= this
+        iter_toSend[_WEST_N_F_][_ENDX_] =   1;
+        iter_toSend[_WEST_N_F_][_INIY_] = lNy-2;
+        iter_toSend[_WEST_N_F_][_ENDY_] = lNy-2;
+        iter_toSend[_WEST_N_F_][_INIZ_] = lNz-2;
+        iter_toSend[_WEST_N_F_][_ENDZ_] = lNz-2;
+       }
+        else
+        {
+            if(neighb[_WEST_N_] != _NO_NEIGHBOUR_ && neighb[_FRONT_] == _NO_NEIGHBOUR_ ){ 
+
+                iter_toSend[_WEST_N_F_][_INIX_] =  iter_toSend[_WEST_N_][_INIX_];// <= this
+                iter_toSend[_WEST_N_F_][_ENDX_] =  iter_toSend[_WEST_N_][_ENDX_];
+                iter_toSend[_WEST_N_F_][_INIY_] =  iter_toSend[_WEST_N_][_INIY_];
+                iter_toSend[_WEST_N_F_][_ENDY_] =  iter_toSend[_WEST_N_][_ENDY_];
+                iter_toSend[_WEST_N_F_][_INIZ_] =  lNz-1;
+                iter_toSend[_WEST_N_F_][_ENDZ_] =  lNz-1;
+            }
+            else if(neighb[_WEST_N_] != _NO_NEIGHBOUR_ && neighb[_FRONT_] != _NO_NEIGHBOUR_ ){
+
+                iter_toSend[_WEST_N_F_][_INIX_] =  iter_toSend[_WEST_N_][_INIX_];// <= this
+                iter_toSend[_WEST_N_F_][_ENDX_] =  iter_toSend[_WEST_N_][_ENDX_];
+                iter_toSend[_WEST_N_F_][_INIY_] =  iter_toSend[_WEST_N_][_INIY_];
+                iter_toSend[_WEST_N_F_][_ENDY_] =  iter_toSend[_WEST_N_][_ENDY_];
+                iter_toSend[_WEST_N_F_][_INIZ_] =  lNz-2;
+                iter_toSend[_WEST_N_F_][_ENDZ_] =  lNz-2;
+            }
+            if(neighb[_WEST_F_] != _NO_NEIGHBOUR_ && neighb[_NORTH_] == _NO_NEIGHBOUR_ ){ 
+
+                iter_toSend[_WEST_N_F_][_INIX_] =  iter_toSend[_WEST_F_][_INIX_];// <= this
+                iter_toSend[_WEST_N_F_][_ENDX_] =  iter_toSend[_WEST_F_][_ENDX_];
+                iter_toSend[_WEST_N_F_][_INIY_] =  lNy-1;
+                iter_toSend[_WEST_N_F_][_ENDY_] =  lNy-1;
+                iter_toSend[_WEST_N_F_][_INIZ_] =  iter_toSend[_WEST_F_][_INIZ_];
+                iter_toSend[_WEST_N_F_][_ENDZ_] =  iter_toSend[_WEST_F_][_ENDZ_];
+            }
+            else if(neighb[_WEST_F_] != _NO_NEIGHBOUR_ && neighb[_NORTH_] != _NO_NEIGHBOUR_ ){
+
+                iter_toSend[_WEST_N_F_][_INIX_] =  iter_toSend[_WEST_F_][_INIX_];// <= this
+                iter_toSend[_WEST_N_F_][_ENDX_] =  iter_toSend[_WEST_F_][_ENDX_];
+                iter_toSend[_WEST_N_F_][_INIY_] =  lNy-2;
+                iter_toSend[_WEST_N_F_][_ENDY_] =  lNy-2;
+                iter_toSend[_WEST_N_F_][_INIZ_] =  iter_toSend[_WEST_F_][_INIZ_];
+                iter_toSend[_WEST_N_F_][_ENDZ_] =  iter_toSend[_WEST_F_][_ENDZ_];
+            }
+            if(neighb[_NORTH_F_] != _NO_NEIGHBOUR_ && neighb[_WEST_] == _NO_NEIGHBOUR_ ){ 
+
+                iter_toSend[_WEST_N_F_][_INIX_] =  0;// <= this
+                iter_toSend[_WEST_N_F_][_ENDX_] =  0;
+                iter_toSend[_WEST_N_F_][_INIY_] =  iter_toSend[_NORTH_F_][_INIY_];
+                iter_toSend[_WEST_N_F_][_ENDY_] =  iter_toSend[_NORTH_F_][_ENDY_];
+                iter_toSend[_WEST_N_F_][_INIZ_] =  iter_toSend[_NORTH_F_][_INIZ_];
+                iter_toSend[_WEST_N_F_][_ENDZ_] =  iter_toSend[_NORTH_F_][_ENDZ_];
+            }
+            else if(neighb[_NORTH_F_] != _NO_NEIGHBOUR_ && neighb[_WEST_] != _NO_NEIGHBOUR_ ){
+
+                iter_toSend[_WEST_N_F_][_INIX_] =  1;// <= this
+                iter_toSend[_WEST_N_F_][_ENDX_] =  1;
+                iter_toSend[_WEST_N_F_][_INIY_] =  iter_toSend[_NORTH_F_][_INIY_];
+                iter_toSend[_WEST_N_F_][_ENDY_] =  iter_toSend[_NORTH_F_][_ENDY_];
+                iter_toSend[_WEST_N_F_][_INIZ_] =  iter_toSend[_NORTH_F_][_INIZ_];
+                iter_toSend[_WEST_N_F_][_ENDZ_] =  iter_toSend[_NORTH_F_][_ENDZ_];
+            }
+
+        }
+
+
+    }
+
+    //EAST SOUTH BACK
+    if(neighb[_EAST_S_B_] != _NO_NEIGHBOUR_ ) {
+         if(neighb[_EAST_] != _NO_NEIGHBOUR_ && neighb[_SOUTH_] != _NO_NEIGHBOUR_ &&  neighb[_BACK_] != _NO_NEIGHBOUR_ ){  
+
+       iter_toSend[_EAST_S_B_][_INIX_] = lNx-2; // <=this
+        iter_toSend[_EAST_S_B_][_ENDX_] = lNx-2;
+        iter_toSend[_EAST_S_B_][_INIY_] =   1;
+        iter_toSend[_EAST_S_B_][_ENDY_] =   1;
+        iter_toSend[_EAST_S_B_][_INIZ_] =   1;
+        iter_toSend[_EAST_S_B_][_ENDZ_] =   1;
+         }
+        else
+        {
+            if(neighb[_EAST_S_] != _NO_NEIGHBOUR_ && neighb[_BACK_] == _NO_NEIGHBOUR_ ){ 
+
+                iter_toSend[_EAST_S_B_][_INIX_] =  iter_toSend[_EAST_S_][_INIX_];// <= this
+                iter_toSend[_EAST_S_B_][_ENDX_] =  iter_toSend[_EAST_S_][_ENDX_];
+                iter_toSend[_EAST_S_B_][_INIY_] =  iter_toSend[_EAST_S_][_INIY_];
+                iter_toSend[_EAST_S_B_][_ENDY_] =  iter_toSend[_EAST_S_][_ENDY_];
+                iter_toSend[_EAST_S_B_][_INIZ_] =  0;
+                iter_toSend[_EAST_S_B_][_ENDZ_] =  0;
+            }
+            else if(neighb[_EAST_S_] != _NO_NEIGHBOUR_ && neighb[_BACK_] != _NO_NEIGHBOUR_ ){
+                
+                iter_toSend[_EAST_S_B_][_INIX_] =  iter_toSend[_EAST_S_][_INIX_];// <= this
+                iter_toSend[_EAST_S_B_][_ENDX_] =  iter_toSend[_EAST_S_][_ENDX_];
+                iter_toSend[_EAST_S_B_][_INIY_] =  iter_toSend[_EAST_S_][_INIY_];
+                iter_toSend[_EAST_S_B_][_ENDY_] =  iter_toSend[_EAST_S_][_ENDY_];
+                iter_toSend[_EAST_S_B_][_INIZ_] =  1;
+                iter_toSend[_EAST_S_B_][_ENDZ_] =  1;
+            }
+             if(neighb[_EAST_B_] != _NO_NEIGHBOUR_ && neighb[_SOUTH_] == _NO_NEIGHBOUR_ ){ 
+
+                iter_toSend[_EAST_S_B_][_INIX_] =  iter_toSend[_EAST_B_][_INIX_];// <= this
+                iter_toSend[_EAST_S_B_][_ENDX_] =  iter_toSend[_EAST_B_][_ENDX_];
+                iter_toSend[_EAST_S_B_][_INIY_] =  0;
+                iter_toSend[_EAST_S_B_][_ENDY_] =  0;
+                iter_toSend[_EAST_S_B_][_INIZ_] =  iter_toSend[_EAST_B_][_INIZ_];
+                iter_toSend[_EAST_S_B_][_ENDZ_] =  iter_toSend[_EAST_B_][_ENDZ_];
+            }
+            else if(neighb[_EAST_B_] != _NO_NEIGHBOUR_ && neighb[_SOUTH_] != _NO_NEIGHBOUR_ ){
+                
+                iter_toSend[_EAST_S_B_][_INIX_] =  iter_toSend[_EAST_B_][_INIX_];// <= this
+                iter_toSend[_EAST_S_B_][_ENDX_] =  iter_toSend[_EAST_B_][_ENDX_];
+                iter_toSend[_EAST_S_B_][_INIY_] =  1;
+                iter_toSend[_EAST_S_B_][_ENDY_] =  1;
+                iter_toSend[_EAST_S_B_][_INIZ_] =  iter_toSend[_EAST_B_][_INIZ_];
+                iter_toSend[_EAST_S_B_][_ENDZ_] =  iter_toSend[_EAST_B_][_ENDZ_];
+            }
+             if(neighb[_SOUTH_B_] != _NO_NEIGHBOUR_ && neighb[_EAST_] == _NO_NEIGHBOUR_ ){ 
+
+                iter_toSend[_EAST_S_B_][_INIX_] =  lNx-1;// <= this
+                iter_toSend[_EAST_S_B_][_ENDX_] =  lNx-1;
+                iter_toSend[_EAST_S_B_][_INIY_] =  iter_toSend[_SOUTH_B_][_INIY_];
+                iter_toSend[_EAST_S_B_][_ENDY_] =  iter_toSend[_SOUTH_B_][_ENDY_];
+                iter_toSend[_EAST_S_B_][_INIZ_] =  iter_toSend[_SOUTH_B_][_INIZ_];
+                iter_toSend[_EAST_S_B_][_ENDZ_] =  iter_toSend[_SOUTH_B_][_ENDZ_];
+            }
+            else if(neighb[_SOUTH_B_] != _NO_NEIGHBOUR_ && neighb[_EAST_] != _NO_NEIGHBOUR_ ){
+                
+                iter_toSend[_EAST_S_B_][_INIX_] =  lNx-2;// <= this
+                iter_toSend[_EAST_S_B_][_ENDX_] =  lNx-2;
+                iter_toSend[_EAST_S_B_][_INIY_] =  iter_toSend[_SOUTH_B_][_INIY_];
+                iter_toSend[_EAST_S_B_][_ENDY_] =  iter_toSend[_SOUTH_B_][_ENDY_];
+                iter_toSend[_EAST_S_B_][_INIZ_] =  iter_toSend[_SOUTH_B_][_INIZ_];
+                iter_toSend[_EAST_S_B_][_ENDZ_] =  iter_toSend[_SOUTH_B_][_ENDZ_];
+            }
+
+        }
+
+    }
+
+    //EAST NORTH BACK
+    if(neighb[_EAST_N_B_] != _NO_NEIGHBOUR_ ) {
+          if(neighb[_EAST_] != _NO_NEIGHBOUR_ && neighb[_NORTH_] != _NO_NEIGHBOUR_ &&  neighb[_BACK_] != _NO_NEIGHBOUR_ ){  
+
+       iter_toSend[_EAST_N_B_][_INIX_] = lNx-2; // <=this
+        iter_toSend[_EAST_N_B_][_ENDX_] = lNx-2;
+        iter_toSend[_EAST_N_B_][_INIY_] = lNy-2;
+        iter_toSend[_EAST_N_B_][_ENDY_] = lNy-2;
+        iter_toSend[_EAST_N_B_][_INIZ_] =   1;
+        iter_toSend[_EAST_N_B_][_ENDZ_] =   1;
+          }
+        else
+        {
+            if(neighb[_EAST_N_] != _NO_NEIGHBOUR_ && neighb[_BACK_] == _NO_NEIGHBOUR_ ){ 
+
+                iter_toSend[_EAST_N_B_][_INIX_] =  iter_toSend[_EAST_N_][_INIX_];// <= this
+                iter_toSend[_EAST_N_B_][_ENDX_] =  iter_toSend[_EAST_N_][_ENDX_];
+                iter_toSend[_EAST_N_B_][_INIY_] =  iter_toSend[_EAST_N_][_INIY_];
+                iter_toSend[_EAST_N_B_][_ENDY_] =  iter_toSend[_EAST_N_][_ENDY_];
+                iter_toSend[_EAST_N_B_][_INIZ_] =  0;
+                iter_toSend[_EAST_N_B_][_ENDZ_] =  0;
+            }
+            else if(neighb[_EAST_N_] != _NO_NEIGHBOUR_ && neighb[_BACK_] != _NO_NEIGHBOUR_ ){
+                
+                iter_toSend[_EAST_N_B_][_INIX_] =  iter_toSend[_EAST_N_][_INIX_];// <= this
+                iter_toSend[_EAST_N_B_][_ENDX_] =  iter_toSend[_EAST_N_][_ENDX_];
+                iter_toSend[_EAST_N_B_][_INIY_] =  iter_toSend[_EAST_N_][_INIY_];
+                iter_toSend[_EAST_N_B_][_ENDY_] =  iter_toSend[_EAST_N_][_ENDY_];
+                iter_toSend[_EAST_N_B_][_INIZ_] =  1;
+                iter_toSend[_EAST_N_B_][_ENDZ_] =  1;
+            }
+             if(neighb[_EAST_B_] != _NO_NEIGHBOUR_ && neighb[_NORTH_] == _NO_NEIGHBOUR_ ){ 
+
+                iter_toSend[_EAST_N_B_][_INIX_] =  iter_toSend[_EAST_B_][_INIX_];// <= this
+                iter_toSend[_EAST_N_B_][_ENDX_] =  iter_toSend[_EAST_B_][_ENDX_];
+                iter_toSend[_EAST_N_B_][_INIY_] =  lNy-1;
+                iter_toSend[_EAST_N_B_][_ENDY_] =  lNy-1;
+                iter_toSend[_EAST_N_B_][_INIZ_] =  iter_toSend[_EAST_B_][_INIZ_];
+                iter_toSend[_EAST_N_B_][_ENDZ_] =  iter_toSend[_EAST_B_][_ENDZ_];
+            }
+            else if(neighb[_EAST_B_] != _NO_NEIGHBOUR_ && neighb[_NORTH_] != _NO_NEIGHBOUR_ ){
+                
+                iter_toSend[_EAST_N_B_][_INIX_] =  iter_toSend[_EAST_B_][_INIX_];// <= this
+                iter_toSend[_EAST_N_B_][_ENDX_] =  iter_toSend[_EAST_B_][_ENDX_];
+                iter_toSend[_EAST_N_B_][_INIY_] =  lNy-2;
+                iter_toSend[_EAST_N_B_][_ENDY_] =  lNy-2;
+                iter_toSend[_EAST_N_B_][_INIZ_] =  iter_toSend[_EAST_B_][_INIZ_];
+                iter_toSend[_EAST_N_B_][_ENDZ_] =  iter_toSend[_EAST_B_][_ENDZ_];
+            }
+             if(neighb[_NORTH_B_] != _NO_NEIGHBOUR_ && neighb[_EAST_] == _NO_NEIGHBOUR_ ){ 
+
+                iter_toSend[_EAST_N_B_][_INIX_] =  lNx-1;// <= this
+                iter_toSend[_EAST_N_B_][_ENDX_] =  lNx-1;
+                iter_toSend[_EAST_N_B_][_INIY_] =  iter_toSend[_NORTH_B_][_INIY_];
+                iter_toSend[_EAST_N_B_][_ENDY_] =  iter_toSend[_NORTH_B_][_ENDY_];
+                iter_toSend[_EAST_N_B_][_INIZ_] =  iter_toSend[_NORTH_B_][_INIZ_];
+                iter_toSend[_EAST_N_B_][_ENDZ_] =  iter_toSend[_NORTH_B_][_ENDZ_];
+            }
+            else if(neighb[_NORTH_B_] != _NO_NEIGHBOUR_ && neighb[_EAST_] != _NO_NEIGHBOUR_ ){
+                
+                iter_toSend[_EAST_N_B_][_INIX_] =  lNx-2;// <= this
+                iter_toSend[_EAST_N_B_][_ENDX_] =  lNx-2;
+                iter_toSend[_EAST_N_B_][_INIY_] =  iter_toSend[_NORTH_B_][_INIY_];
+                iter_toSend[_EAST_N_B_][_ENDY_] =  iter_toSend[_NORTH_B_][_ENDY_];
+                iter_toSend[_EAST_N_B_][_INIZ_] =  iter_toSend[_NORTH_B_][_INIZ_];
+                iter_toSend[_EAST_N_B_][_ENDZ_] =  iter_toSend[_NORTH_B_][_ENDZ_];
+            }
+
+        }
+
+    }
+
+    //EAST SOUTH FRONT
+    if(neighb[_EAST_S_F_] != _NO_NEIGHBOUR_ ) {
+         if(neighb[_EAST_] != _NO_NEIGHBOUR_ && neighb[_SOUTH_] != _NO_NEIGHBOUR_ &&  neighb[_FRONT_] != _NO_NEIGHBOUR_ ){  
+
+       iter_toSend[_EAST_S_F_][_INIX_] = lNx-2; // <=this
+        iter_toSend[_EAST_S_F_][_ENDX_] = lNx-2;
+        iter_toSend[_EAST_S_F_][_INIY_] =   1;
+        iter_toSend[_EAST_S_F_][_ENDY_] =   1;
+        iter_toSend[_EAST_S_F_][_INIZ_] = lNz-2;
+        iter_toSend[_EAST_S_F_][_ENDZ_] = lNz-2;
+         }
+        else
+        {
+            if(neighb[_EAST_S_] != _NO_NEIGHBOUR_ && neighb[_FRONT_] == _NO_NEIGHBOUR_ ){ 
+
+                iter_toSend[_EAST_S_F_][_INIX_] =  iter_toSend[_EAST_S_][_INIX_];// <= this
+                iter_toSend[_EAST_S_F_][_ENDX_] =  iter_toSend[_EAST_S_][_ENDX_];
+                iter_toSend[_EAST_S_F_][_INIY_] =  iter_toSend[_EAST_S_][_INIY_];
+                iter_toSend[_EAST_S_F_][_ENDY_] =  iter_toSend[_EAST_S_][_ENDY_];
+                iter_toSend[_EAST_S_F_][_INIZ_] =  lNz-1;
+                iter_toSend[_EAST_S_F_][_ENDZ_] =  lNz-1;
+            }
+            else if(neighb[_EAST_S_] != _NO_NEIGHBOUR_ && neighb[_FRONT_] != _NO_NEIGHBOUR_ ){
+
+                iter_toSend[_EAST_S_F_][_INIX_] =  iter_toSend[_EAST_S_][_INIX_];// <= this
+                iter_toSend[_EAST_S_F_][_ENDX_] =  iter_toSend[_EAST_S_][_ENDX_];
+                iter_toSend[_EAST_S_F_][_INIY_] =  iter_toSend[_EAST_S_][_INIY_];
+                iter_toSend[_EAST_S_F_][_ENDY_] =  iter_toSend[_EAST_S_][_ENDY_];
+                iter_toSend[_EAST_S_F_][_INIZ_] =  lNz-2;
+                iter_toSend[_EAST_S_F_][_ENDZ_] =  lNz-2;
+            }
+            if(neighb[_EAST_F_] != _NO_NEIGHBOUR_ && neighb[_SOUTH_] == _NO_NEIGHBOUR_ ){ 
+
+                iter_toSend[_EAST_S_F_][_INIX_] =  iter_toSend[_EAST_F_][_INIX_];// <= this
+                iter_toSend[_EAST_S_F_][_ENDX_] =  iter_toSend[_EAST_F_][_ENDX_];
+                iter_toSend[_EAST_S_F_][_INIY_] =  0;
+                iter_toSend[_EAST_S_F_][_ENDY_] =  0;
+                iter_toSend[_EAST_S_F_][_INIZ_] =  iter_toSend[_EAST_F_][_INIZ_];
+                iter_toSend[_EAST_S_F_][_ENDZ_] =  iter_toSend[_EAST_F_][_ENDZ_];
+            }
+            else if(neighb[_EAST_F_] != _NO_NEIGHBOUR_ && neighb[_SOUTH_] != _NO_NEIGHBOUR_ ){
+
+                iter_toSend[_EAST_S_F_][_INIX_] =  iter_toSend[_EAST_F_][_INIX_];// <= this
+                iter_toSend[_EAST_S_F_][_ENDX_] =  iter_toSend[_EAST_F_][_ENDX_];
+                iter_toSend[_EAST_S_F_][_INIY_] =  1;
+                iter_toSend[_EAST_S_F_][_ENDY_] =  1;
+                iter_toSend[_EAST_S_F_][_INIZ_] =  iter_toSend[_EAST_F_][_INIZ_];
+                iter_toSend[_EAST_S_F_][_ENDZ_] =  iter_toSend[_EAST_F_][_ENDZ_];
+            }
+            if(neighb[_SOUTH_F_] != _NO_NEIGHBOUR_ && neighb[_EAST_] == _NO_NEIGHBOUR_ ){ 
+
+                iter_toSend[_EAST_S_F_][_INIX_] =  lNx-1;// <= this
+                iter_toSend[_EAST_S_F_][_ENDX_] =  lNx-1;
+                iter_toSend[_EAST_S_F_][_INIY_] =  iter_toSend[_SOUTH_F_][_INIY_];
+                iter_toSend[_EAST_S_F_][_ENDY_] =  iter_toSend[_SOUTH_F_][_ENDY_];
+                iter_toSend[_EAST_S_F_][_INIZ_] =  iter_toSend[_SOUTH_F_][_INIZ_];
+                iter_toSend[_EAST_S_F_][_ENDZ_] =  iter_toSend[_SOUTH_F_][_ENDZ_];
+            }
+            else if(neighb[_SOUTH_F_] != _NO_NEIGHBOUR_ && neighb[_EAST_] != _NO_NEIGHBOUR_ ){
+
+                iter_toSend[_EAST_S_F_][_INIX_] =  lNx-2;// <= this
+                iter_toSend[_EAST_S_F_][_ENDX_] =  lNx-2;
+                iter_toSend[_EAST_S_F_][_INIY_] =  iter_toSend[_SOUTH_F_][_INIY_];
+                iter_toSend[_EAST_S_F_][_ENDY_] =  iter_toSend[_SOUTH_F_][_ENDY_];
+                iter_toSend[_EAST_S_F_][_INIZ_] =  iter_toSend[_SOUTH_F_][_INIZ_];
+                iter_toSend[_EAST_S_F_][_ENDZ_] =  iter_toSend[_SOUTH_F_][_ENDZ_];
+            }
+
+        }
+
+    }
+
+    //EAST NORTH FRONT
+    if(neighb[_EAST_N_F_] != _NO_NEIGHBOUR_ ) {
+          if(neighb[_EAST_] != _NO_NEIGHBOUR_ && neighb[_NORTH_] != _NO_NEIGHBOUR_ &&  neighb[_FRONT_] != _NO_NEIGHBOUR_ ){  
+
+              iter_toSend[_EAST_N_F_][_INIX_] = lNx-2; // <=this
+              iter_toSend[_EAST_N_F_][_ENDX_] = lNx-2;
+              iter_toSend[_EAST_N_F_][_INIY_] = lNy-2;
+              iter_toSend[_EAST_N_F_][_ENDY_] = lNy-2;
+              iter_toSend[_EAST_N_F_][_INIZ_] = lNz-2;
+              iter_toSend[_EAST_N_F_][_ENDZ_] = lNz-2;
+          }
+
+          else
+        {
+            if(neighb[_EAST_N_] != _NO_NEIGHBOUR_ && neighb[_FRONT_] == _NO_NEIGHBOUR_ ){ 
+
+                iter_toSend[_EAST_N_F_][_INIX_] =  iter_toSend[_EAST_N_][_INIX_];// <= this
+                iter_toSend[_EAST_N_F_][_ENDX_] =  iter_toSend[_EAST_N_][_ENDX_];
+                iter_toSend[_EAST_N_F_][_INIY_] =  iter_toSend[_EAST_N_][_INIY_];
+                iter_toSend[_EAST_N_F_][_ENDY_] =  iter_toSend[_EAST_N_][_ENDY_];
+                iter_toSend[_EAST_N_F_][_INIZ_] =  lNz-1;
+                iter_toSend[_EAST_N_F_][_ENDZ_] =  lNz-1;
+            }
+            else if(neighb[_EAST_N_] != _NO_NEIGHBOUR_ && neighb[_FRONT_] != _NO_NEIGHBOUR_ ){
+
+                iter_toSend[_EAST_N_F_][_INIX_] =  iter_toSend[_EAST_N_][_INIX_];// <= this
+                iter_toSend[_EAST_N_F_][_ENDX_] =  iter_toSend[_EAST_N_][_ENDX_];
+                iter_toSend[_EAST_N_F_][_INIY_] =  iter_toSend[_EAST_N_][_INIY_];
+                iter_toSend[_EAST_N_F_][_ENDY_] =  iter_toSend[_EAST_N_][_ENDY_];
+                iter_toSend[_EAST_N_F_][_INIZ_] =  lNz-2;
+                iter_toSend[_EAST_N_F_][_ENDZ_] =  lNz-2;
+            }
+            if(neighb[_EAST_F_] != _NO_NEIGHBOUR_ && neighb[_NORTH_] == _NO_NEIGHBOUR_ ){ 
+
+                iter_toSend[_EAST_N_F_][_INIX_] =  iter_toSend[_EAST_F_][_INIX_];// <= this
+                iter_toSend[_EAST_N_F_][_ENDX_] =  iter_toSend[_EAST_F_][_ENDX_];
+                iter_toSend[_EAST_N_F_][_INIY_] =  lNy-1;
+                iter_toSend[_EAST_N_F_][_ENDY_] =  lNy-1;
+                iter_toSend[_EAST_N_F_][_INIZ_] =  iter_toSend[_EAST_F_][_INIZ_];
+                iter_toSend[_EAST_N_F_][_ENDZ_] =  iter_toSend[_EAST_F_][_ENDZ_];
+            }
+            else if(neighb[_EAST_F_] != _NO_NEIGHBOUR_ && neighb[_NORTH_] != _NO_NEIGHBOUR_ ){
+
+                iter_toSend[_EAST_N_F_][_INIX_] =  iter_toSend[_EAST_F_][_INIX_];// <= this
+                iter_toSend[_EAST_N_F_][_ENDX_] =  iter_toSend[_EAST_F_][_ENDX_];
+                iter_toSend[_EAST_N_F_][_INIY_] =  lNy-2;
+                iter_toSend[_EAST_N_F_][_ENDY_] =  lNy-2;
+                iter_toSend[_EAST_N_F_][_INIZ_] =  iter_toSend[_EAST_F_][_INIZ_];
+                iter_toSend[_EAST_N_F_][_ENDZ_] =  iter_toSend[_EAST_F_][_ENDZ_];
+            }
+            if(neighb[_NORTH_F_] != _NO_NEIGHBOUR_ && neighb[_EAST_] == _NO_NEIGHBOUR_ ){ 
+
+                iter_toSend[_EAST_N_F_][_INIX_] =  lNx-1;// <= this
+                iter_toSend[_EAST_N_F_][_ENDX_] =  lNx-1;
+                iter_toSend[_EAST_N_F_][_INIY_] =  iter_toSend[_NORTH_F_][_INIY_];
+                iter_toSend[_EAST_N_F_][_ENDY_] =  iter_toSend[_NORTH_F_][_ENDY_];
+                iter_toSend[_EAST_N_F_][_INIZ_] =  iter_toSend[_NORTH_F_][_INIZ_];
+                iter_toSend[_EAST_N_F_][_ENDZ_] =  iter_toSend[_NORTH_F_][_ENDZ_];
+            }
+            else if(neighb[_NORTH_F_] != _NO_NEIGHBOUR_ && neighb[_EAST_] != _NO_NEIGHBOUR_ ){
+
+                iter_toSend[_EAST_N_F_][_INIX_] =  lNx-2;// <= this
+                iter_toSend[_EAST_N_F_][_ENDX_] =  lNx-2;
+                iter_toSend[_EAST_N_F_][_INIY_] =  iter_toSend[_NORTH_F_][_INIY_];
+                iter_toSend[_EAST_N_F_][_ENDY_] =  iter_toSend[_NORTH_F_][_ENDY_];
+                iter_toSend[_EAST_N_F_][_INIZ_] =  iter_toSend[_NORTH_F_][_INIZ_];
+                iter_toSend[_EAST_N_F_][_ENDZ_] =  iter_toSend[_NORTH_F_][_ENDZ_];
+            }
+
+        }
+
+
+    }
+
+}
+
+
+void ParallelTopology::create_global_iters()
+{
+    
+    iter_glob_ind[_INIX_] = iter_common[_INNER_][_INIX_] + offx - 1;
+    iter_glob_ind[_ENDX_] = iter_common[_INNER_][_ENDX_] + offx + 1;
+    iter_glob_ind[_INIY_] = iter_common[_INNER_][_INIY_] + offy - 1;
+    iter_glob_ind[_ENDY_] = iter_common[_INNER_][_ENDY_] + offy + 1;
+    iter_glob_ind[_INIZ_] = iter_common[_INNER_][_INIZ_] + offz - 1;
+    iter_glob_ind[_ENDZ_] = iter_common[_INNER_][_ENDZ_] + offz + 1;
+
+
+
+    if(iter_glob_ind[_INIX_] == 0)
+        iter_slab[_INIX_] = 0;
+    else
+        iter_slab[_INIX_] = 1;
+
+
+    if(iter_glob_ind[_ENDX_] ==  (mymesh->getGNx() + 1) )
+      iter_slab[_ENDX_] = lNx-1;
+    else
+      iter_slab[_ENDX_] = lNx-2;
+ 
+    if(iter_glob_ind[_INIY_] == 0)
+        iter_slab[_INIY_] = 0;
+    else 
+        iter_slab[_INIY_] = 1;
+ 
+    if(iter_glob_ind[_ENDY_] ==  (mymesh->getGNy() + 1) )
+        iter_slab[_ENDY_] = lNy-1;
+    else
+        iter_slab[_ENDY_] = lNy-2;
+
+
+    if(iter_glob_ind[_INIZ_] == 0)
+        iter_slab[_INIZ_] = 0;
+    else
+        iter_slab[_INIZ_] = 1;
+
+    if(iter_glob_ind[_ENDZ_] ==  (mymesh->getGNz() + 1) )
+        iter_slab[_ENDZ_] = lNz-1;
+    else
+        iter_slab[_ENDZ_] = lNz-2;
+
+    //
+    if(iter_glob_ind[_INIX_] == 0)
+        offslab_x = offx;
+    else
+        offslab_x = offx + 1;
+
+    if(iter_glob_ind[_INIY_] == 0)
+        offslab_y = offy;
+    else
+        offslab_y = offy + 1;
+
+
+    if(iter_glob_ind[_INIZ_] == 0)
+        offslab_z = offz;
+    else
+        offslab_z = offz + 1;
+
+
+    lenslabx = iter_slab[_ENDX_] -  iter_slab[_INIX_] + 1; 
+    lenslaby = iter_slab[_ENDY_] -  iter_slab[_INIY_] + 1; 
+    lenslabz = iter_slab[_ENDZ_] -  iter_slab[_INIZ_] + 1; 
+
+    lenslab = lenslabx*lenslaby*lenslabz;
+
+
+
+
+    //cout<<" Globals "<<rank<<" offz "<<offz<<endl;
+    //cout<<" "<<iter_glob_ind[_INIX_] <<endl;
+    //cout<<" "<<iter_glob_ind[_ENDX_] <<endl;
+    //cout<<" "<<iter_glob_ind[_INIY_] <<endl;
+    //cout<<" "<<iter_glob_ind[_ENDY_] <<endl;
+    //cout<<" "<<iter_glob_ind[_INIZ_] <<endl;
+    //cout<<" "<<iter_glob_ind[_ENDZ_] <<endl;
+
+
+
+
+
+}
+
+void ParallelTopology::create_comm_arrays()
+{
+    //Size of the faces
+
+    len_xy = (lNx-2)*(lNy-2);
+    len_xz = (lNx-2)*(lNz-2);
+    len_yz = (lNy-2)*(lNz-2);
+
+    if( len_yz != 0 ) {
+        pack_send_w = new double [len_yz];    
+        pack_send_e = new double [len_yz];    
+        pack_recv_w = new double [len_yz];    
+        pack_recv_e = new double [len_yz];
+        #pragma acc enter data create(pack_send_w[0:len_yz], pack_send_e[0:len_yz], pack_recv_w[0:len_yz], pack_recv_e[0:len_yz])	
+   }
+    if( len_xz != 0 ) {
+        pack_send_s = new double [len_xz];    
+        pack_send_n = new double [len_xz];    
+        pack_recv_s = new double [len_xz];    
+        pack_recv_n = new double [len_xz];    
+	#pragma acc enter data create(pack_send_s[0:len_xz], pack_send_n[0:len_xz], pack_recv_s[0:len_xz], pack_recv_n[0:len_xz])
+   }
+    if( len_xy != 0 ) {
+        pack_send_b = new double [len_xy];    
+        pack_send_f = new double [len_xy];    
+        pack_recv_b = new double [len_xy];    
+        pack_recv_f = new double [len_xy];
+    	#pragma acc enter data create(pack_send_b[0:len_xy], pack_send_f[0:len_xy], pack_recv_b[0:len_xy], pack_recv_f[0:len_xy])	
+    }
+}
+
+void ParallelTopology::create_complex_comm_arrays()
+{
+
+    len_1Dx = lNx-2;
+    len_1Dy = lNy-2;
+    len_1Dz = lNz-2;
+
+    len_1pt = 1;
+
+    if (neighb[_WEST_S_] != _NO_NEIGHBOUR_) {
+        pack_send_ws = new double[len_1Dz];
+        #pragma acc enter data create(pack_send_ws[0:len_1Dz])
+    }
+    if (neighb[_WEST_N_] != _NO_NEIGHBOUR_) {
+        pack_send_wn = new double[len_1Dz];
+        #pragma acc enter data create(pack_send_wn[0:len_1Dz])
+    }
+    if (neighb[_WEST_B_] != _NO_NEIGHBOUR_) {
+        pack_send_wb = new double[len_1Dy];
+        #pragma acc enter data create(pack_send_wb[0:len_1Dy])
+    }
+    if (neighb[_WEST_F_] != _NO_NEIGHBOUR_) {
+        pack_send_wf = new double[len_1Dy];
+        #pragma acc enter data create(pack_send_wf[0:len_1Dy])
+    }
+    if (neighb[_EAST_S_] != _NO_NEIGHBOUR_) {
+        pack_send_es = new double[len_1Dz];
+        #pragma acc enter data create(pack_send_es[0:len_1Dz])
+    }
+    if (neighb[_EAST_N_] != _NO_NEIGHBOUR_) {
+        pack_send_en = new double[len_1Dz];
+        #pragma acc enter data create(pack_send_en[0:len_1Dz])
+    }
+    if (neighb[_EAST_B_] != _NO_NEIGHBOUR_) {
+        pack_send_eb = new double[len_1Dy];
+        #pragma acc enter data create(pack_send_eb[0:len_1Dy])
+    }
+    if (neighb[_EAST_F_] != _NO_NEIGHBOUR_) {
+        pack_send_ef = new double[len_1Dy];
+        #pragma acc enter data create(pack_send_ef[0:len_1Dy])
+    }
+    if (neighb[_SOUTH_B_] != _NO_NEIGHBOUR_) {
+        pack_send_sb = new double[len_1Dx];
+        #pragma acc enter data create(pack_send_sb[0:len_1Dx])
+    }
+    if (neighb[_SOUTH_F_] != _NO_NEIGHBOUR_) {
+        pack_send_sf = new double[len_1Dx];
+        #pragma acc enter data create(pack_send_sf[0:len_1Dx])
+    }
+    if (neighb[_NORTH_B_] != _NO_NEIGHBOUR_) {
+        pack_send_nb = new double[len_1Dx];
+        #pragma acc enter data create(pack_send_nb[0:len_1Dx])
+    }
+    if (neighb[_NORTH_F_] != _NO_NEIGHBOUR_) {
+        pack_send_nf = new double[len_1Dx];
+        #pragma acc enter data create(pack_send_nf[0:len_1Dx])
+    }
+    if (neighb[_WEST_S_B_] != _NO_NEIGHBOUR_) {
+        pack_send_wsb = new double[len_1pt];
+        #pragma acc enter data create(pack_send_wsb[0:len_1pt])
+    }
+    if (neighb[_WEST_N_B_] != _NO_NEIGHBOUR_) {
+        pack_send_wnb = new double[len_1pt];
+        #pragma acc enter data create(pack_send_wnb[0:len_1pt])
+    }
+    if (neighb[_WEST_S_F_] != _NO_NEIGHBOUR_) {
+        pack_send_wsf = new double[len_1pt];
+        #pragma acc enter data create(pack_send_wsf[0:len_1pt])
+    }
+    if (neighb[_WEST_N_F_] != _NO_NEIGHBOUR_) {
+        pack_send_wnf = new double[len_1pt];
+        #pragma acc enter data create(pack_send_wnf[0:len_1pt])
+    }
+    if (neighb[_EAST_S_B_] != _NO_NEIGHBOUR_) {
+        pack_send_esb = new double[len_1pt];
+        #pragma acc enter data create(pack_send_esb[0:len_1pt])
+    }
+    if (neighb[_EAST_N_B_] != _NO_NEIGHBOUR_) {
+        pack_send_enb = new double[len_1pt];
+        #pragma acc enter data create(pack_send_enb[0:len_1pt])
+    }
+    if (neighb[_EAST_S_F_] != _NO_NEIGHBOUR_) {
+        pack_send_esf = new double[len_1pt];
+        #pragma acc enter data create(pack_send_esf[0:len_1pt])
+    }
+    if (neighb[_EAST_N_F_] != _NO_NEIGHBOUR_) {
+        pack_send_enf = new double[len_1pt];
+        #pragma acc enter data create(pack_send_enf[0:len_1pt])
+    }
+    
+    if (neighb[_WEST_S_] != _NO_NEIGHBOUR_) {
+        pack_recv_ws = new double[len_1Dz];
+        #pragma acc enter data create(pack_recv_ws[0:len_1Dz])
+    }
+    if (neighb[_WEST_N_] != _NO_NEIGHBOUR_) {
+        pack_recv_wn = new double[len_1Dz];
+        #pragma acc enter data create(pack_recv_wn[0:len_1Dz])
+    }
+    if (neighb[_WEST_B_] != _NO_NEIGHBOUR_) {
+        pack_recv_wb = new double[len_1Dy];
+        #pragma acc enter data create(pack_recv_wb[0:len_1Dy])
+    }
+    if (neighb[_WEST_F_] != _NO_NEIGHBOUR_) {
+        pack_recv_wf = new double[len_1Dy];
+        #pragma acc enter data create(pack_recv_wf[0:len_1Dy])
+    }
+    if (neighb[_EAST_S_] != _NO_NEIGHBOUR_) {
+        pack_recv_es = new double[len_1Dz];
+        #pragma acc enter data create(pack_recv_es[0:len_1Dz])
+    }
+    if (neighb[_EAST_N_] != _NO_NEIGHBOUR_) {
+        pack_recv_en = new double[len_1Dz];
+        #pragma acc enter data create(pack_recv_en[0:len_1Dz])
+    }
+    if (neighb[_EAST_B_] != _NO_NEIGHBOUR_) {
+        pack_recv_eb = new double[len_1Dy];
+        #pragma acc enter data create(pack_recv_eb[0:len_1Dy])
+    }
+    if (neighb[_EAST_F_] != _NO_NEIGHBOUR_) {
+        pack_recv_ef = new double[len_1Dy];
+        #pragma acc enter data create(pack_recv_ef[0:len_1Dy])
+    }
+    if (neighb[_SOUTH_B_] != _NO_NEIGHBOUR_) {
+        pack_recv_sb = new double[len_1Dx];
+        #pragma acc enter data create(pack_recv_sb[0:len_1Dx])
+    }
+    if (neighb[_SOUTH_F_] != _NO_NEIGHBOUR_) {
+        pack_recv_sf = new double[len_1Dx];
+        #pragma acc enter data create(pack_recv_sf[0:len_1Dx])
+    }
+    if (neighb[_NORTH_B_] != _NO_NEIGHBOUR_) {
+        pack_recv_nb = new double[len_1Dx];
+        #pragma acc enter data create(pack_recv_nb[0:len_1Dx])
+    }
+    if (neighb[_NORTH_F_] != _NO_NEIGHBOUR_) {
+        pack_recv_nf = new double[len_1Dx];
+        #pragma acc enter data create(pack_recv_nf[0:len_1Dx])
+    }
+    if (neighb[_WEST_S_B_] != _NO_NEIGHBOUR_) {
+        pack_recv_wsb = new double[len_1pt];
+        #pragma acc enter data create(pack_recv_wsb[0:len_1pt])
+    }
+    if (neighb[_WEST_N_B_] != _NO_NEIGHBOUR_) {
+        pack_recv_wnb = new double[len_1pt];
+        #pragma acc enter data create(pack_recv_wnb[0:len_1pt])
+    }
+    if (neighb[_WEST_S_F_] != _NO_NEIGHBOUR_) {
+        pack_recv_wsf = new double[len_1pt];
+        #pragma acc enter data create(pack_recv_wsf[0:len_1pt])
+    }
+    if (neighb[_WEST_N_F_] != _NO_NEIGHBOUR_) {
+        pack_recv_wnf = new double[len_1pt];
+        #pragma acc enter data create(pack_recv_wnf[0:len_1pt])
+    }
+    if (neighb[_EAST_S_B_] != _NO_NEIGHBOUR_) {
+        pack_recv_esb = new double[len_1pt];
+        #pragma acc enter data create(pack_recv_esb[0:len_1pt])
+    }
+    if (neighb[_EAST_N_B_] != _NO_NEIGHBOUR_) {
+        pack_recv_enb = new double[len_1pt];
+        #pragma acc enter data create(pack_recv_enb[0:len_1pt])
+    }
+    if (neighb[_EAST_S_F_] != _NO_NEIGHBOUR_) {
+        pack_recv_esf = new double[len_1pt];
+        #pragma acc enter data create(pack_recv_esf[0:len_1pt])
+    }
+    if (neighb[_EAST_N_F_] != _NO_NEIGHBOUR_) {
+        pack_recv_enf = new double[len_1pt];
+        #pragma acc enter data create(pack_recv_enf[0:len_1pt])
+    }
+}
+
+void ParallelTopology::fillEdgesCorners(double *vec)
+{
+
+    int _lNx_ = getlNx();
+    int _lNy_ = getlNy();
+    int _lNz_ = getlNz();
+    int _ls_ = _lNx_*_lNy_*_lNz_;
+
+#pragma acc data present(vec[0:_ls_]) 
+{
+
+    /// West-South boundary points
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_]) 
+    for(int i = iter_bound[_WEST_S_][_INIX_]; i <= iter_bound[_WEST_S_][_ENDX_]; i++) {
+        for(int j = iter_bound[_WEST_S_][_INIY_]; j <= iter_bound[_WEST_S_][_ENDY_]; j++) {
+            for(int k = iter_bound[_WEST_S_][_INIZ_]; k <= iter_bound[_WEST_S_][_ENDZ_]; k++) {
+                vec[I1D(i,j,k)] = (1.0/2.0) * (vec[I1D(i+1,j,k)] + vec[I1D(i,j+1,k)]);
+            }
+        }
+    }
+    
+    /// West-North boundary points
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_]) 
+    for(int i = iter_bound[_WEST_N_][_INIX_]; i <= iter_bound[_WEST_N_][_ENDX_]; i++) {
+        for(int j = iter_bound[_WEST_N_][_INIY_]; j <= iter_bound[_WEST_N_][_ENDY_]; j++) {
+            for(int k = iter_bound[_WEST_N_][_INIZ_]; k <= iter_bound[_WEST_N_][_ENDZ_]; k++) {
+                vec[I1D(i,j,k)] = (1.0/2.0) * (vec[I1D(i+1,j,k)] + vec[I1D(i,j-1,k)]);
+            }
+        }
+    }
+    
+    /// West-Back boundary points
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_]) 
+    for(int i = iter_bound[_WEST_B_][_INIX_]; i <= iter_bound[_WEST_B_][_ENDX_]; i++) {
+        for(int j = iter_bound[_WEST_B_][_INIY_]; j <= iter_bound[_WEST_B_][_ENDY_]; j++) {
+            for(int k = iter_bound[_WEST_B_][_INIZ_]; k <= iter_bound[_WEST_B_][_ENDZ_]; k++) {
+                vec[I1D(i,j,k)] = (1.0/2.0) * (vec[I1D(i+1,j,k)] + vec[I1D(i,j,k+1)]);
+            }
+        }
+    }
+    
+    /// West-Front boundary points
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_]) 
+    for(int i = iter_bound[_WEST_F_][_INIX_]; i <= iter_bound[_WEST_F_][_ENDX_]; i++) {
+        for(int j = iter_bound[_WEST_F_][_INIY_]; j <= iter_bound[_WEST_F_][_ENDY_]; j++) {
+            for(int k = iter_bound[_WEST_F_][_INIZ_]; k <= iter_bound[_WEST_F_][_ENDZ_]; k++) {
+                vec[I1D(i,j,k)] = (1.0/2.0) * (vec[I1D(i+1,j,k)] + vec[I1D(i,j,k-1)]);
+            }
+        }
+    }
+    
+    /// East-South boundary points
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_])
+    for(int i = iter_bound[_EAST_S_][_INIX_]; i <= iter_bound[_EAST_S_][_ENDX_]; i++) {
+        for(int j = iter_bound[_EAST_S_][_INIY_]; j <= iter_bound[_EAST_S_][_ENDY_]; j++) {
+            for(int k = iter_bound[_EAST_S_][_INIZ_]; k <= iter_bound[_EAST_S_][_ENDZ_]; k++) {
+                vec[I1D(i,j,k)] = (1.0/2.0) * (vec[I1D(i-1,j,k)] + vec[I1D(i,j+1,k)]);
+            }
+        }
+    }
+    
+    /// East-North boundary points
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_]) 
+    for(int i = iter_bound[_EAST_N_][_INIX_]; i <= iter_bound[_EAST_N_][_ENDX_]; i++) {
+        for(int j = iter_bound[_EAST_N_][_INIY_]; j <= iter_bound[_EAST_N_][_ENDY_]; j++) {
+            for(int k = iter_bound[_EAST_N_][_INIZ_]; k <= iter_bound[_EAST_N_][_ENDZ_]; k++) {
+                vec[I1D(i,j,k)] = (1.0/2.0) * (vec[I1D(i-1,j,k)] + vec[I1D(i,j-1,k)]);
+            }
+        }
+    }
+    
+    /// East-Back boundary points
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_]) 
+    for(int i = iter_bound[_EAST_B_][_INIX_]; i <= iter_bound[_EAST_B_][_ENDX_]; i++) {
+        for(int j = iter_bound[_EAST_B_][_INIY_]; j <= iter_bound[_EAST_B_][_ENDY_]; j++) {
+            for(int k = iter_bound[_EAST_B_][_INIZ_]; k <= iter_bound[_EAST_B_][_ENDZ_]; k++) {
+                vec[I1D(i,j,k)] = (1.0/2.0) * (vec[I1D(i-1,j,k)] + vec[I1D(i,j,k+1)]);
+            }
+        }
+    }
+    
+    /// East-Front boundary points
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_]) 
+    for(int i = iter_bound[_EAST_F_][_INIX_]; i <= iter_bound[_EAST_F_][_ENDX_]; i++) {
+        for(int j = iter_bound[_EAST_F_][_INIY_]; j <= iter_bound[_EAST_F_][_ENDY_]; j++) {
+            for(int k = iter_bound[_EAST_F_][_INIZ_]; k <= iter_bound[_EAST_F_][_ENDZ_]; k++) {
+                vec[I1D(i,j,k)] = (1.0/2.0) * (vec[I1D(i-1,j,k)] + vec[I1D(i,j,k-1)]);
+            }
+        }
+    }
+    
+    /// South-Back boundary points
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_]) 
+    for(int i = iter_bound[_SOUTH_B_][_INIX_]; i <= iter_bound[_SOUTH_B_][_ENDX_]; i++) {
+        for(int j = iter_bound[_SOUTH_B_][_INIY_]; j <= iter_bound[_SOUTH_B_][_ENDY_]; j++) {
+            for(int k = iter_bound[_SOUTH_B_][_INIZ_]; k <= iter_bound[_SOUTH_B_][_ENDZ_]; k++) {
+                vec[I1D(i,j,k)] = (1.0/2.0) * (vec[I1D(i,j+1,k)] + vec[I1D(i,j,k+1)]);
+            }
+        }
+    }
+    
+    /// South-Front boundary points
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_]) 
+    for(int i = iter_bound[_SOUTH_F_][_INIX_]; i <= iter_bound[_SOUTH_F_][_ENDX_]; i++) {
+        for(int j = iter_bound[_SOUTH_F_][_INIY_]; j <= iter_bound[_SOUTH_F_][_ENDY_]; j++) {
+            for(int k = iter_bound[_SOUTH_F_][_INIZ_]; k <= iter_bound[_SOUTH_F_][_ENDZ_]; k++) {
+                vec[I1D(i,j,k)] = (1.0/2.0) * (vec[I1D(i,j+1,k)] + vec[I1D(i,j,k-1)]);
+            }
+        }
+    }
+    
+    /// North-Back boundary points
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_]) 
+    for(int i = iter_bound[_NORTH_B_][_INIX_]; i <= iter_bound[_NORTH_B_][_ENDX_]; i++) {
+        for(int j = iter_bound[_NORTH_B_][_INIY_]; j <= iter_bound[_NORTH_B_][_ENDY_]; j++) {
+            for(int k = iter_bound[_NORTH_B_][_INIZ_]; k <= iter_bound[_NORTH_B_][_ENDZ_]; k++) {
+                vec[I1D(i,j,k)] = (1.0/2.0) * (vec[I1D(i,j-1,k)] + vec[I1D(i,j,k+1)]);
+            }
+        }
+    }
+    
+    /// North-Front boundary points
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_])
+    for(int i = iter_bound[_NORTH_F_][_INIX_]; i <= iter_bound[_NORTH_F_][_ENDX_]; i++) {
+        for(int j = iter_bound[_NORTH_F_][_INIY_]; j <= iter_bound[_NORTH_F_][_ENDY_]; j++) {
+            for(int k = iter_bound[_NORTH_F_][_INIZ_]; k <= iter_bound[_NORTH_F_][_ENDZ_]; k++) {
+                vec[I1D(i,j,k)] = (1.0/2.0) * (vec[I1D(i,j-1,k)] + vec[I1D(i,j,k-1)]);
+            }
+        }
+    }
+    
+    /// West-South-Back corner
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_])
+    for(int i = iter_bound[_WEST_S_B_][_INIX_]; i <= iter_bound[_WEST_S_B_][_ENDX_]; i++) {
+        for(int j = iter_bound[_WEST_S_B_][_INIY_]; j <= iter_bound[_WEST_S_B_][_ENDY_]; j++) {
+            for(int k = iter_bound[_WEST_S_B_][_INIZ_]; k <= iter_bound[_WEST_S_B_][_ENDZ_]; k++) {
+                vec[I1D(i,j,k)] = (1.0/3.0) * (vec[I1D(i+1,j,k)] + vec[I1D(i,j+1,k)] + vec[I1D(i,j,k+1)]);
+            }
+        }
+    }
+    
+    /// West-North-Back corner
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_])
+    for(int i = iter_bound[_WEST_N_B_][_INIX_]; i <= iter_bound[_WEST_N_B_][_ENDX_]; i++) {
+        for(int j = iter_bound[_WEST_N_B_][_INIY_]; j <= iter_bound[_WEST_N_B_][_ENDY_]; j++) {
+            for(int k = iter_bound[_WEST_N_B_][_INIZ_]; k <= iter_bound[_WEST_N_B_][_ENDZ_]; k++) {
+                vec[I1D(i,j,k)] = (1.0/3.0) * (vec[I1D(i+1,j,k)] + vec[I1D(i,j-1,k)] + vec[I1D(i,j,k+1)]);
+            }
+        }
+    }
+    
+    /// West-South-Front corner
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_])
+    for(int i = iter_bound[_WEST_S_F_][_INIX_]; i <= iter_bound[_WEST_S_F_][_ENDX_]; i++) {
+        for(int j = iter_bound[_WEST_S_F_][_INIY_]; j <= iter_bound[_WEST_S_F_][_ENDY_]; j++) {
+            for(int k = iter_bound[_WEST_S_F_][_INIZ_]; k <= iter_bound[_WEST_S_F_][_ENDZ_]; k++) {
+                vec[I1D(i,j,k)] = (1.0/3.0) * (vec[I1D(i+1,j,k)] + vec[I1D(i,j+1,k)] + vec[I1D(i,j,k-1)]);
+            }
+        }
+    }
+    
+    /// West-North-Front corner
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_]) 
+    for(int i = iter_bound[_WEST_N_F_][_INIX_]; i <= iter_bound[_WEST_N_F_][_ENDX_]; i++) {
+        for(int j = iter_bound[_WEST_N_F_][_INIY_]; j <= iter_bound[_WEST_N_F_][_ENDY_]; j++) {
+            for(int k = iter_bound[_WEST_N_F_][_INIZ_]; k <= iter_bound[_WEST_N_F_][_ENDZ_]; k++) {
+                vec[I1D(i,j,k)] = (1.0/3.0) * (vec[I1D(i+1,j,k)] + vec[I1D(i,j-1,k)] + vec[I1D(i,j,k-1)]);
+            }
+        }
+    }
+    
+    /// East-South-Back corner
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_])
+    for(int i = iter_bound[_EAST_S_B_][_INIX_]; i <= iter_bound[_EAST_S_B_][_ENDX_]; i++) {
+        for(int j = iter_bound[_EAST_S_B_][_INIY_]; j <= iter_bound[_EAST_S_B_][_ENDY_]; j++) {
+            for(int k = iter_bound[_EAST_S_B_][_INIZ_]; k <= iter_bound[_EAST_S_B_][_ENDZ_]; k++) {
+                vec[I1D(i,j,k)] = (1.0/3.0) * (vec[I1D(i-1,j,k)] + vec[I1D(i,j+1,k)] + vec[I1D(i,j,k+1)]);
+            }
+        }
+    }
+    
+    /// East-North-Back corner
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_])
+    for(int i = iter_bound[_EAST_N_B_][_INIX_]; i <= iter_bound[_EAST_N_B_][_ENDX_]; i++) {
+        for(int j = iter_bound[_EAST_N_B_][_INIY_]; j <= iter_bound[_EAST_N_B_][_ENDY_]; j++) {
+            for(int k = iter_bound[_EAST_N_B_][_INIZ_]; k <= iter_bound[_EAST_N_B_][_ENDZ_]; k++) {
+                vec[I1D(i,j,k)] = (1.0/3.0) * (vec[I1D(i-1,j,k)] + vec[I1D(i,j-1,k)] + vec[I1D(i,j,k+1)]);
+            }
+        }
+    }
+    
+    /// East-South-Front corner
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_])
+    for(int i = iter_bound[_EAST_S_F_][_INIX_]; i <= iter_bound[_EAST_S_F_][_ENDX_]; i++) {
+        for(int j = iter_bound[_EAST_S_F_][_INIY_]; j <= iter_bound[_EAST_S_F_][_ENDY_]; j++) {
+            for(int k = iter_bound[_EAST_S_F_][_INIZ_]; k <= iter_bound[_EAST_S_F_][_ENDZ_]; k++) {
+                vec[I1D(i,j,k)] = (1.0/3.0) * (vec[I1D(i-1,j,k)] + vec[I1D(i,j+1,k)] + vec[I1D(i,j,k-1)]);
+            }
+        }
+    }
+    
+    /// East-North-Front corner
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_]) 
+    for(int i = iter_bound[_EAST_N_F_][_INIX_]; i <= iter_bound[_EAST_N_F_][_ENDX_]; i++) {
+        for(int j = iter_bound[_EAST_N_F_][_INIY_]; j <= iter_bound[_EAST_N_F_][_ENDY_]; j++) {
+            for(int k = iter_bound[_EAST_N_F_][_INIZ_]; k <= iter_bound[_EAST_N_F_][_ENDZ_]; k++) {
+                vec[I1D(i,j,k)] = (1.0/3.0) * (vec[I1D(i-1,j,k)] + vec[I1D(i,j-1,k)] + vec[I1D(i,j,k-1)]);
+            }
+        }
+    }
+}
+
+};
+
+// CPU-only Halo-exchange
+ 
+void ParallelTopology::update(double *vec)
+{
+    pack(vec);
+    halo_exchange();
+    unpack(vec);
+}
+
+void ParallelTopology::update_simple(double *vec)
+{
+    pack_simple(vec);
+    halo_exchange_simple();
+    unpack_simple(vec);
+}
+
+
+void ParallelTopology::pack_simple(double *vec)
+{
+
+    //WEST
+    int l=0;
+    for(int i=iter_toSend[_WEST_][_INIX_]; i<= iter_toSend[_WEST_][_ENDX_]; i++)
+        for(int j=iter_toSend[_WEST_][_INIY_]; j<= iter_toSend[_WEST_][_ENDY_]; j++)
+            for(int k=iter_toSend[_WEST_][_INIZ_]; k<= iter_toSend[_WEST_][_ENDZ_]; k++)
+            {
+                pack_send_w[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++; 
+            }
+
+    //EAST
+    l=0;
+    for(int i=iter_toSend[_EAST_][_INIX_]; i<= iter_toSend[_EAST_][_ENDX_]; i++)
+        for(int j=iter_toSend[_EAST_][_INIY_]; j<= iter_toSend[_EAST_][_ENDY_]; j++)
+            for(int k=iter_toSend[_EAST_][_INIZ_]; k<= iter_toSend[_EAST_][_ENDZ_]; k++)
+            {
+                pack_send_e[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++;
+            }
+
+
+    //SOUTH
+    l=0;
+    for(int i=iter_toSend[_SOUTH_][_INIX_]; i<= iter_toSend[_SOUTH_][_ENDX_]; i++)
+        for(int j=iter_toSend[_SOUTH_][_INIY_]; j<= iter_toSend[_SOUTH_][_ENDY_]; j++)
+            for(int k=iter_toSend[_SOUTH_][_INIZ_]; k<= iter_toSend[_SOUTH_][_ENDZ_]; k++)
+            {
+                pack_send_s[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++;
+            }
+
+
+    //NORTH
+    l=0;
+    for(int i=iter_toSend[_NORTH_][_INIX_]; i<= iter_toSend[_NORTH_][_ENDX_]; i++)
+        for(int j=iter_toSend[_NORTH_][_INIY_]; j<= iter_toSend[_NORTH_][_ENDY_]; j++)
+            for(int k=iter_toSend[_NORTH_][_INIZ_]; k<= iter_toSend[_NORTH_][_ENDZ_]; k++)
+            {
+                pack_send_n[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++;
+            }
+
+    //BACK
+    l=0;
+    for(int i=iter_toSend[_BACK_][_INIX_]; i<= iter_toSend[_BACK_][_ENDX_]; i++)
+        for(int j=iter_toSend[_BACK_][_INIY_]; j<= iter_toSend[_BACK_][_ENDY_]; j++)
+            for(int k=iter_toSend[_BACK_][_INIZ_]; k<= iter_toSend[_BACK_][_ENDZ_]; k++)
+            {
+                pack_send_b[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++;
+            }
+
+
+    //FRONT 
+    l=0;
+    for(int i=iter_toSend[_FRONT_][_INIX_]; i<= iter_toSend[_FRONT_][_ENDX_]; i++)
+        for(int j=iter_toSend[_FRONT_][_INIY_]; j<= iter_toSend[_FRONT_][_ENDY_]; j++)
+            for(int k=iter_toSend[_FRONT_][_INIZ_]; k<= iter_toSend[_FRONT_][_ENDZ_]; k++)
+            {
+                pack_send_f[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++;
+            }
+
+}
+
+
+void ParallelTopology::pack(double *vec)
+{
+
+    //WEST
+    int l=0;
+    for(int i=iter_toSend[_WEST_][_INIX_]; i<= iter_toSend[_WEST_][_ENDX_]; i++)
+        for(int j=iter_toSend[_WEST_][_INIY_]; j<= iter_toSend[_WEST_][_ENDY_]; j++)
+            for(int k=iter_toSend[_WEST_][_INIZ_]; k<= iter_toSend[_WEST_][_ENDZ_]; k++)
+            {
+                pack_send_w[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++; 
+            }
+
+
+    //EAST
+    l=0;
+    for(int i=iter_toSend[_EAST_][_INIX_]; i<= iter_toSend[_EAST_][_ENDX_]; i++)
+        for(int j=iter_toSend[_EAST_][_INIY_]; j<= iter_toSend[_EAST_][_ENDY_]; j++)
+            for(int k=iter_toSend[_EAST_][_INIZ_]; k<= iter_toSend[_EAST_][_ENDZ_]; k++)
+            {
+                pack_send_e[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++;
+            }
+
+    //SOUTH
+    l=0;
+    for(int i=iter_toSend[_SOUTH_][_INIX_]; i<= iter_toSend[_SOUTH_][_ENDX_]; i++)
+        for(int j=iter_toSend[_SOUTH_][_INIY_]; j<= iter_toSend[_SOUTH_][_ENDY_]; j++)
+            for(int k=iter_toSend[_SOUTH_][_INIZ_]; k<= iter_toSend[_SOUTH_][_ENDZ_]; k++)
+            {
+                pack_send_s[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++;
+            }
+
+
+    //NORTH
+    l=0;
+    for(int i=iter_toSend[_NORTH_][_INIX_]; i<= iter_toSend[_NORTH_][_ENDX_]; i++)
+        for(int j=iter_toSend[_NORTH_][_INIY_]; j<= iter_toSend[_NORTH_][_ENDY_]; j++)
+            for(int k=iter_toSend[_NORTH_][_INIZ_]; k<= iter_toSend[_NORTH_][_ENDZ_]; k++)
+            {
+                pack_send_n[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++;
+            }
+
+    //BACK
+    l=0;
+    for(int i=iter_toSend[_BACK_][_INIX_]; i<= iter_toSend[_BACK_][_ENDX_]; i++)
+        for(int j=iter_toSend[_BACK_][_INIY_]; j<= iter_toSend[_BACK_][_ENDY_]; j++)
+            for(int k=iter_toSend[_BACK_][_INIZ_]; k<= iter_toSend[_BACK_][_ENDZ_]; k++)
+            {
+                pack_send_b[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++;
+            }
+
+
+    //FRONT 
+    l=0;
+    for(int i=iter_toSend[_FRONT_][_INIX_]; i<= iter_toSend[_FRONT_][_ENDX_]; i++)
+        for(int j=iter_toSend[_FRONT_][_INIY_]; j<= iter_toSend[_FRONT_][_ENDY_]; j++)
+            for(int k=iter_toSend[_FRONT_][_INIZ_]; k<= iter_toSend[_FRONT_][_ENDZ_]; k++)
+            {
+                pack_send_f[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++;
+            }
+
+ 
+    //WEST SOUTH 
+    l=0;
+    for(int i=iter_toSend[_WEST_S_][_INIX_]; i<= iter_toSend[_WEST_S_][_ENDX_]; i++)
+        for(int j=iter_toSend[_WEST_S_][_INIY_]; j<= iter_toSend[_WEST_S_][_ENDY_]; j++)
+            for(int k=iter_toSend[_WEST_S_][_INIZ_]; k<= iter_toSend[_WEST_S_][_ENDZ_]; k++)
+            {
+                pack_send_ws[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++; 
+            }
+
+    //WEST NORTH
+    l=0;
+    for(int i=iter_toSend[_WEST_N_][_INIX_]; i<= iter_toSend[_WEST_N_][_ENDX_]; i++)
+        for(int j=iter_toSend[_WEST_N_][_INIY_]; j<= iter_toSend[_WEST_N_][_ENDY_]; j++)
+            for(int k=iter_toSend[_WEST_N_][_INIZ_]; k<= iter_toSend[_WEST_N_][_ENDZ_]; k++)
+            {
+                pack_send_wn[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++; 
+            }
+
+    //WEST BACK 
+    l=0;
+    for(int i=iter_toSend[_WEST_B_][_INIX_]; i<= iter_toSend[_WEST_B_][_ENDX_]; i++)
+        for(int j=iter_toSend[_WEST_B_][_INIY_]; j<= iter_toSend[_WEST_B_][_ENDY_]; j++)
+            for(int k=iter_toSend[_WEST_B_][_INIZ_]; k<= iter_toSend[_WEST_B_][_ENDZ_]; k++)
+            {
+                pack_send_wb[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++; 
+            }
+
+    //WEST FRONT 
+    l=0;
+    for(int i=iter_toSend[_WEST_F_][_INIX_]; i<= iter_toSend[_WEST_F_][_ENDX_]; i++)
+        for(int j=iter_toSend[_WEST_F_][_INIY_]; j<= iter_toSend[_WEST_F_][_ENDY_]; j++)
+            for(int k=iter_toSend[_WEST_F_][_INIZ_]; k<= iter_toSend[_WEST_F_][_ENDZ_]; k++)
+            {
+                pack_send_wf[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++; 
+            }
+
+    //EAST SOUTH 
+    l=0;
+    for(int i=iter_toSend[_EAST_S_][_INIX_]; i<= iter_toSend[_EAST_S_][_ENDX_]; i++)
+        for(int j=iter_toSend[_EAST_S_][_INIY_]; j<= iter_toSend[_EAST_S_][_ENDY_]; j++)
+            for(int k=iter_toSend[_EAST_S_][_INIZ_]; k<= iter_toSend[_EAST_S_][_ENDZ_]; k++)
+            {
+                pack_send_es[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++; 
+            }
+
+    //EAST NORTH
+    l=0;
+    for(int i=iter_toSend[_EAST_N_][_INIX_]; i<= iter_toSend[_EAST_N_][_ENDX_]; i++)
+        for(int j=iter_toSend[_EAST_N_][_INIY_]; j<= iter_toSend[_EAST_N_][_ENDY_]; j++)
+            for(int k=iter_toSend[_EAST_N_][_INIZ_]; k<= iter_toSend[_EAST_N_][_ENDZ_]; k++)
+            {
+                pack_send_en[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++; 
+            }
+
+    //EAST BACK 
+    l=0;
+    for(int i=iter_toSend[_EAST_B_][_INIX_]; i<= iter_toSend[_EAST_B_][_ENDX_]; i++)
+        for(int j=iter_toSend[_EAST_B_][_INIY_]; j<= iter_toSend[_EAST_B_][_ENDY_]; j++)
+            for(int k=iter_toSend[_EAST_B_][_INIZ_]; k<= iter_toSend[_EAST_B_][_ENDZ_]; k++)
+            {
+                pack_send_eb[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++; 
+            }
+
+    //EAST FRONT 
+    l=0;
+    for(int i=iter_toSend[_EAST_F_][_INIX_]; i<= iter_toSend[_EAST_F_][_ENDX_]; i++)
+        for(int j=iter_toSend[_EAST_F_][_INIY_]; j<= iter_toSend[_EAST_F_][_ENDY_]; j++)
+            for(int k=iter_toSend[_EAST_F_][_INIZ_]; k<= iter_toSend[_EAST_F_][_ENDZ_]; k++)
+            {
+                pack_send_ef[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++; 
+            }
+
+    //SOUTH BACK 
+    l=0;
+    for(int i=iter_toSend[_SOUTH_B_][_INIX_]; i<= iter_toSend[_SOUTH_B_][_ENDX_]; i++)
+        for(int j=iter_toSend[_SOUTH_B_][_INIY_]; j<= iter_toSend[_SOUTH_B_][_ENDY_]; j++)
+            for(int k=iter_toSend[_SOUTH_B_][_INIZ_]; k<= iter_toSend[_SOUTH_B_][_ENDZ_]; k++)
+            {
+                pack_send_sb[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++; 
+            }
+
+    //SOUTH FRONT 
+    l=0;
+    for(int i=iter_toSend[_SOUTH_F_][_INIX_]; i<= iter_toSend[_SOUTH_F_][_ENDX_]; i++)
+        for(int j=iter_toSend[_SOUTH_F_][_INIY_]; j<= iter_toSend[_SOUTH_F_][_ENDY_]; j++)
+            for(int k=iter_toSend[_SOUTH_F_][_INIZ_]; k<= iter_toSend[_SOUTH_F_][_ENDZ_]; k++)
+            {
+                pack_send_sf[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++; 
+            }
+
+    //NORTH BACK 
+    l=0;
+    for(int i=iter_toSend[_NORTH_B_][_INIX_]; i<= iter_toSend[_NORTH_B_][_ENDX_]; i++)
+        for(int j=iter_toSend[_NORTH_B_][_INIY_]; j<= iter_toSend[_NORTH_B_][_ENDY_]; j++)
+            for(int k=iter_toSend[_NORTH_B_][_INIZ_]; k<= iter_toSend[_NORTH_B_][_ENDZ_]; k++)
+            {
+                pack_send_nb[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++; 
+            }
+
+    //NORTH FRONT 
+    l=0;
+    for(int i=iter_toSend[_NORTH_F_][_INIX_]; i<= iter_toSend[_NORTH_F_][_ENDX_]; i++)
+        for(int j=iter_toSend[_NORTH_F_][_INIY_]; j<= iter_toSend[_NORTH_F_][_ENDY_]; j++)
+            for(int k=iter_toSend[_NORTH_F_][_INIZ_]; k<= iter_toSend[_NORTH_F_][_ENDZ_]; k++)
+            {
+                pack_send_nf[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++; 
+            }
+ 
+    //WEST SOUTH BACK 
+    l=0;
+    for(int i=iter_toSend[_WEST_S_B_][_INIX_]; i<= iter_toSend[_WEST_S_B_][_ENDX_]; i++)
+        for(int j=iter_toSend[_WEST_S_B_][_INIY_]; j<= iter_toSend[_WEST_S_B_][_ENDY_]; j++)
+            for(int k=iter_toSend[_WEST_S_B_][_INIZ_]; k<= iter_toSend[_WEST_S_B_][_ENDZ_]; k++)
+            {
+                pack_send_wsb[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++; 
+            }
+
+    //WEST NORTH BACK
+    l=0;
+    for(int i=iter_toSend[_WEST_N_B_][_INIX_]; i<= iter_toSend[_WEST_N_B_][_ENDX_]; i++)
+        for(int j=iter_toSend[_WEST_N_B_][_INIY_]; j<= iter_toSend[_WEST_N_B_][_ENDY_]; j++)
+            for(int k=iter_toSend[_WEST_N_B_][_INIZ_]; k<= iter_toSend[_WEST_N_B_][_ENDZ_]; k++)
+            {
+                pack_send_wnb[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++; 
+            }
+
+    //WEST SOUTH FRONT
+    l=0;
+    for(int i=iter_toSend[_WEST_S_F_][_INIX_]; i<= iter_toSend[_WEST_S_F_][_ENDX_]; i++)
+        for(int j=iter_toSend[_WEST_S_F_][_INIY_]; j<= iter_toSend[_WEST_S_F_][_ENDY_]; j++)
+            for(int k=iter_toSend[_WEST_S_F_][_INIZ_]; k<= iter_toSend[_WEST_S_F_][_ENDZ_]; k++)
+            {
+                pack_send_wsf[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++; 
+            }
+
+    //WEST NORTH FRONT
+    l=0;
+    for(int i=iter_toSend[_WEST_N_F_][_INIX_]; i<= iter_toSend[_WEST_N_F_][_ENDX_]; i++)
+        for(int j=iter_toSend[_WEST_N_F_][_INIY_]; j<= iter_toSend[_WEST_N_F_][_ENDY_]; j++)
+            for(int k=iter_toSend[_WEST_N_F_][_INIZ_]; k<= iter_toSend[_WEST_N_F_][_ENDZ_]; k++)
+            {
+                pack_send_wnf[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++; 
+            }
+
+    //EAST SOUTH BACK 
+    l=0;
+    for(int i=iter_toSend[_EAST_S_B_][_INIX_]; i<= iter_toSend[_EAST_S_B_][_ENDX_]; i++)
+        for(int j=iter_toSend[_EAST_S_B_][_INIY_]; j<= iter_toSend[_EAST_S_B_][_ENDY_]; j++)
+            for(int k=iter_toSend[_EAST_S_B_][_INIZ_]; k<= iter_toSend[_EAST_S_B_][_ENDZ_]; k++)
+            {
+                pack_send_esb[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++; 
+            }
+
+    //EAST NORTH BACK
+    l=0;
+    for(int i=iter_toSend[_EAST_N_B_][_INIX_]; i<= iter_toSend[_EAST_N_B_][_ENDX_]; i++)
+        for(int j=iter_toSend[_EAST_N_B_][_INIY_]; j<= iter_toSend[_EAST_N_B_][_ENDY_]; j++)
+            for(int k=iter_toSend[_EAST_N_B_][_INIZ_]; k<= iter_toSend[_EAST_N_B_][_ENDZ_]; k++)
+            {
+                pack_send_enb[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++; 
+            }
+ 
+    //EAST SOUTH FRONT
+    l=0;
+    for(int i=iter_toSend[_EAST_S_F_][_INIX_]; i<= iter_toSend[_EAST_S_F_][_ENDX_]; i++)
+        for(int j=iter_toSend[_EAST_S_F_][_INIY_]; j<= iter_toSend[_EAST_S_F_][_ENDY_]; j++)
+            for(int k=iter_toSend[_EAST_S_F_][_INIZ_]; k<= iter_toSend[_EAST_S_F_][_ENDZ_]; k++)
+            {
+                pack_send_esf[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++; 
+            }
+
+    //EAST NORTH FRONT
+    l=0;
+    for(int i=iter_toSend[_EAST_N_F_][_INIX_]; i<= iter_toSend[_EAST_N_F_][_ENDX_]; i++)
+        for(int j=iter_toSend[_EAST_N_F_][_INIY_]; j<= iter_toSend[_EAST_N_F_][_ENDY_]; j++)
+            for(int k=iter_toSend[_EAST_N_F_][_INIZ_]; k<= iter_toSend[_EAST_N_F_][_ENDZ_]; k++)
+            {
+                pack_send_enf[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+                l++; 
+            }
+
+}
+
+
+void ParallelTopology::unpack_simple(double *vec)
+{
+    //WEST
+    int l=0;
+    for(int i=iter_toRecv[_WEST_][_INIX_]; i<= iter_toRecv[_WEST_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_WEST_][_INIY_]; j<= iter_toRecv[_WEST_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_WEST_][_INIZ_]; k<= iter_toRecv[_WEST_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_w[l];
+                l++;
+            }
+
+    //EAST
+    l=0;
+    for(int i=iter_toRecv[_EAST_][_INIX_]; i<= iter_toRecv[_EAST_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_EAST_][_INIY_]; j<= iter_toRecv[_EAST_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_EAST_][_INIZ_]; k<= iter_toRecv[_EAST_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_e[l];
+                l++;
+            }
+
+    //SOUTH
+    l=0;
+    for(int i=iter_toRecv[_SOUTH_][_INIX_]; i<= iter_toRecv[_SOUTH_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_SOUTH_][_INIY_]; j<= iter_toRecv[_SOUTH_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_SOUTH_][_INIZ_]; k<= iter_toRecv[_SOUTH_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_s[l];
+                l++;
+            }
+
+    //NORTH
+    l=0;
+    for(int i=iter_toRecv[_NORTH_][_INIX_]; i<= iter_toRecv[_NORTH_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_NORTH_][_INIY_]; j<= iter_toRecv[_NORTH_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_NORTH_][_INIZ_]; k<= iter_toRecv[_NORTH_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_n[l];
+                l++;
+            }
+
+    //BACK
+    l=0;
+    for(int i=iter_toRecv[_BACK_][_INIX_]; i<= iter_toRecv[_BACK_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_BACK_][_INIY_]; j<= iter_toRecv[_BACK_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_BACK_][_INIZ_]; k<= iter_toRecv[_BACK_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_b[l];
+                l++;
+            }
+
+    //FRONT 
+    l=0;
+    for(int i=iter_toRecv[_FRONT_][_INIX_]; i<= iter_toRecv[_FRONT_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_FRONT_][_INIY_]; j<= iter_toRecv[_FRONT_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_FRONT_][_INIZ_]; k<= iter_toRecv[_FRONT_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_f[l];
+                l++;
+            }
+}
+
+void ParallelTopology::unpack(double *vec)
+{
+    //WEST
+    int l=0;
+    for(int i=iter_toRecv[_WEST_][_INIX_]; i<= iter_toRecv[_WEST_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_WEST_][_INIY_]; j<= iter_toRecv[_WEST_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_WEST_][_INIZ_]; k<= iter_toRecv[_WEST_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_w[l];
+                l++;
+            }
+
+    //EAST
+    l=0;
+    for(int i=iter_toRecv[_EAST_][_INIX_]; i<= iter_toRecv[_EAST_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_EAST_][_INIY_]; j<= iter_toRecv[_EAST_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_EAST_][_INIZ_]; k<= iter_toRecv[_EAST_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_e[l];
+                l++;
+            }
+
+    //SOUTH
+    l=0;
+    for(int i=iter_toRecv[_SOUTH_][_INIX_]; i<= iter_toRecv[_SOUTH_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_SOUTH_][_INIY_]; j<= iter_toRecv[_SOUTH_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_SOUTH_][_INIZ_]; k<= iter_toRecv[_SOUTH_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_s[l];
+                l++;
+            }
+
+    //NORTH
+    l=0;
+    for(int i=iter_toRecv[_NORTH_][_INIX_]; i<= iter_toRecv[_NORTH_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_NORTH_][_INIY_]; j<= iter_toRecv[_NORTH_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_NORTH_][_INIZ_]; k<= iter_toRecv[_NORTH_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_n[l];
+                l++;
+            }
+
+    //BACK
+    l=0;
+    for(int i=iter_toRecv[_BACK_][_INIX_]; i<= iter_toRecv[_BACK_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_BACK_][_INIY_]; j<= iter_toRecv[_BACK_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_BACK_][_INIZ_]; k<= iter_toRecv[_BACK_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_b[l];
+                l++;
+            }
+
+    //FRONT 
+    l=0;
+    for(int i=iter_toRecv[_FRONT_][_INIX_]; i<= iter_toRecv[_FRONT_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_FRONT_][_INIY_]; j<= iter_toRecv[_FRONT_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_FRONT_][_INIZ_]; k<= iter_toRecv[_FRONT_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_f[l];
+                l++;
+            }
+    
+
+    //2level comms
+    //WEST SOUTH
+    l=0;
+    for(int i=iter_toRecv[_WEST_S_][_INIX_]; i<= iter_toRecv[_WEST_S_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_WEST_S_][_INIY_]; j<= iter_toRecv[_WEST_S_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_WEST_S_][_INIZ_]; k<= iter_toRecv[_WEST_S_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_ws[l];
+                l++;
+            }
+
+    //WEST NORTH
+    l=0;
+    for(int i=iter_toRecv[_WEST_N_][_INIX_]; i<= iter_toRecv[_WEST_N_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_WEST_N_][_INIY_]; j<= iter_toRecv[_WEST_N_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_WEST_N_][_INIZ_]; k<= iter_toRecv[_WEST_N_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_wn[l];
+                l++;
+            }
+
+    //WEST BACK
+    l=0;
+    for(int i=iter_toRecv[_WEST_B_][_INIX_]; i<= iter_toRecv[_WEST_B_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_WEST_B_][_INIY_]; j<= iter_toRecv[_WEST_B_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_WEST_B_][_INIZ_]; k<= iter_toRecv[_WEST_B_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_wb[l];
+                l++;
+            }
+
+    //WEST FRONT
+    l=0;
+    for(int i=iter_toRecv[_WEST_F_][_INIX_]; i<= iter_toRecv[_WEST_F_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_WEST_F_][_INIY_]; j<= iter_toRecv[_WEST_F_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_WEST_F_][_INIZ_]; k<= iter_toRecv[_WEST_F_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_wf[l];
+                l++;
+            }
+
+    //EAST SOUTH
+    l=0;
+    for(int i=iter_toRecv[_EAST_S_][_INIX_]; i<= iter_toRecv[_EAST_S_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_EAST_S_][_INIY_]; j<= iter_toRecv[_EAST_S_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_EAST_S_][_INIZ_]; k<= iter_toRecv[_EAST_S_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_es[l];
+                l++;
+            }
+
+    //EAST NORTH
+    l=0;
+    for(int i=iter_toRecv[_EAST_N_][_INIX_]; i<= iter_toRecv[_EAST_N_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_EAST_N_][_INIY_]; j<= iter_toRecv[_EAST_N_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_EAST_N_][_INIZ_]; k<= iter_toRecv[_EAST_N_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_en[l];
+                l++;
+            }
+
+    //EAST BACK
+    l=0;
+    for(int i=iter_toRecv[_EAST_B_][_INIX_]; i<= iter_toRecv[_EAST_B_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_EAST_B_][_INIY_]; j<= iter_toRecv[_EAST_B_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_EAST_B_][_INIZ_]; k<= iter_toRecv[_EAST_B_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_eb[l];
+                l++;
+            }
+
+    //EAST FRONT
+    l=0;
+    for(int i=iter_toRecv[_EAST_F_][_INIX_]; i<= iter_toRecv[_EAST_F_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_EAST_F_][_INIY_]; j<= iter_toRecv[_EAST_F_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_EAST_F_][_INIZ_]; k<= iter_toRecv[_EAST_F_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_ef[l];
+                l++;
+            }
+
+    //SOUTH BACK
+    l=0;
+    for(int i=iter_toRecv[_SOUTH_B_][_INIX_]; i<= iter_toRecv[_SOUTH_B_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_SOUTH_B_][_INIY_]; j<= iter_toRecv[_SOUTH_B_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_SOUTH_B_][_INIZ_]; k<= iter_toRecv[_SOUTH_B_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_sb[l];
+                l++;
+            }
+
+    //SOUTH FRONT
+    l=0;
+    for(int i=iter_toRecv[_SOUTH_F_][_INIX_]; i<= iter_toRecv[_SOUTH_F_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_SOUTH_F_][_INIY_]; j<= iter_toRecv[_SOUTH_F_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_SOUTH_F_][_INIZ_]; k<= iter_toRecv[_SOUTH_F_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_sf[l];
+                l++;
+            }
+
+    //NORTH BACK
+    l=0;
+    for(int i=iter_toRecv[_NORTH_B_][_INIX_]; i<= iter_toRecv[_NORTH_B_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_NORTH_B_][_INIY_]; j<= iter_toRecv[_NORTH_B_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_NORTH_B_][_INIZ_]; k<= iter_toRecv[_NORTH_B_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_nb[l];
+                l++;
+            }
+
+    //NORTH FRONT
+    l=0;
+    for(int i=iter_toRecv[_NORTH_F_][_INIX_]; i<= iter_toRecv[_NORTH_F_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_NORTH_F_][_INIY_]; j<= iter_toRecv[_NORTH_F_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_NORTH_F_][_INIZ_]; k<= iter_toRecv[_NORTH_F_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_nf[l];
+                l++;
+            }
+
+    //WEST SOUTH BACK 
+    l=0;
+    for(int i=iter_toRecv[_WEST_S_B_][_INIX_]; i<= iter_toRecv[_WEST_S_B_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_WEST_S_B_][_INIY_]; j<= iter_toRecv[_WEST_S_B_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_WEST_S_B_][_INIZ_]; k<= iter_toRecv[_WEST_S_B_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_wsb[l];
+                l++;
+            }
+
+    //WEST NORTH BACK
+    l=0;
+    for(int i=iter_toRecv[_WEST_N_B_][_INIX_]; i<= iter_toRecv[_WEST_N_B_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_WEST_N_B_][_INIY_]; j<= iter_toRecv[_WEST_N_B_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_WEST_N_B_][_INIZ_]; k<= iter_toRecv[_WEST_N_B_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_wnb[l];
+                l++;
+            }
+
+    //WEST SOUTH FRONT
+    l=0;
+    for(int i=iter_toRecv[_WEST_S_F_][_INIX_]; i<= iter_toRecv[_WEST_S_F_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_WEST_S_F_][_INIY_]; j<= iter_toRecv[_WEST_S_F_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_WEST_S_F_][_INIZ_]; k<= iter_toRecv[_WEST_S_F_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_wsf[l];
+                l++;
+            }
+
+    //WEST NORTH FRONT
+    l=0;
+    for(int i=iter_toRecv[_WEST_N_F_][_INIX_]; i<= iter_toRecv[_WEST_N_F_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_WEST_N_F_][_INIY_]; j<= iter_toRecv[_WEST_N_F_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_WEST_N_F_][_INIZ_]; k<= iter_toRecv[_WEST_N_F_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_wnf[l];
+                l++;
+            }
+
+    //EAST SOUTH BACK 
+    l=0;
+    for(int i=iter_toRecv[_EAST_S_B_][_INIX_]; i<= iter_toRecv[_EAST_S_B_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_EAST_S_B_][_INIY_]; j<= iter_toRecv[_EAST_S_B_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_EAST_S_B_][_INIZ_]; k<= iter_toRecv[_EAST_S_B_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_esb[l];
+                l++;
+            }
+
+    //EAST NORTH BACK
+    l=0;
+    for(int i=iter_toRecv[_EAST_N_B_][_INIX_]; i<= iter_toRecv[_EAST_N_B_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_EAST_N_B_][_INIY_]; j<= iter_toRecv[_EAST_N_B_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_EAST_N_B_][_INIZ_]; k<= iter_toRecv[_EAST_N_B_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_enb[l];
+                l++;
+            }
+
+    //EAST SOUTH FRONT
+    l=0;
+    for(int i=iter_toRecv[_EAST_S_F_][_INIX_]; i<= iter_toRecv[_EAST_S_F_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_EAST_S_F_][_INIY_]; j<= iter_toRecv[_EAST_S_F_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_EAST_S_F_][_INIZ_]; k<= iter_toRecv[_EAST_S_F_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_esf[l];
+                l++;
+            }
+
+    //EAST NORTH FRONT
+    l=0;
+    for(int i=iter_toRecv[_EAST_N_F_][_INIX_]; i<= iter_toRecv[_EAST_N_F_][_ENDX_]; i++)
+        for(int j=iter_toRecv[_EAST_N_F_][_INIY_]; j<= iter_toRecv[_EAST_N_F_][_ENDY_]; j++)
+            for(int k=iter_toRecv[_EAST_N_F_][_INIZ_]; k<= iter_toRecv[_EAST_N_F_][_ENDZ_]; k++)
+            {
+                vec[ R_INDX( i, j, k, lNx, lNy, lNz )] = pack_recv_enf[l];
+                l++;
+            }
+
+}
+
+void ParallelTopology :: halo_exchange_simple()
+{
+
+    MPI_Request req_s[6];
+    MPI_Request req_r[6];
+
+    MPI_Status  stat_s[6];
+    MPI_Status  stat_r[6];
+
+    if(getNB(_WEST_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_w, len_yz, MPI_DOUBLE, getNB(_WEST_), tagid_s[_WEST_], RHEA_3DCOMM, &req_s[_WEST_]);
+
+    if(getNB(_EAST_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_e, len_yz, MPI_DOUBLE, getNB(_EAST_), tagid_s[_EAST_], RHEA_3DCOMM, &req_s[_EAST_]);
+
+    if(getNB(_SOUTH_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_s, len_xz, MPI_DOUBLE, getNB(_SOUTH_), tagid_s[_SOUTH_], RHEA_3DCOMM, &req_s[_SOUTH_]);
+
+    if(getNB(_NORTH_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_n, len_xz, MPI_DOUBLE, getNB(_NORTH_), tagid_s[_NORTH_], RHEA_3DCOMM, &req_s[_NORTH_]);
+
+    if(getNB(_BACK_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_b, len_xy, MPI_DOUBLE, getNB(_BACK_), tagid_s[_BACK_], RHEA_3DCOMM, &req_s[_BACK_]);
+
+    if(getNB(_FRONT_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_f, len_xy, MPI_DOUBLE, getNB(_FRONT_), tagid_s[_FRONT_], RHEA_3DCOMM, &req_s[_FRONT_]);
+
+
+    if(getNB(_WEST_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_w, len_yz, MPI_DOUBLE, getNB(_WEST_), tagid_r[_WEST_], RHEA_3DCOMM, &req_r[_WEST_]);
+
+    if(getNB(_EAST_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_e, len_yz, MPI_DOUBLE, getNB(_EAST_), tagid_r[_EAST_], RHEA_3DCOMM, &req_r[_EAST_]);
+
+    if(getNB(_SOUTH_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_s, len_xz, MPI_DOUBLE, getNB(_SOUTH_), tagid_r[_SOUTH_], RHEA_3DCOMM, &req_r[_SOUTH_]);
+
+    if(getNB(_NORTH_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_n, len_xz, MPI_DOUBLE, getNB(_NORTH_), tagid_r[_NORTH_], RHEA_3DCOMM, &req_r[_NORTH_]);
+
+    if(getNB(_BACK_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_b, len_xy, MPI_DOUBLE, getNB(_BACK_), tagid_r[_BACK_], RHEA_3DCOMM, &req_r[_BACK_]);
+
+    if(getNB(_FRONT_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_f, len_xy, MPI_DOUBLE, getNB(_FRONT_), tagid_r[_FRONT_], RHEA_3DCOMM, &req_r[_FRONT_]);
+
+
+    if(getNB(_WEST_) != _NO_NEIGHBOUR_ ) {
+        MPI_Wait(&req_r[_WEST_], &stat_r[_WEST_]);
+        MPI_Wait(&req_s[_WEST_], &stat_s[_WEST_]);
+    }
+    if(getNB(_EAST_) != _NO_NEIGHBOUR_ ) {
+        MPI_Wait(&req_r[_EAST_], &stat_r[_EAST_]);
+        MPI_Wait(&req_s[_EAST_], &stat_s[_EAST_]);
+    }
+    if(getNB(_SOUTH_) != _NO_NEIGHBOUR_ ) {
+        MPI_Wait(&req_r[_SOUTH_], &stat_r[_SOUTH_]);
+        MPI_Wait(&req_s[_SOUTH_], &stat_s[_SOUTH_]);
+    }
+
+    if(getNB(_NORTH_) != _NO_NEIGHBOUR_ ) {
+        MPI_Wait(&req_r[_NORTH_], &stat_r[_NORTH_]);
+        MPI_Wait(&req_s[_NORTH_], &stat_s[_NORTH_]);
+    }
+    if(getNB(_BACK_) != _NO_NEIGHBOUR_ ) {
+        MPI_Wait(&req_r[_BACK_], &stat_r[_BACK_]);
+        MPI_Wait(&req_s[_BACK_], &stat_s[_BACK_]);
+    }
+    if(getNB(_FRONT_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_FRONT_], &stat_r[_FRONT_]);
+        MPI_Wait(&req_s[_FRONT_], &stat_s[_FRONT_]);
+    }
+
+}
+
+void ParallelTopology :: halo_exchange()
+{
+
+    MPI_Request req_s[26];
+    MPI_Request req_r[26];
+
+    MPI_Status  stat_s[26];
+    MPI_Status  stat_r[26];
+
+
+
+    if(getNB(_WEST_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_w, len_yz, MPI_DOUBLE, getNB(_WEST_), tagid_s[_WEST_], RHEA_3DCOMM, &req_s[_WEST_]);
+
+    if(getNB(_EAST_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_e, len_yz, MPI_DOUBLE, getNB(_EAST_), tagid_s[_EAST_], RHEA_3DCOMM, &req_s[_EAST_]);
+
+    if(getNB(_SOUTH_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_s, len_xz, MPI_DOUBLE, getNB(_SOUTH_), tagid_s[_SOUTH_], RHEA_3DCOMM, &req_s[_SOUTH_]);
+
+    if(getNB(_NORTH_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_n, len_xz, MPI_DOUBLE, getNB(_NORTH_), tagid_s[_NORTH_], RHEA_3DCOMM, &req_s[_NORTH_]);
+
+    if(getNB(_BACK_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_b, len_xy, MPI_DOUBLE, getNB(_BACK_), tagid_s[_BACK_], RHEA_3DCOMM, &req_s[_BACK_]);
+
+    if(getNB(_FRONT_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_f, len_xy, MPI_DOUBLE, getNB(_FRONT_), tagid_s[_FRONT_], RHEA_3DCOMM, &req_s[_FRONT_]);
+
+// 2nd level
+
+    if(getNB(_WEST_S_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_ws, len_1Dz, MPI_DOUBLE, getNB(_WEST_S_), tagid_s[_WEST_S_], RHEA_3DCOMM, &req_s[_WEST_S_]);
+
+    if(getNB(_WEST_N_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_wn, len_1Dz, MPI_DOUBLE, getNB(_WEST_N_), tagid_s[_WEST_N_], RHEA_3DCOMM, &req_s[_WEST_N_]);
+
+    if(getNB(_WEST_B_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_wb, len_1Dy, MPI_DOUBLE, getNB(_WEST_B_), tagid_s[_WEST_B_], RHEA_3DCOMM, &req_s[_WEST_B_]);
+
+    if(getNB(_WEST_F_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_wf, len_1Dy, MPI_DOUBLE, getNB(_WEST_F_), tagid_s[_WEST_F_], RHEA_3DCOMM, &req_s[_WEST_F_]);
+
+
+    if(getNB(_EAST_S_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_es, len_1Dz, MPI_DOUBLE, getNB(_EAST_S_), tagid_s[_EAST_S_], RHEA_3DCOMM, &req_s[_EAST_S_]);
+
+    if(getNB(_EAST_N_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_en, len_1Dz, MPI_DOUBLE, getNB(_EAST_N_), tagid_s[_EAST_N_], RHEA_3DCOMM, &req_s[_EAST_N_]);
+
+    if(getNB(_EAST_B_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_eb, len_1Dy, MPI_DOUBLE, getNB(_EAST_B_), tagid_s[_EAST_B_], RHEA_3DCOMM, &req_s[_EAST_B_]);
+
+    if(getNB(_EAST_F_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_ef, len_1Dy, MPI_DOUBLE, getNB(_EAST_F_), tagid_s[_EAST_F_], RHEA_3DCOMM, &req_s[_EAST_F_]);
+
+
+    if(getNB(_SOUTH_B_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_sb, len_1Dx, MPI_DOUBLE, getNB(_SOUTH_B_), tagid_s[_SOUTH_B_], RHEA_3DCOMM, &req_s[_SOUTH_B_]);
+
+    if(getNB(_SOUTH_F_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_sf, len_1Dx, MPI_DOUBLE, getNB(_SOUTH_F_), tagid_s[_SOUTH_F_], RHEA_3DCOMM, &req_s[_SOUTH_F_]);
+
+    if(getNB(_NORTH_B_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_nb, len_1Dx, MPI_DOUBLE, getNB(_NORTH_B_), tagid_s[_NORTH_B_], RHEA_3DCOMM, &req_s[_NORTH_B_]);
+
+    if(getNB(_NORTH_F_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_nf, len_1Dx, MPI_DOUBLE, getNB(_NORTH_F_), tagid_s[_NORTH_F_], RHEA_3DCOMM, &req_s[_NORTH_F_]);
+
+
+// 3er level
+
+    if(getNB(_WEST_S_B_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_wsb, len_1pt, MPI_DOUBLE, getNB(_WEST_S_B_), tagid_s[_WEST_S_B_], RHEA_3DCOMM, &req_s[_WEST_S_B_]);
+
+    if(getNB(_WEST_N_B_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_wnb, len_1pt, MPI_DOUBLE, getNB(_WEST_N_B_), tagid_s[_WEST_N_B_], RHEA_3DCOMM, &req_s[_WEST_N_B_]);
+
+    if(getNB(_WEST_S_F_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_wsf, len_1pt, MPI_DOUBLE, getNB(_WEST_S_F_), tagid_s[_WEST_S_F_], RHEA_3DCOMM, &req_s[_WEST_S_F_]);
+
+    if(getNB(_WEST_N_F_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_wnf, len_1pt, MPI_DOUBLE, getNB(_WEST_N_F_), tagid_s[_WEST_N_F_], RHEA_3DCOMM, &req_s[_WEST_N_F_]);
+
+
+
+    if(getNB(_EAST_S_B_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_esb, len_1pt, MPI_DOUBLE, getNB(_EAST_S_B_), tagid_s[_EAST_S_B_], RHEA_3DCOMM, &req_s[_EAST_S_B_]);
+
+    if(getNB(_EAST_N_B_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_enb, len_1pt, MPI_DOUBLE, getNB(_EAST_N_B_), tagid_s[_EAST_N_B_], RHEA_3DCOMM, &req_s[_EAST_N_B_]);
+
+    if(getNB(_EAST_S_F_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_esf, len_1pt, MPI_DOUBLE, getNB(_EAST_S_F_), tagid_s[_EAST_S_F_], RHEA_3DCOMM, &req_s[_EAST_S_F_]);
+
+    if(getNB(_EAST_N_F_) != _NO_NEIGHBOUR_ )
+        MPI_Isend(pack_send_enf, len_1pt, MPI_DOUBLE, getNB(_EAST_N_F_), tagid_s[_EAST_N_F_], RHEA_3DCOMM, &req_s[_EAST_N_F_]);
+
+///////
+
+    if(getNB(_WEST_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_w, len_yz, MPI_DOUBLE, getNB(_WEST_), tagid_r[_WEST_], RHEA_3DCOMM, &req_r[_WEST_]);
+
+    if(getNB(_EAST_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_e, len_yz, MPI_DOUBLE, getNB(_EAST_), tagid_r[_EAST_], RHEA_3DCOMM, &req_r[_EAST_]);
+
+    if(getNB(_SOUTH_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_s, len_xz, MPI_DOUBLE, getNB(_SOUTH_), tagid_r[_SOUTH_], RHEA_3DCOMM, &req_r[_SOUTH_]);
+
+    if(getNB(_NORTH_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_n, len_xz, MPI_DOUBLE, getNB(_NORTH_), tagid_r[_NORTH_], RHEA_3DCOMM, &req_r[_NORTH_]);
+
+    if(getNB(_BACK_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_b, len_xy, MPI_DOUBLE, getNB(_BACK_), tagid_r[_BACK_], RHEA_3DCOMM, &req_r[_BACK_]);
+
+    if(getNB(_FRONT_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_f, len_xy, MPI_DOUBLE, getNB(_FRONT_), tagid_r[_FRONT_], RHEA_3DCOMM, &req_r[_FRONT_]);
+
+//2nd Level
+    if(getNB(_WEST_S_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_ws, len_1Dz, MPI_DOUBLE, getNB(_WEST_S_), tagid_r[_WEST_S_], RHEA_3DCOMM, &req_r[_WEST_S_]);
+    if(getNB(_WEST_N_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_wn, len_1Dz, MPI_DOUBLE, getNB(_WEST_N_), tagid_r[_WEST_N_], RHEA_3DCOMM, &req_r[_WEST_N_]);
+    if(getNB(_WEST_B_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_wb, len_1Dy, MPI_DOUBLE, getNB(_WEST_B_), tagid_r[_WEST_B_], RHEA_3DCOMM, &req_r[_WEST_B_]);
+    if(getNB(_WEST_F_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_wf, len_1Dy, MPI_DOUBLE, getNB(_WEST_F_), tagid_r[_WEST_F_], RHEA_3DCOMM, &req_r[_WEST_F_]);
+
+    if(getNB(_EAST_S_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_es, len_1Dz, MPI_DOUBLE, getNB(_EAST_S_), tagid_r[_EAST_S_], RHEA_3DCOMM, &req_r[_EAST_S_]);
+    if(getNB(_EAST_N_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_en, len_1Dz, MPI_DOUBLE, getNB(_EAST_N_), tagid_r[_EAST_N_], RHEA_3DCOMM, &req_r[_EAST_N_]);
+    if(getNB(_EAST_B_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_eb, len_1Dy, MPI_DOUBLE, getNB(_EAST_B_), tagid_r[_EAST_B_], RHEA_3DCOMM, &req_r[_EAST_B_]);
+    if(getNB(_EAST_F_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_ef, len_1Dy, MPI_DOUBLE, getNB(_EAST_F_), tagid_r[_EAST_F_], RHEA_3DCOMM, &req_r[_EAST_F_]);
+
+    if(getNB(_SOUTH_B_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_sb, len_1Dx, MPI_DOUBLE, getNB(_SOUTH_B_), tagid_r[_SOUTH_B_], RHEA_3DCOMM, &req_r[_SOUTH_B_]);
+    if(getNB(_SOUTH_F_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_sf, len_1Dx, MPI_DOUBLE, getNB(_SOUTH_F_), tagid_r[_SOUTH_F_], RHEA_3DCOMM, &req_r[_SOUTH_F_]);
+    if(getNB(_NORTH_B_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_nb, len_1Dx, MPI_DOUBLE, getNB(_NORTH_B_), tagid_r[_NORTH_B_], RHEA_3DCOMM, &req_r[_NORTH_B_]);
+    if(getNB(_NORTH_F_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_nf, len_1Dx, MPI_DOUBLE, getNB(_NORTH_F_), tagid_r[_NORTH_F_], RHEA_3DCOMM, &req_r[_NORTH_F_]);
+
+// 3er level
+    if(getNB(_WEST_S_B_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_wsb, len_1pt, MPI_DOUBLE, getNB(_WEST_S_B_), tagid_r[_WEST_S_B_], RHEA_3DCOMM, &req_r[_WEST_S_B_]);
+    if(getNB(_WEST_N_B_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_wnb, len_1pt, MPI_DOUBLE, getNB(_WEST_N_B_), tagid_r[_WEST_N_B_], RHEA_3DCOMM, &req_r[_WEST_N_B_]);
+    if(getNB(_WEST_S_F_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_wsf, len_1pt, MPI_DOUBLE, getNB(_WEST_S_F_), tagid_r[_WEST_S_F_], RHEA_3DCOMM, &req_r[_WEST_S_F_]);
+    if(getNB(_WEST_N_F_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_wnf, len_1pt, MPI_DOUBLE, getNB(_WEST_N_F_), tagid_r[_WEST_N_F_], RHEA_3DCOMM, &req_r[_WEST_N_F_]);
+
+    if(getNB(_EAST_S_B_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_esb, len_1pt, MPI_DOUBLE, getNB(_EAST_S_B_), tagid_r[_EAST_S_B_], RHEA_3DCOMM, &req_r[_EAST_S_B_]);
+    if(getNB(_EAST_N_B_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_enb, len_1pt, MPI_DOUBLE, getNB(_EAST_N_B_), tagid_r[_EAST_N_B_], RHEA_3DCOMM, &req_r[_EAST_N_B_]);
+    if(getNB(_EAST_S_F_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_esf, len_1pt, MPI_DOUBLE, getNB(_EAST_S_F_), tagid_r[_EAST_S_F_], RHEA_3DCOMM, &req_r[_EAST_S_F_]);
+    if(getNB(_EAST_N_F_) != _NO_NEIGHBOUR_ )
+        MPI_Irecv(pack_recv_enf, len_1pt, MPI_DOUBLE, getNB(_EAST_N_F_), tagid_r[_EAST_N_F_], RHEA_3DCOMM, &req_r[_EAST_N_F_]);
+
+// Wait for the communications to be done
+
+    if(getNB(_WEST_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_WEST_], &stat_r[_WEST_]);
+        MPI_Wait(&req_s[_WEST_], &stat_s[_WEST_]);
+    }
+    if(getNB(_EAST_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_EAST_], &stat_r[_EAST_]);
+        MPI_Wait(&req_s[_EAST_], &stat_s[_EAST_]);
+    }
+    if(getNB(_SOUTH_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_SOUTH_], &stat_r[_SOUTH_]);
+        MPI_Wait(&req_s[_SOUTH_], &stat_s[_SOUTH_]);
+    }
+    if(getNB(_NORTH_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_NORTH_], &stat_r[_NORTH_]);
+        MPI_Wait(&req_s[_NORTH_], &stat_s[_NORTH_]);
+    }
+    if(getNB(_BACK_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_BACK_], &stat_r[_BACK_]);
+        MPI_Wait(&req_s[_BACK_], &stat_s[_BACK_]);
+    }
+    if(getNB(_FRONT_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_FRONT_], &stat_r[_FRONT_]);
+        MPI_Wait(&req_s[_FRONT_], &stat_s[_FRONT_]);
+    }
+
+//2nd level
+    if(getNB(_WEST_S_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_WEST_S_], &stat_r[_WEST_S_]);
+        MPI_Wait(&req_s[_WEST_S_], &stat_s[_WEST_S_]);
+    }
+    if(getNB(_WEST_N_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_WEST_N_], &stat_r[_WEST_N_]);
+        MPI_Wait(&req_s[_WEST_N_], &stat_s[_WEST_N_]);
+    }
+    if(getNB(_WEST_B_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_WEST_B_], &stat_r[_WEST_B_]);
+        MPI_Wait(&req_s[_WEST_B_], &stat_s[_WEST_B_]);
+    }
+    if(getNB(_WEST_F_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_WEST_F_], &stat_r[_WEST_F_]);
+        MPI_Wait(&req_s[_WEST_F_], &stat_s[_WEST_F_]);
+    }
+
+    if(getNB(_EAST_S_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_EAST_S_], &stat_r[_EAST_S_]);
+        MPI_Wait(&req_s[_EAST_S_], &stat_s[_EAST_S_]);
+    }
+    if(getNB(_EAST_N_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_EAST_N_], &stat_r[_EAST_N_]);
+        MPI_Wait(&req_s[_EAST_N_], &stat_s[_EAST_N_]);
+    }
+    if(getNB(_EAST_B_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_EAST_B_], &stat_r[_EAST_B_]);
+        MPI_Wait(&req_s[_EAST_B_], &stat_s[_EAST_B_]);
+    }
+    if(getNB(_EAST_F_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_EAST_F_], &stat_r[_EAST_F_]);
+        MPI_Wait(&req_s[_EAST_F_], &stat_s[_EAST_F_]);
+    }
+
+    if(getNB(_SOUTH_B_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_SOUTH_B_], &stat_r[_SOUTH_B_]);
+        MPI_Wait(&req_s[_SOUTH_B_], &stat_s[_SOUTH_B_]);
+    }
+    if(getNB(_SOUTH_F_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_SOUTH_F_], &stat_r[_SOUTH_F_]);
+        MPI_Wait(&req_s[_SOUTH_F_], &stat_s[_SOUTH_F_]);
+    }
+    if(getNB(_NORTH_B_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_NORTH_B_], &stat_r[_NORTH_B_]);
+        MPI_Wait(&req_s[_NORTH_B_], &stat_s[_NORTH_B_]);
+    }
+    if(getNB(_NORTH_F_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_NORTH_F_], &stat_r[_NORTH_F_]);
+        MPI_Wait(&req_s[_NORTH_F_], &stat_s[_NORTH_F_]);
+    }
+
+
+//3er Level
+    if(getNB(_WEST_S_B_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_WEST_S_B_], &stat_r[_WEST_S_B_]);
+        MPI_Wait(&req_s[_WEST_S_B_], &stat_s[_WEST_S_B_]);
+    }
+    if(getNB(_WEST_N_B_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_WEST_N_B_], &stat_r[_WEST_N_B_]);
+        MPI_Wait(&req_s[_WEST_N_B_], &stat_s[_WEST_N_B_]);
+    }
+    if(getNB(_WEST_S_F_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_WEST_S_F_], &stat_r[_WEST_S_F_]);
+        MPI_Wait(&req_s[_WEST_S_F_], &stat_s[_WEST_S_F_]);
+    }
+    if(getNB(_WEST_N_F_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_WEST_N_F_], &stat_r[_WEST_N_F_]);
+        MPI_Wait(&req_s[_WEST_N_F_], &stat_s[_WEST_N_F_]);
+    }
+
+    if(getNB(_EAST_S_B_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_EAST_S_B_], &stat_r[_EAST_S_B_]);
+        MPI_Wait(&req_s[_EAST_S_B_], &stat_s[_EAST_S_B_]);
+    }
+    if(getNB(_EAST_N_B_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_EAST_N_B_], &stat_r[_EAST_N_B_]);
+        MPI_Wait(&req_s[_EAST_N_B_], &stat_s[_EAST_N_B_]);
+    }
+    if(getNB(_EAST_S_F_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_EAST_S_F_], &stat_r[_EAST_S_F_]);
+        MPI_Wait(&req_s[_EAST_S_F_], &stat_s[_EAST_S_F_]);
+    }
+    if(getNB(_EAST_N_F_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_EAST_N_F_], &stat_r[_EAST_N_F_]);
+        MPI_Wait(&req_s[_EAST_N_F_], &stat_s[_EAST_N_F_]);
+    }
+}
+
+// GPU HALO-EXCHANGE FUNCTIONS - REQUIRES CUDA AWARE MPI /
+
+void ParallelTopology::update_gpu(double *vec)
+{
+    #pragma acc data present(vec[0:_ls_]) 
+    {
+	pack_gpu(vec);
+	halo_exchange_gpu();
+	unpack_gpu(vec);
+    }
+    
+}
+
+void ParallelTopology::pack_gpu(double *vec)
+{
+
+    //WEST
+if (getNB(_WEST_) != _NO_NEIGHBOUR_) {
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_send_w[0:len_yz]) async(1)  
+    for(int i=iter_toSend[_WEST_][_INIX_]; i<= iter_toSend[_WEST_][_ENDX_]; i++)
+        for(int j=iter_toSend[_WEST_][_INIY_]; j<= iter_toSend[_WEST_][_ENDY_]; j++)
+            for(int k=iter_toSend[_WEST_][_INIZ_]; k<= iter_toSend[_WEST_][_ENDZ_]; k++)
+	    {
+		int l = l_toSend(i,j,k,_WEST_);
+    	        pack_send_w[l] = vec[R_INDX(i, j, k, lNx, lNy, lNz)];
+	    }
+}
+
+   //EAST
+if (getNB(_EAST_) != _NO_NEIGHBOUR_) {
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_send_e[0:len_yz]) async(2) 
+    for (int i = iter_toSend[_EAST_][_INIX_]; i <= iter_toSend[_EAST_][_ENDX_]; i++)
+        for (int j = iter_toSend[_EAST_][_INIY_]; j <= iter_toSend[_EAST_][_ENDY_]; j++)
+            for (int k = iter_toSend[_EAST_][_INIZ_]; k <= iter_toSend[_EAST_][_ENDZ_]; k++)
+            {
+		int l = l_toSend(i,j,k,_EAST_);
+		pack_send_e[l] = vec[R_INDX(i, j, k, lNx, lNy, lNz)];
+            }
+
+}
+    //SOUTH
+if (getNB(_SOUTH_) != _NO_NEIGHBOUR_) {
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_send_s[0:len_xz]) async(3) 
+    for (int i = iter_toSend[_SOUTH_][_INIX_]; i <= iter_toSend[_SOUTH_][_ENDX_]; i++)
+        for (int j = iter_toSend[_SOUTH_][_INIY_]; j <= iter_toSend[_SOUTH_][_ENDY_]; j++)
+            for (int k = iter_toSend[_SOUTH_][_INIZ_]; k <= iter_toSend[_SOUTH_][_ENDZ_]; k++)
+            {
+		int l = l_toSend(i,j,k,_SOUTH_);
+                pack_send_s[l] = vec[R_INDX(i, j, k, lNx, lNy, lNz)];
+            }
+
+}
+
+    //NORTH
+if (getNB(_NORTH_) != _NO_NEIGHBOUR_) {
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_send_n[0:len_xz]) async(4) 
+    for (int i = iter_toSend[_NORTH_][_INIX_]; i <= iter_toSend[_NORTH_][_ENDX_]; i++)
+        for (int j = iter_toSend[_NORTH_][_INIY_]; j <= iter_toSend[_NORTH_][_ENDY_]; j++)
+            for (int k = iter_toSend[_NORTH_][_INIZ_]; k <= iter_toSend[_NORTH_][_ENDZ_]; k++)
+            {
+		int l = l_toSend(i,j,k,_NORTH_);
+		pack_send_n[l] = vec[R_INDX(i, j, k, lNx, lNy, lNz)];
+            }
+}
+    //BACK
+if (getNB(_BACK_) != _NO_NEIGHBOUR_) {
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_send_b[0:len_xy]) async(5) 
+    for (int i = iter_toSend[_BACK_][_INIX_]; i <= iter_toSend[_BACK_][_ENDX_]; i++)
+        for (int j = iter_toSend[_BACK_][_INIY_]; j <= iter_toSend[_BACK_][_ENDY_]; j++)
+            for (int k = iter_toSend[_BACK_][_INIZ_]; k <= iter_toSend[_BACK_][_ENDZ_]; k++)
+            {
+		int l = l_toSend(i,j,k,_BACK_);
+                pack_send_b[l] = vec[R_INDX(i, j, k, lNx, lNy, lNz)];
+            }
+}
+    //FRONT 
+if (getNB(_FRONT_) != _NO_NEIGHBOUR_) {
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_send_f[0:len_xy]) async(6) 
+    for (int i = iter_toSend[_FRONT_][_INIX_]; i <= iter_toSend[_FRONT_][_ENDX_]; i++)
+        for (int j = iter_toSend[_FRONT_][_INIY_]; j <= iter_toSend[_FRONT_][_ENDY_]; j++)
+            for (int k = iter_toSend[_FRONT_][_INIZ_]; k <= iter_toSend[_FRONT_][_ENDZ_]; k++)
+            {
+		int l = l_toSend(i,j,k,_FRONT_);
+                pack_send_f[l] = vec[R_INDX(i, j, k, lNx, lNy, lNz)];
+            }
+}
+    //WEST SOUTH 
+if (getNB(_WEST_S_) != _NO_NEIGHBOUR_) {
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_send_ws[0:len_1Dz]) async(7) 
+    for(int i=iter_toSend[_WEST_S_][_INIX_]; i<= iter_toSend[_WEST_S_][_ENDX_]; i++)
+        for(int j=iter_toSend[_WEST_S_][_INIY_]; j<= iter_toSend[_WEST_S_][_ENDY_]; j++)
+            for(int k=iter_toSend[_WEST_S_][_INIZ_]; k<= iter_toSend[_WEST_S_][_ENDZ_]; k++)
+            {
+		int l = l_toSend(i,j,k,_WEST_S_);
+		pack_send_ws[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+            }
+}
+    //WEST NORTH
+if (getNB(_WEST_N_) != _NO_NEIGHBOUR_) {
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_send_wn[0:len_1Dz]) async(8) 
+    for(int i=iter_toSend[_WEST_N_][_INIX_]; i<= iter_toSend[_WEST_N_][_ENDX_]; i++)
+        for(int j=iter_toSend[_WEST_N_][_INIY_]; j<= iter_toSend[_WEST_N_][_ENDY_]; j++)
+            for(int k=iter_toSend[_WEST_N_][_INIZ_]; k<= iter_toSend[_WEST_N_][_ENDZ_]; k++)
+            {
+		int l = l_toSend(i,j,k,_WEST_N_);
+                pack_send_wn[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+            }
+
+}
+    //WEST BACK 
+if (getNB(_WEST_B_) != _NO_NEIGHBOUR_) {
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_send_wb[0:len_1Dy]) async(9)
+    for(int i=iter_toSend[_WEST_B_][_INIX_]; i<= iter_toSend[_WEST_B_][_ENDX_]; i++)
+        for(int j=iter_toSend[_WEST_B_][_INIY_]; j<= iter_toSend[_WEST_B_][_ENDY_]; j++)
+            for(int k=iter_toSend[_WEST_B_][_INIZ_]; k<= iter_toSend[_WEST_B_][_ENDZ_]; k++)
+            {
+		int l = l_toSend(i,j,k,_WEST_B_);
+                pack_send_wb[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+            }
+}
+    //WEST FRONT 
+if (getNB(_WEST_F_) != _NO_NEIGHBOUR_) {
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_send_wf[0:len_1Dy]) async(10) 
+    for(int i=iter_toSend[_WEST_F_][_INIX_]; i<= iter_toSend[_WEST_F_][_ENDX_]; i++)
+        for(int j=iter_toSend[_WEST_F_][_INIY_]; j<= iter_toSend[_WEST_F_][_ENDY_]; j++)
+            for(int k=iter_toSend[_WEST_F_][_INIZ_]; k<= iter_toSend[_WEST_F_][_ENDZ_]; k++)
+            {
+		int l = l_toSend(i,j,k,_WEST_F_);
+  	        pack_send_wf[l] = vec[ R_INDX( i, j, k, lNx, lNy, lNz )];
+            }
+}
+    //EAST SOUTH
+if (getNB(_EAST_S_) != _NO_NEIGHBOUR_) {
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_send_es[0:len_1Dz]) async(11) 
+    for(int i=iter_toSend[_EAST_S_][_INIX_]; i<= iter_toSend[_EAST_S_][_ENDX_]; i++)
+        for(int j=iter_toSend[_EAST_S_][_INIY_]; j<= iter_toSend[_EAST_S_][_ENDY_]; j++)
+            for(int k=iter_toSend[_EAST_S_][_INIZ_]; k<= iter_toSend[_EAST_S_][_ENDZ_]; k++)
+            {
+		int l = l_toSend(i,j,k,_EAST_S_);
+                pack_send_es[l] = vec[R_INDX(i, j, k, lNx, lNy, lNz)];
+            }
+}
+    //EAST NORTH
+if (getNB(_EAST_N_) != _NO_NEIGHBOUR_) {
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_send_en[0:len_1Dz]) async(12) 
+    for(int i=iter_toSend[_EAST_N_][_INIX_]; i<= iter_toSend[_EAST_N_][_ENDX_]; i++)
+        for(int j=iter_toSend[_EAST_N_][_INIY_]; j<= iter_toSend[_EAST_N_][_ENDY_]; j++)
+            for(int k=iter_toSend[_EAST_N_][_INIZ_]; k<= iter_toSend[_EAST_N_][_ENDZ_]; k++)
+            {
+		int l = l_toSend(i,j,k,_EAST_N_);
+                pack_send_en[l] = vec[R_INDX(i, j, k, lNx, lNy, lNz)];
+            }
+}
+    //EAST BACK
+if (getNB(_EAST_B_) != _NO_NEIGHBOUR_) {
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_send_eb[0:len_1Dy]) async(13) 
+    for(int i=iter_toSend[_EAST_B_][_INIX_]; i<= iter_toSend[_EAST_B_][_ENDX_]; i++)
+        for(int j=iter_toSend[_EAST_B_][_INIY_]; j<= iter_toSend[_EAST_B_][_ENDY_]; j++)
+            for(int k=iter_toSend[_EAST_B_][_INIZ_]; k<= iter_toSend[_EAST_B_][_ENDZ_]; k++)
+            {
+		int l = l_toSend(i,j,k,_EAST_B_);
+                pack_send_eb[l] = vec[R_INDX(i, j, k, lNx, lNy, lNz)];
+            }
+}
+    //EAST FRONT
+if (getNB(_EAST_F_) != _NO_NEIGHBOUR_) {
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_send_ef[0:len_1Dy]) async(14) 
+    for(int i=iter_toSend[_EAST_F_][_INIX_]; i<= iter_toSend[_EAST_F_][_ENDX_]; i++)
+        for(int j=iter_toSend[_EAST_F_][_INIY_]; j<= iter_toSend[_EAST_F_][_ENDY_]; j++)
+            for(int k=iter_toSend[_EAST_F_][_INIZ_]; k<= iter_toSend[_EAST_F_][_ENDZ_]; k++)
+            {
+		int l = l_toSend(i,j,k,_EAST_F_);
+                pack_send_ef[l] = vec[R_INDX(i, j, k, lNx, lNy, lNz)];
+            }
+}
+    //SOUTH BACK
+if (getNB(_SOUTH_B_) != _NO_NEIGHBOUR_) {
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_send_sb[0:len_1Dx]) async(15) 
+    for(int i=iter_toSend[_SOUTH_B_][_INIX_]; i<= iter_toSend[_SOUTH_B_][_ENDX_]; i++)
+        for(int j=iter_toSend[_SOUTH_B_][_INIY_]; j<= iter_toSend[_SOUTH_B_][_ENDY_]; j++)
+            for(int k=iter_toSend[_SOUTH_B_][_INIZ_]; k<= iter_toSend[_SOUTH_B_][_ENDZ_]; k++)
+            {
+		int l = l_toSend(i,j,k,_SOUTH_B_);
+                pack_send_sb[l] = vec[R_INDX(i, j, k, lNx, lNy, lNz)];
+            }
+}
+    //SOUTH FRONT
+if (getNB(_SOUTH_F_) != _NO_NEIGHBOUR_) {
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_send_sf[0:len_1Dx]) async(16) 
+    for(int i=iter_toSend[_SOUTH_F_][_INIX_]; i<= iter_toSend[_SOUTH_F_][_ENDX_]; i++)
+        for(int j=iter_toSend[_SOUTH_F_][_INIY_]; j<= iter_toSend[_SOUTH_F_][_ENDY_]; j++)
+            for(int k=iter_toSend[_SOUTH_F_][_INIZ_]; k<= iter_toSend[_SOUTH_F_][_ENDZ_]; k++)
+            {
+		int l = l_toSend(i,j,k,_SOUTH_F_);
+                pack_send_sf[l] = vec[R_INDX(i, j, k, lNx, lNy, lNz)];
+            }
+}
+    //NORTH BACK
+if (getNB(_NORTH_B_) != _NO_NEIGHBOUR_) {
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_send_nb[0:len_1Dx]) async(17) 
+    for(int i=iter_toSend[_NORTH_B_][_INIX_]; i<= iter_toSend[_NORTH_B_][_ENDX_]; i++)
+        for(int j=iter_toSend[_NORTH_B_][_INIY_]; j<= iter_toSend[_NORTH_B_][_ENDY_]; j++)
+            for(int k=iter_toSend[_NORTH_B_][_INIZ_]; k<= iter_toSend[_NORTH_B_][_ENDZ_]; k++)
+            {
+		int l = l_toSend(i,j,k,_NORTH_B_);
+                pack_send_nb[l] = vec[R_INDX(i, j, k, lNx, lNy, lNz)];
+            }
+}
+    //NORTH FRONT
+if (getNB(_NORTH_F_) != _NO_NEIGHBOUR_) {
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_send_nf[0:len_1Dx]) async(18) 
+    for(int i=iter_toSend[_NORTH_F_][_INIX_]; i<= iter_toSend[_NORTH_F_][_ENDX_]; i++)
+        for(int j=iter_toSend[_NORTH_F_][_INIY_]; j<= iter_toSend[_NORTH_F_][_ENDY_]; j++)
+            for(int k=iter_toSend[_NORTH_F_][_INIZ_]; k<= iter_toSend[_NORTH_F_][_ENDZ_]; k++)
+            {
+		int l = l_toSend(i,j,k,_NORTH_F_);
+                pack_send_nf[l] = vec[R_INDX(i, j, k, lNx, lNy, lNz)];
+            }
+}
+    //WEST SOUTH BACK
+if (getNB(_WEST_S_B_) != _NO_NEIGHBOUR_) {
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_send_wsb[0:len_1pt]) async(19) 
+    for(int i=iter_toSend[_WEST_S_B_][_INIX_]; i<= iter_toSend[_WEST_S_B_][_ENDX_]; i++)
+        for(int j=iter_toSend[_WEST_S_B_][_INIY_]; j<= iter_toSend[_WEST_S_B_][_ENDY_]; j++)
+            for(int k=iter_toSend[_WEST_S_B_][_INIZ_]; k<= iter_toSend[_WEST_S_B_][_ENDZ_]; k++)
+            {
+		int l = l_toSend(i,j,k,_WEST_S_B_);
+                pack_send_wsb[l] = vec[R_INDX(i, j, k, lNx, lNy, lNz)];
+            }
+}
+    //WEST NORTH BACK
+if (getNB(_WEST_N_B_) != _NO_NEIGHBOUR_) {
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_send_wnb[0:len_1pt]) async(20)
+    for(int i=iter_toSend[_WEST_N_B_][_INIX_]; i<= iter_toSend[_WEST_N_B_][_ENDX_]; i++)
+        for(int j=iter_toSend[_WEST_N_B_][_INIY_]; j<= iter_toSend[_WEST_N_B_][_ENDY_]; j++)
+            for(int k=iter_toSend[_WEST_N_B_][_INIZ_]; k<= iter_toSend[_WEST_N_B_][_ENDZ_]; k++)
+            {
+		int l = l_toSend(i,j,k,_WEST_N_B_);
+                pack_send_wnb[l] = vec[R_INDX(i, j, k, lNx, lNy, lNz)];
+            }
+
+}
+    //WEST SOUTH FRONT 
+if (getNB(_WEST_S_F_) != _NO_NEIGHBOUR_) {
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_send_wsf[0:len_1pt]) async(21) 
+    for(int i=iter_toSend[_WEST_S_F_][_INIX_]; i<= iter_toSend[_WEST_S_F_][_ENDX_]; i++)
+        for(int j=iter_toSend[_WEST_S_F_][_INIY_]; j<= iter_toSend[_WEST_S_F_][_ENDY_]; j++)
+            for(int k=iter_toSend[_WEST_S_F_][_INIZ_]; k<= iter_toSend[_WEST_S_F_][_ENDZ_]; k++)
+            {
+		int l = l_toSend(i,j,k,_WEST_S_F_);
+                pack_send_wsf[l] = vec[R_INDX(i, j, k, lNx, lNy, lNz)];
+            }
+}
+    //WEST NORTH FRONT
+if (getNB(_WEST_N_F_) != _NO_NEIGHBOUR_) {
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_send_wnf[0:len_1pt]) async(22) 
+    for(int i=iter_toSend[_WEST_N_F_][_INIX_]; i<= iter_toSend[_WEST_N_F_][_ENDX_]; i++)
+        for(int j=iter_toSend[_WEST_N_F_][_INIY_]; j<= iter_toSend[_WEST_N_F_][_ENDY_]; j++)
+            for(int k=iter_toSend[_WEST_N_F_][_INIZ_]; k<= iter_toSend[_WEST_N_F_][_ENDZ_]; k++)
+            {
+		int l = l_toSend(i,j,k,_WEST_N_F_);
+                pack_send_wnf[l] = vec[R_INDX(i, j, k, lNx, lNy, lNz)];
+            }
+}
+    //EAST SOUTH BACK
+if (getNB(_EAST_S_B_) != _NO_NEIGHBOUR_) {
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_send_esb[0:len_1pt]) async(23)
+    for(int i=iter_toSend[_EAST_S_B_][_INIX_]; i<= iter_toSend[_EAST_S_B_][_ENDX_]; i++)
+        for(int j=iter_toSend[_EAST_S_B_][_INIY_]; j<= iter_toSend[_EAST_S_B_][_ENDY_]; j++)
+            for(int k=iter_toSend[_EAST_S_B_][_INIZ_]; k<= iter_toSend[_EAST_S_B_][_ENDZ_]; k++)
+            {
+		int l = l_toSend(i,j,k,_EAST_S_B_);
+                pack_send_esb[l] = vec[R_INDX(i, j, k, lNx, lNy, lNz)];
+            }
+}
+    //EAST NORTH BACK
+if (getNB(_EAST_N_B_) != _NO_NEIGHBOUR_) {
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_send_enb[0:len_1pt]) async(24) 
+    for(int i=iter_toSend[_EAST_N_B_][_INIX_]; i<= iter_toSend[_EAST_N_B_][_ENDX_]; i++)
+        for(int j=iter_toSend[_EAST_N_B_][_INIY_]; j<= iter_toSend[_EAST_N_B_][_ENDY_]; j++)
+            for(int k=iter_toSend[_EAST_N_B_][_INIZ_]; k<= iter_toSend[_EAST_N_B_][_ENDZ_]; k++)
+            {
+		int l = l_toSend(i,j,k,_EAST_N_B_);
+                pack_send_enb[l] = vec[R_INDX(i, j, k, lNx, lNy, lNz)];
+            }
+}
+    //EAST SOUTH FRONT
+if (getNB(_EAST_S_F_) != _NO_NEIGHBOUR_) {
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_send_esf[0:len_1pt]) async(25) 
+    for(int i=iter_toSend[_EAST_S_F_][_INIX_]; i<= iter_toSend[_EAST_S_F_][_ENDX_]; i++)
+        for(int j=iter_toSend[_EAST_S_F_][_INIY_]; j<= iter_toSend[_EAST_S_F_][_ENDY_]; j++)
+            for(int k=iter_toSend[_EAST_S_F_][_INIZ_]; k<= iter_toSend[_EAST_S_F_][_ENDZ_]; k++)
+            {
+		int l = l_toSend(i,j,k,_EAST_S_F_);
+                pack_send_esf[l] = vec[R_INDX(i, j, k, lNx, lNy, lNz)];
+            }
+}
+    //EAST NORTH FRONT
+if (getNB(_EAST_N_F_) != _NO_NEIGHBOUR_) {
+    #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_send_enf[0:len_1pt]) async(26) 
+    for(int i=iter_toSend[_EAST_N_F_][_INIX_]; i<= iter_toSend[_EAST_N_F_][_ENDX_]; i++)
+        for(int j=iter_toSend[_EAST_N_F_][_INIY_]; j<= iter_toSend[_EAST_N_F_][_ENDY_]; j++)
+            for(int k=iter_toSend[_EAST_N_F_][_INIZ_]; k<= iter_toSend[_EAST_N_F_][_ENDZ_]; k++)
+            {
+		int l = l_toSend(i,j,k,_EAST_N_F_);
+                pack_send_enf[l] = vec[R_INDX(i, j, k, lNx, lNy, lNz)];
+            }
+}
+//#pragma acc wait
+};
+
+void ParallelTopology::unpack_gpu(double *vec)
+{
+
+     // WEST
+    if (getNB(_WEST_) != _NO_NEIGHBOUR_) {
+        #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_recv_w[0:len_yz]) async(27) 
+        for (int i = iter_toRecv[_WEST_][_INIX_]; i <= iter_toRecv[_WEST_][_ENDX_]; i++)
+            for (int j = iter_toRecv[_WEST_][_INIY_]; j <= iter_toRecv[_WEST_][_ENDY_]; j++)
+                for (int k = iter_toRecv[_WEST_][_INIZ_]; k <= iter_toRecv[_WEST_][_ENDZ_]; k++)
+                {
+                    int l = l_toRecv(i, j, k, _WEST_);
+                    vec[R_INDX(i, j, k, lNx, lNy, lNz)] = pack_recv_w[l];
+                }
+    }
+
+    // EAST
+    if (getNB(_EAST_) != _NO_NEIGHBOUR_) {
+        #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_recv_e[0:len_yz]) async(28)
+        for (int i = iter_toRecv[_EAST_][_INIX_]; i <= iter_toRecv[_EAST_][_ENDX_]; i++)
+            for (int j = iter_toRecv[_EAST_][_INIY_]; j <= iter_toRecv[_EAST_][_ENDY_]; j++)
+                for (int k = iter_toRecv[_EAST_][_INIZ_]; k <= iter_toRecv[_EAST_][_ENDZ_]; k++)
+                {
+                    int l = l_toRecv(i, j, k, _EAST_);
+                    vec[R_INDX(i, j, k, lNx, lNy, lNz)] = pack_recv_e[l];
+                }
+
+    }
+
+    // SOUTH
+    if (getNB(_SOUTH_) != _NO_NEIGHBOUR_) {
+        #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_recv_s[0:len_xz]) async(29) 
+        for (int i = iter_toRecv[_SOUTH_][_INIX_]; i <= iter_toRecv[_SOUTH_][_ENDX_]; i++)
+            for (int j = iter_toRecv[_SOUTH_][_INIY_]; j <= iter_toRecv[_SOUTH_][_ENDY_]; j++)
+                for (int k = iter_toRecv[_SOUTH_][_INIZ_]; k <= iter_toRecv[_SOUTH_][_ENDZ_]; k++)
+                {
+                    int l = l_toRecv(i, j, k, _SOUTH_);
+                    vec[R_INDX(i, j, k, lNx, lNy, lNz)] = pack_recv_s[l];
+                }
+    }
+
+    // NORTH
+    if (getNB(_NORTH_) != _NO_NEIGHBOUR_) {
+        #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_recv_n[0:len_xz]) async(30) 
+        for (int i = iter_toRecv[_NORTH_][_INIX_]; i <= iter_toRecv[_NORTH_][_ENDX_]; i++)
+            for (int j = iter_toRecv[_NORTH_][_INIY_]; j <= iter_toRecv[_NORTH_][_ENDY_]; j++)
+                for (int k = iter_toRecv[_NORTH_][_INIZ_]; k <= iter_toRecv[_NORTH_][_ENDZ_]; k++)
+                {
+                    int l = l_toRecv(i, j, k, _NORTH_);
+                    vec[R_INDX(i, j, k, lNx, lNy, lNz)] = pack_recv_n[l];
+                }
+    }
+    
+    // BACK
+    if (getNB(_BACK_) != _NO_NEIGHBOUR_) {
+        #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_recv_b[0:len_xy]) async(31)
+        for (int i = iter_toRecv[_BACK_][_INIX_]; i <= iter_toRecv[_BACK_][_ENDX_]; i++)
+            for (int j = iter_toRecv[_BACK_][_INIY_]; j <= iter_toRecv[_BACK_][_ENDY_]; j++)
+                for (int k = iter_toRecv[_BACK_][_INIZ_]; k <= iter_toRecv[_BACK_][_ENDZ_]; k++)
+                {
+                    int l = l_toRecv(i, j, k, _BACK_);
+                    vec[R_INDX(i, j, k, lNx, lNy, lNz)] = pack_recv_b[l];
+                }
+    }
+
+    // FRONT
+    if (getNB(_FRONT_) != _NO_NEIGHBOUR_) {
+        #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_recv_f[0:len_xy]) async(32)
+        for (int i = iter_toRecv[_FRONT_][_INIX_]; i <= iter_toRecv[_FRONT_][_ENDX_]; i++)
+            for (int j = iter_toRecv[_FRONT_][_INIY_]; j <= iter_toRecv[_FRONT_][_ENDY_]; j++)
+                for (int k = iter_toRecv[_FRONT_][_INIZ_]; k <= iter_toRecv[_FRONT_][_ENDZ_]; k++)
+                {
+                    int l = l_toRecv(i, j, k, _FRONT_);
+                    vec[R_INDX(i, j, k, lNx, lNy, lNz)] = pack_recv_f[l];
+                }
+    }
+
+    // WEST SOUTH
+    if (getNB(_WEST_S_) != _NO_NEIGHBOUR_) {
+        #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_recv_ws[0:len_1Dz]) async(33) 
+        for (int i = iter_toRecv[_WEST_S_][_INIX_]; i <= iter_toRecv[_WEST_S_][_ENDX_]; i++)
+            for (int j = iter_toRecv[_WEST_S_][_INIY_]; j <= iter_toRecv[_WEST_S_][_ENDY_]; j++)
+                for (int k = iter_toRecv[_WEST_S_][_INIZ_]; k <= iter_toRecv[_WEST_S_][_ENDZ_]; k++)
+                {
+                    int l = l_toRecv(i, j, k, _WEST_S_);
+                    vec[R_INDX(i, j, k, lNx, lNy, lNz)] = pack_recv_ws[l];
+                }
+    }
+
+    // WEST NORTH
+    if (getNB(_WEST_N_) != _NO_NEIGHBOUR_) {
+        #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_recv_wn[0:len_1Dz]) async(34) 
+        for (int i = iter_toRecv[_WEST_N_][_INIX_]; i <= iter_toRecv[_WEST_N_][_ENDX_]; i++)
+            for (int j = iter_toRecv[_WEST_N_][_INIY_]; j <= iter_toRecv[_WEST_N_][_ENDY_]; j++)
+                for (int k = iter_toRecv[_WEST_N_][_INIZ_]; k <= iter_toRecv[_WEST_N_][_ENDZ_]; k++)
+                {
+                    int l = l_toRecv(i, j, k, _WEST_N_);
+                    vec[R_INDX(i, j, k, lNx, lNy, lNz)] = pack_recv_wn[l];
+                }
+
+    }
+
+    // WEST BACK
+    if (getNB(_WEST_B_) != _NO_NEIGHBOUR_) {
+        #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_recv_wb[0:len_1Dy]) async(35)
+        for (int i = iter_toRecv[_WEST_B_][_INIX_]; i <= iter_toRecv[_WEST_B_][_ENDX_]; i++)
+            for (int j = iter_toRecv[_WEST_B_][_INIY_]; j <= iter_toRecv[_WEST_B_][_ENDY_]; j++)
+                for (int k = iter_toRecv[_WEST_B_][_INIZ_]; k <= iter_toRecv[_WEST_B_][_ENDZ_]; k++)
+                {
+                    int l = l_toRecv(i, j, k, _WEST_B_);
+                    vec[R_INDX(i, j, k, lNx, lNy, lNz)] = pack_recv_wb[l];
+                }
+    }
+
+    // WEST FRONT
+    if (getNB(_WEST_F_) != _NO_NEIGHBOUR_) {
+        #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_recv_wf[0:len_1Dy]) async(36) 
+        for (int i = iter_toRecv[_WEST_F_][_INIX_]; i <= iter_toRecv[_WEST_F_][_ENDX_]; i++)
+            for (int j = iter_toRecv[_WEST_F_][_INIY_]; j <= iter_toRecv[_WEST_F_][_ENDY_]; j++)
+                for (int k = iter_toRecv[_WEST_F_][_INIZ_]; k <= iter_toRecv[_WEST_F_][_ENDZ_]; k++)
+                {
+                    int l = l_toRecv(i, j, k, _WEST_F_);
+                    vec[R_INDX(i, j, k, lNx, lNy, lNz)] = pack_recv_wf[l];
+                }
+    }
+
+    // EAST SOUTH
+    if (getNB(_EAST_S_) != _NO_NEIGHBOUR_) {
+        #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_recv_es[0:len_1Dz]) async(37) 
+        for (int i = iter_toRecv[_EAST_S_][_INIX_]; i <= iter_toRecv[_EAST_S_][_ENDX_]; i++)
+            for (int j = iter_toRecv[_EAST_S_][_INIY_]; j <= iter_toRecv[_EAST_S_][_ENDY_]; j++)
+                for (int k = iter_toRecv[_EAST_S_][_INIZ_]; k <= iter_toRecv[_EAST_S_][_ENDZ_]; k++)
+                {
+                    int l = l_toRecv(i, j, k, _EAST_S_);
+                    vec[R_INDX(i, j, k, lNx, lNy, lNz)] = pack_recv_es[l];
+                }
+    }
+
+    // EAST NORTH
+    if (getNB(_EAST_N_) != _NO_NEIGHBOUR_) {
+        #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_recv_en[0:len_1Dz]) async(38) 
+        for (int i = iter_toRecv[_EAST_N_][_INIX_]; i <= iter_toRecv[_EAST_N_][_ENDX_]; i++)
+            for (int j = iter_toRecv[_EAST_N_][_INIY_]; j <= iter_toRecv[_EAST_N_][_ENDY_]; j++)
+                for (int k = iter_toRecv[_EAST_N_][_INIZ_]; k <= iter_toRecv[_EAST_N_][_ENDZ_]; k++)
+                {
+                    int l = l_toRecv(i, j, k, _EAST_N_);
+                    vec[R_INDX(i, j, k, lNx, lNy, lNz)] = pack_recv_en[l];
+                }
+    }
+
+    // EAST BACK
+    if (getNB(_EAST_B_) != _NO_NEIGHBOUR_) {
+        #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_recv_eb[0:len_1Dy]) async(39)
+        for (int i = iter_toRecv[_EAST_B_][_INIX_]; i <= iter_toRecv[_EAST_B_][_ENDX_]; i++)
+            for (int j = iter_toRecv[_EAST_B_][_INIY_]; j <= iter_toRecv[_EAST_B_][_ENDY_]; j++)
+                for (int k = iter_toRecv[_EAST_B_][_INIZ_]; k <= iter_toRecv[_EAST_B_][_ENDZ_]; k++)
+                {
+                    int l = l_toRecv(i, j, k, _EAST_B_);
+                    vec[R_INDX(i, j, k, lNx, lNy, lNz)] = pack_recv_eb[l];
+                }
+    }
+
+    // EAST FRONT
+    if (getNB(_EAST_F_) != _NO_NEIGHBOUR_) {
+        #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_recv_ef[0:len_1Dy]) async(40)
+        for (int i = iter_toRecv[_EAST_F_][_INIX_]; i <= iter_toRecv[_EAST_F_][_ENDX_]; i++)
+            for (int j = iter_toRecv[_EAST_F_][_INIY_]; j <= iter_toRecv[_EAST_F_][_ENDY_]; j++)
+                for (int k = iter_toRecv[_EAST_F_][_INIZ_]; k <= iter_toRecv[_EAST_F_][_ENDZ_]; k++)
+                {
+                    int l = l_toRecv(i, j, k, _EAST_F_);
+                    vec[R_INDX(i, j, k, lNx, lNy, lNz)] = pack_recv_ef[l];
+                }
+    }
+
+    // SOUTH BACK
+    if (getNB(_SOUTH_B_) != _NO_NEIGHBOUR_) {
+        #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_recv_sb[0:len_1Dx]) async(41)
+        for (int i = iter_toRecv[_SOUTH_B_][_INIX_]; i <= iter_toRecv[_SOUTH_B_][_ENDX_]; i++)
+            for (int j = iter_toRecv[_SOUTH_B_][_INIY_]; j <= iter_toRecv[_SOUTH_B_][_ENDY_]; j++)
+                for (int k = iter_toRecv[_SOUTH_B_][_INIZ_]; k <= iter_toRecv[_SOUTH_B_][_ENDZ_]; k++)
+                {
+                    int l = l_toRecv(i, j, k, _SOUTH_B_);
+                    vec[R_INDX(i, j, k, lNx, lNy, lNz)] = pack_recv_sb[l];
+                }
+    }
+
+    // SOUTH FRONT
+    if (getNB(_SOUTH_F_) != _NO_NEIGHBOUR_) {
+        #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_recv_sf[0:len_1Dx]) async(42) 
+        for (int i = iter_toRecv[_SOUTH_F_][_INIX_]; i <= iter_toRecv[_SOUTH_F_][_ENDX_]; i++)
+            for (int j = iter_toRecv[_SOUTH_F_][_INIY_]; j <= iter_toRecv[_SOUTH_F_][_ENDY_]; j++)
+                for (int k = iter_toRecv[_SOUTH_F_][_INIZ_]; k <= iter_toRecv[_SOUTH_F_][_ENDZ_]; k++)
+                {
+                    int l = l_toRecv(i, j, k, _SOUTH_F_);
+                    vec[R_INDX(i, j, k, lNx, lNy, lNz)] = pack_recv_sf[l];
+                }
+    }
+
+    // NORTH BACK
+    if (getNB(_NORTH_B_) != _NO_NEIGHBOUR_) {
+        #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_recv_nb[0:len_1Dx]) async(43)
+        for (int i = iter_toRecv[_NORTH_B_][_INIX_]; i <= iter_toRecv[_NORTH_B_][_ENDX_]; i++)
+            for (int j = iter_toRecv[_NORTH_B_][_INIY_]; j <= iter_toRecv[_NORTH_B_][_ENDY_]; j++)
+                for (int k = iter_toRecv[_NORTH_B_][_INIZ_]; k <= iter_toRecv[_NORTH_B_][_ENDZ_]; k++)
+                {
+                    int l = l_toRecv(i, j, k, _NORTH_B_);
+                    vec[R_INDX(i, j, k, lNx, lNy, lNz)] = pack_recv_nb[l];
+                }
+    }
+
+    // NORTH FRONT
+    if (getNB(_NORTH_F_) != _NO_NEIGHBOUR_) {
+        #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_recv_nf[0:len_1Dx]) async(44) 
+        for (int i = iter_toRecv[_NORTH_F_][_INIX_]; i <= iter_toRecv[_NORTH_F_][_ENDX_]; i++)
+            for (int j = iter_toRecv[_NORTH_F_][_INIY_]; j <= iter_toRecv[_NORTH_F_][_ENDY_]; j++)
+                for (int k = iter_toRecv[_NORTH_F_][_INIZ_]; k <= iter_toRecv[_NORTH_F_][_ENDZ_]; k++)
+                {
+                    int l = l_toRecv(i, j, k, _NORTH_F_);
+                    vec[R_INDX(i, j, k, lNx, lNy, lNz)] = pack_recv_nf[l];
+                }
+    }
+
+    // WEST SOUTH BACK
+    if (getNB(_WEST_S_B_) != _NO_NEIGHBOUR_) {
+        #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_recv_wsb[0:len_1pt]) async(45)
+        for (int i = iter_toRecv[_WEST_S_B_][_INIX_]; i <= iter_toRecv[_WEST_S_B_][_ENDX_]; i++)
+            for (int j = iter_toRecv[_WEST_S_B_][_INIY_]; j <= iter_toRecv[_WEST_S_B_][_ENDY_]; j++)
+                for (int k = iter_toRecv[_WEST_S_B_][_INIZ_]; k <= iter_toRecv[_WEST_S_B_][_ENDZ_]; k++)
+                {
+                    int l = l_toRecv(i, j, k, _WEST_S_B_);
+                    vec[R_INDX(i, j, k, lNx, lNy, lNz)] = pack_recv_wsb[l];
+                }
+    }
+
+    // WEST NORTH BACK
+    if (getNB(_WEST_N_B_) != _NO_NEIGHBOUR_) {
+        #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_recv_wnb[0:len_1pt]) async(46) 
+        for (int i = iter_toRecv[_WEST_N_B_][_INIX_]; i <= iter_toRecv[_WEST_N_B_][_ENDX_]; i++)
+            for (int j = iter_toRecv[_WEST_N_B_][_INIY_]; j <= iter_toRecv[_WEST_N_B_][_ENDY_]; j++)
+                for (int k = iter_toRecv[_WEST_N_B_][_INIZ_]; k <= iter_toRecv[_WEST_N_B_][_ENDZ_]; k++)
+                {
+                    int l = l_toRecv(i, j, k, _WEST_N_B_);
+                    vec[R_INDX(i, j, k, lNx, lNy, lNz)] = pack_recv_wnb[l];
+                }
+
+    }
+
+    // WEST SOUTH FRONT
+    if (getNB(_WEST_S_F_) != _NO_NEIGHBOUR_) {
+        #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_recv_wsf[0:len_1pt]) async(47) 
+        for (int i = iter_toRecv[_WEST_S_F_][_INIX_]; i <= iter_toRecv[_WEST_S_F_][_ENDX_]; i++)
+            for (int j = iter_toRecv[_WEST_S_F_][_INIY_]; j <= iter_toRecv[_WEST_S_F_][_ENDY_]; j++)
+                for (int k = iter_toRecv[_WEST_S_F_][_INIZ_]; k <= iter_toRecv[_WEST_S_F_][_ENDZ_]; k++)
+                {
+                    int l = l_toRecv(i, j, k, _WEST_S_F_);
+                    vec[R_INDX(i, j, k, lNx, lNy, lNz)] = pack_recv_wsf[l];
+                }
+    }
+
+    // WEST NORTH FRONT
+    if (getNB(_WEST_N_F_) != _NO_NEIGHBOUR_) {
+        #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_recv_wnf[0:len_1pt]) async(48) 
+        for (int i = iter_toRecv[_WEST_N_F_][_INIX_]; i <= iter_toRecv[_WEST_N_F_][_ENDX_]; i++)
+            for (int j = iter_toRecv[_WEST_N_F_][_INIY_]; j <= iter_toRecv[_WEST_N_F_][_ENDY_]; j++)
+                for (int k = iter_toRecv[_WEST_N_F_][_INIZ_]; k <= iter_toRecv[_WEST_N_F_][_ENDZ_]; k++)
+                {
+                    int l = l_toRecv(i, j, k, _WEST_N_F_);
+                    vec[R_INDX(i, j, k, lNx, lNy, lNz)] = pack_recv_wnf[l];
+                }
+    }
+
+    // EAST SOUTH BACK
+    if (getNB(_EAST_S_B_) != _NO_NEIGHBOUR_) {
+        #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_recv_esb[0:len_1pt]) async(49) 
+        for (int i = iter_toRecv[_EAST_S_B_][_INIX_]; i <= iter_toRecv[_EAST_S_B_][_ENDX_]; i++)
+            for (int j = iter_toRecv[_EAST_S_B_][_INIY_]; j <= iter_toRecv[_EAST_S_B_][_ENDY_]; j++)
+                for (int k = iter_toRecv[_EAST_S_B_][_INIZ_]; k <= iter_toRecv[_EAST_S_B_][_ENDZ_]; k++)
+                {
+                    int l = l_toRecv(i, j, k, _EAST_S_B_);
+                    vec[R_INDX(i, j, k, lNx, lNy, lNz)] = pack_recv_esb[l];
+                }
+    }
+
+    // EAST NORTH BACK
+    if (getNB(_EAST_N_B_) != _NO_NEIGHBOUR_) {
+        #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_recv_enb[0:len_1pt]) async(50) 
+        for (int i = iter_toRecv[_EAST_N_B_][_INIX_]; i <= iter_toRecv[_EAST_N_B_][_ENDX_]; i++)
+            for (int j = iter_toRecv[_EAST_N_B_][_INIY_]; j <= iter_toRecv[_EAST_N_B_][_ENDY_]; j++)
+                for (int k = iter_toRecv[_EAST_N_B_][_INIZ_]; k <= iter_toRecv[_EAST_N_B_][_ENDZ_]; k++)
+                {
+                    int l = l_toRecv(i, j, k, _EAST_N_B_);
+                    vec[R_INDX(i, j, k, lNx, lNy, lNz)] = pack_recv_enb[l];
+                }
+    }
+
+    // EAST SOUTH FRONT
+    if (getNB(_EAST_S_F_) != _NO_NEIGHBOUR_) {
+        #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_recv_esf[0:len_1pt]) async(51) 
+        for (int i = iter_toRecv[_EAST_S_F_][_INIX_]; i <= iter_toRecv[_EAST_S_F_][_ENDX_]; i++)
+            for (int j = iter_toRecv[_EAST_S_F_][_INIY_]; j <= iter_toRecv[_EAST_S_F_][_ENDY_]; j++)
+                for (int k = iter_toRecv[_EAST_S_F_][_INIZ_]; k <= iter_toRecv[_EAST_S_F_][_ENDZ_]; k++)
+                {
+                    int l = l_toRecv(i, j, k, _EAST_S_F_);
+                    vec[R_INDX(i, j, k, lNx, lNy, lNz)] = pack_recv_esf[l];
+                }
+    }
+
+    // EAST NORTH FRONT
+    if (getNB(_EAST_N_F_) != _NO_NEIGHBOUR_) {
+        #pragma acc parallel loop collapse(3) present(this, vec[0:_ls_], pack_recv_enf[0:len_1pt]) async(52) 
+        for (int i = iter_toRecv[_EAST_N_F_][_INIX_]; i <= iter_toRecv[_EAST_N_F_][_ENDX_]; i++)
+            for (int j = iter_toRecv[_EAST_N_F_][_INIY_]; j <= iter_toRecv[_EAST_N_F_][_ENDY_]; j++)
+                for (int k = iter_toRecv[_EAST_N_F_][_INIZ_]; k <= iter_toRecv[_EAST_N_F_][_ENDZ_]; k++)
+                {
+                    int l = l_toRecv(i, j, k, _EAST_N_F_);
+                    vec[R_INDX(i, j, k, lNx, lNy, lNz)] = pack_recv_enf[l];
+                }
+    }
+
+#pragma acc wait
+};
+
+void ParallelTopology::halo_exchange_gpu()
+{
+    MPI_Request req_s[26];
+    MPI_Request req_r[26];
+
+    MPI_Status  stat_s[26];
+    MPI_Status  stat_r[26];
+    
+    // Send and Receive buffers: CUDA-aware MPI
+    if (getNB(_WEST_) != _NO_NEIGHBOUR_)
+    {
+	#pragma acc wait(1)
+        #pragma acc host_data use_device(pack_send_w, pack_recv_w)
+        {
+            MPI_Isend(pack_send_w, len_yz, MPI_DOUBLE, getNB(_WEST_), tagid_s[_WEST_], RHEA_3DCOMM, &req_s[_WEST_]);
+            MPI_Irecv(pack_recv_w, len_yz, MPI_DOUBLE, getNB(_WEST_), tagid_r[_WEST_], RHEA_3DCOMM, &req_r[_WEST_]);
+        }
+    }
+    if (getNB(_EAST_) != _NO_NEIGHBOUR_)
+    {
+	#pragma acc wait(2)
+        #pragma acc host_data use_device(pack_send_e, pack_recv_e)
+        {
+            MPI_Isend(pack_send_e, len_yz, MPI_DOUBLE, getNB(_EAST_), tagid_s[_EAST_], RHEA_3DCOMM, &req_s[_EAST_]);
+            MPI_Irecv(pack_recv_e, len_yz, MPI_DOUBLE, getNB(_EAST_), tagid_r[_EAST_], RHEA_3DCOMM, &req_r[_EAST_]);
+        }
+    }
+    if (getNB(_SOUTH_) != _NO_NEIGHBOUR_)
+    {
+	#pragma acc wait(3)
+        #pragma acc host_data use_device(pack_send_s, pack_recv_s)
+        {
+            MPI_Isend(pack_send_s, len_xz, MPI_DOUBLE, getNB(_SOUTH_), tagid_s[_SOUTH_], RHEA_3DCOMM, &req_s[_SOUTH_]);
+            MPI_Irecv(pack_recv_s, len_xz, MPI_DOUBLE, getNB(_SOUTH_), tagid_r[_SOUTH_], RHEA_3DCOMM, &req_r[_SOUTH_]);
+        }
+    }
+    if (getNB(_NORTH_) != _NO_NEIGHBOUR_)
+    {
+	#pragma acc wait(4)
+        #pragma acc host_data use_device(pack_send_n, pack_recv_n)
+        {
+            MPI_Isend(pack_send_n, len_xz, MPI_DOUBLE, getNB(_NORTH_), tagid_s[_NORTH_], RHEA_3DCOMM, &req_s[_NORTH_]);
+            MPI_Irecv(pack_recv_n, len_xz, MPI_DOUBLE, getNB(_NORTH_), tagid_r[_NORTH_], RHEA_3DCOMM, &req_r[_NORTH_]);
+        }
+    }
+    if (getNB(_BACK_) != _NO_NEIGHBOUR_)
+    {
+	#pragma acc wait(5)
+        #pragma acc host_data use_device(pack_send_b, pack_recv_b)
+        {
+            MPI_Isend(pack_send_b, len_xy, MPI_DOUBLE, getNB(_BACK_), tagid_s[_BACK_], RHEA_3DCOMM, &req_s[_BACK_]);
+            MPI_Irecv(pack_recv_b, len_xy, MPI_DOUBLE, getNB(_BACK_), tagid_r[_BACK_], RHEA_3DCOMM, &req_r[_BACK_]);
+        }
+    }
+    if (getNB(_FRONT_) != _NO_NEIGHBOUR_)
+    {
+	#pragma acc wait(6)
+        #pragma acc host_data use_device(pack_send_f, pack_recv_f)
+        {
+            MPI_Isend(pack_send_f, len_xy, MPI_DOUBLE, getNB(_FRONT_), tagid_s[_FRONT_], RHEA_3DCOMM, &req_s[_FRONT_]);
+            MPI_Irecv(pack_recv_f, len_xy, MPI_DOUBLE, getNB(_FRONT_), tagid_r[_FRONT_], RHEA_3DCOMM, &req_r[_FRONT_]);
+        }
+    }
+    
+// 2nd level
+    if (getNB(_WEST_S_) != _NO_NEIGHBOUR_)
+    {
+	#pragma acc wait(7)
+        #pragma acc host_data use_device(pack_send_ws, pack_recv_ws)
+        {
+            MPI_Isend(pack_send_ws, len_1Dz, MPI_DOUBLE, getNB(_WEST_S_), tagid_s[_WEST_S_], RHEA_3DCOMM, &req_s[_WEST_S_]);
+            MPI_Irecv(pack_recv_ws, len_1Dz, MPI_DOUBLE, getNB(_WEST_S_), tagid_r[_WEST_S_], RHEA_3DCOMM, &req_r[_WEST_S_]);
+        }
+    }
+    if (getNB(_WEST_N_) != _NO_NEIGHBOUR_)
+    {
+	#pragma acc wait(8)
+        #pragma acc host_data use_device(pack_send_wn, pack_recv_wn)
+        {
+            MPI_Isend(pack_send_wn, len_1Dz, MPI_DOUBLE, getNB(_WEST_N_), tagid_s[_WEST_N_], RHEA_3DCOMM, &req_s[_WEST_N_]);
+            MPI_Irecv(pack_recv_wn, len_1Dz, MPI_DOUBLE, getNB(_WEST_N_), tagid_r[_WEST_N_], RHEA_3DCOMM, &req_r[_WEST_N_]);
+        }
+    }
+    if (getNB(_WEST_B_) != _NO_NEIGHBOUR_)
+    {
+	#pragma acc wait(9)
+        #pragma acc host_data use_device(pack_send_wb, pack_recv_wb)
+        {
+            MPI_Isend(pack_send_wb, len_1Dy, MPI_DOUBLE, getNB(_WEST_B_), tagid_s[_WEST_B_], RHEA_3DCOMM, &req_s[_WEST_B_]);
+            MPI_Irecv(pack_recv_wb, len_1Dy, MPI_DOUBLE, getNB(_WEST_B_), tagid_r[_WEST_B_], RHEA_3DCOMM, &req_r[_WEST_B_]);
+        }
+    }
+    if (getNB(_WEST_F_) != _NO_NEIGHBOUR_)
+    {
+	#pragma acc wait(10)
+        #pragma acc host_data use_device(pack_send_wf, pack_recv_wf)
+        {
+            MPI_Isend(pack_send_wf, len_1Dy, MPI_DOUBLE, getNB(_WEST_F_), tagid_s[_WEST_F_], RHEA_3DCOMM, &req_s[_WEST_F_]);
+            MPI_Irecv(pack_recv_wf, len_1Dy, MPI_DOUBLE, getNB(_WEST_F_), tagid_r[_WEST_F_], RHEA_3DCOMM, &req_r[_WEST_F_]);
+        }
+    }
+    if (getNB(_EAST_S_) != _NO_NEIGHBOUR_)
+    {
+	#pragma acc wait(11)
+        #pragma acc host_data use_device(pack_send_es, pack_recv_es)
+        {
+            MPI_Isend(pack_send_es, len_1Dz, MPI_DOUBLE, getNB(_EAST_S_), tagid_s[_EAST_S_], RHEA_3DCOMM, &req_s[_EAST_S_]);
+            MPI_Irecv(pack_recv_es, len_1Dz, MPI_DOUBLE, getNB(_EAST_S_), tagid_r[_EAST_S_], RHEA_3DCOMM, &req_r[_EAST_S_]);
+        }
+    }
+    if (getNB(_EAST_N_) != _NO_NEIGHBOUR_)
+    {
+	#pragma acc wait(12)
+        #pragma acc host_data use_device(pack_send_en, pack_recv_en)
+        {
+            MPI_Isend(pack_send_en, len_1Dz, MPI_DOUBLE, getNB(_EAST_N_), tagid_s[_EAST_N_], RHEA_3DCOMM, &req_s[_EAST_N_]);
+            MPI_Irecv(pack_recv_en, len_1Dz, MPI_DOUBLE, getNB(_EAST_N_), tagid_r[_EAST_N_], RHEA_3DCOMM, &req_r[_EAST_N_]);
+        }
+    }
+
+    if (getNB(_EAST_B_) != _NO_NEIGHBOUR_)
+    {
+	#pragma acc wait(13)
+        #pragma acc host_data use_device(pack_send_eb, pack_recv_eb)
+        {
+            MPI_Isend(pack_send_eb, len_1Dy, MPI_DOUBLE, getNB(_EAST_B_), tagid_s[_EAST_B_], RHEA_3DCOMM, &req_s[_EAST_B_]);
+            MPI_Irecv(pack_recv_eb, len_1Dy, MPI_DOUBLE, getNB(_EAST_B_), tagid_r[_EAST_B_], RHEA_3DCOMM, &req_r[_EAST_B_]);
+        }
+    }
+    if (getNB(_EAST_F_) != _NO_NEIGHBOUR_)
+    {
+	#pragma acc wait(14)
+        #pragma acc host_data use_device(pack_send_ef, pack_recv_ef)
+        {
+            MPI_Isend(pack_send_ef, len_1Dy, MPI_DOUBLE, getNB(_EAST_F_), tagid_s[_EAST_F_], RHEA_3DCOMM, &req_s[_EAST_F_]);
+            MPI_Irecv(pack_recv_ef, len_1Dy, MPI_DOUBLE, getNB(_EAST_F_), tagid_r[_EAST_F_], RHEA_3DCOMM, &req_r[_EAST_F_]);
+        }
+    }
+    if (getNB(_SOUTH_B_) != _NO_NEIGHBOUR_)
+    {
+	#pragma acc wait(15)
+        #pragma acc host_data use_device(pack_send_sb, pack_recv_sb)
+        {
+            MPI_Isend(pack_send_sb, len_1Dx, MPI_DOUBLE, getNB(_SOUTH_B_), tagid_s[_SOUTH_B_], RHEA_3DCOMM, &req_s[_SOUTH_B_]);
+            MPI_Irecv(pack_recv_sb, len_1Dx, MPI_DOUBLE, getNB(_SOUTH_B_), tagid_r[_SOUTH_B_], RHEA_3DCOMM, &req_r[_SOUTH_B_]);
+        }
+    }
+    if (getNB(_SOUTH_F_) != _NO_NEIGHBOUR_)
+    {
+	#pragma acc wait(16)
+        #pragma acc host_data use_device(pack_send_sf, pack_recv_sf)
+        {
+            MPI_Isend(pack_send_sf, len_1Dx, MPI_DOUBLE, getNB(_SOUTH_F_), tagid_s[_SOUTH_F_], RHEA_3DCOMM, &req_s[_SOUTH_F_]);
+            MPI_Irecv(pack_recv_sf, len_1Dx, MPI_DOUBLE, getNB(_SOUTH_F_), tagid_r[_SOUTH_F_], RHEA_3DCOMM, &req_r[_SOUTH_F_]);
+        }
+    }
+    if (getNB(_NORTH_B_) != _NO_NEIGHBOUR_)
+    {
+	#pragma acc wait(17)
+        #pragma acc host_data use_device(pack_send_nb, pack_recv_nb)
+        {
+            MPI_Isend(pack_send_nb, len_1Dx, MPI_DOUBLE, getNB(_NORTH_B_), tagid_s[_NORTH_B_], RHEA_3DCOMM, &req_s[_NORTH_B_]);
+            MPI_Irecv(pack_recv_nb, len_1Dx, MPI_DOUBLE, getNB(_NORTH_B_), tagid_r[_NORTH_B_], RHEA_3DCOMM, &req_r[_NORTH_B_]);
+        }
+    }
+    if (getNB(_NORTH_F_) != _NO_NEIGHBOUR_)
+    {
+	#pragma acc wait(18)
+        #pragma acc host_data use_device(pack_send_nf, pack_recv_nf)
+        {
+            MPI_Isend(pack_send_nf, len_1Dx, MPI_DOUBLE, getNB(_NORTH_F_), tagid_s[_NORTH_F_], RHEA_3DCOMM, &req_s[_NORTH_F_]);
+            MPI_Irecv(pack_recv_nf, len_1Dx, MPI_DOUBLE, getNB(_NORTH_F_), tagid_r[_NORTH_F_], RHEA_3DCOMM, &req_r[_NORTH_F_]);
+        }
+    }
+
+// 3er level
+    if (getNB(_WEST_S_B_) != _NO_NEIGHBOUR_)
+    {
+	#pragma acc wait(19)
+        #pragma acc host_data use_device(pack_send_wsb, pack_recv_wsb)
+        {
+            MPI_Isend(pack_send_wsb, len_1pt, MPI_DOUBLE, getNB(_WEST_S_B_), tagid_s[_WEST_S_B_], RHEA_3DCOMM, &req_s[_WEST_S_B_]);
+            MPI_Irecv(pack_recv_wsb, len_1pt, MPI_DOUBLE, getNB(_WEST_S_B_), tagid_r[_WEST_S_B_], RHEA_3DCOMM, &req_r[_WEST_S_B_]);
+        }
+    }
+    if (getNB(_WEST_N_B_) != _NO_NEIGHBOUR_)
+    {
+	#pragma acc wait(20)
+        #pragma acc host_data use_device(pack_send_wnb, pack_recv_wnb)
+        {
+            MPI_Isend(pack_send_wnb, len_1pt, MPI_DOUBLE, getNB(_WEST_N_B_), tagid_s[_WEST_N_B_], RHEA_3DCOMM, &req_s[_WEST_N_B_]);
+            MPI_Irecv(pack_recv_wnb, len_1pt, MPI_DOUBLE, getNB(_WEST_N_B_), tagid_r[_WEST_N_B_], RHEA_3DCOMM, &req_r[_WEST_N_B_]);
+        }
+    }
+    if (getNB(_WEST_S_F_) != _NO_NEIGHBOUR_)
+    {
+	#pragma acc wait(21)
+        #pragma acc host_data use_device(pack_send_wsf, pack_recv_wsf)
+        {
+            MPI_Isend(pack_send_wsf, len_1pt, MPI_DOUBLE, getNB(_WEST_S_F_), tagid_s[_WEST_S_F_], RHEA_3DCOMM, &req_s[_WEST_S_F_]);
+            MPI_Irecv(pack_recv_wsf, len_1pt, MPI_DOUBLE, getNB(_WEST_S_F_), tagid_r[_WEST_S_F_], RHEA_3DCOMM, &req_r[_WEST_S_F_]);
+        }
+    }
+    if (getNB(_WEST_N_F_) != _NO_NEIGHBOUR_)
+    {
+	#pragma acc wait(22)
+        #pragma acc host_data use_device(pack_send_wnf, pack_recv_wnf)
+        {
+            MPI_Isend(pack_send_wnf, len_1pt, MPI_DOUBLE, getNB(_WEST_N_F_), tagid_s[_WEST_N_F_], RHEA_3DCOMM, &req_s[_WEST_N_F_]);
+            MPI_Irecv(pack_recv_wnf, len_1pt, MPI_DOUBLE, getNB(_WEST_N_F_), tagid_r[_WEST_N_F_], RHEA_3DCOMM, &req_r[_WEST_N_F_]);
+        }
+    }
+    if (getNB(_EAST_S_B_) != _NO_NEIGHBOUR_)
+    {
+	#pragma acc wait(23)
+        #pragma acc host_data use_device(pack_send_esb, pack_recv_esb)
+        {
+            MPI_Isend(pack_send_esb, len_1pt, MPI_DOUBLE, getNB(_EAST_S_B_), tagid_s[_EAST_S_B_], RHEA_3DCOMM, &req_s[_EAST_S_B_]);
+            MPI_Irecv(pack_recv_esb, len_1pt, MPI_DOUBLE, getNB(_EAST_S_B_), tagid_r[_EAST_S_B_], RHEA_3DCOMM, &req_r[_EAST_S_B_]);
+        }
+    }
+    if (getNB(_EAST_N_B_) != _NO_NEIGHBOUR_)
+    {
+	#pragma acc wait(24)
+        #pragma acc host_data use_device(pack_send_enb, pack_recv_enb)
+        {
+            MPI_Isend(pack_send_enb, len_1pt, MPI_DOUBLE, getNB(_EAST_N_B_), tagid_s[_EAST_N_B_], RHEA_3DCOMM, &req_s[_EAST_N_B_]);
+            MPI_Irecv(pack_recv_enb, len_1pt, MPI_DOUBLE, getNB(_EAST_N_B_), tagid_r[_EAST_N_B_], RHEA_3DCOMM, &req_r[_EAST_N_B_]);
+        }
+    }
+    if (getNB(_EAST_S_F_) != _NO_NEIGHBOUR_)
+    {
+	#pragma acc wait(25)
+        #pragma acc host_data use_device(pack_send_esf, pack_recv_esf)
+        {
+            MPI_Isend(pack_send_esf, len_1pt, MPI_DOUBLE, getNB(_EAST_S_F_), tagid_s[_EAST_S_F_], RHEA_3DCOMM, &req_s[_EAST_S_F_]);
+            MPI_Irecv(pack_recv_esf, len_1pt, MPI_DOUBLE, getNB(_EAST_S_F_), tagid_r[_EAST_S_F_], RHEA_3DCOMM, &req_r[_EAST_S_F_]);
+        }
+    }
+    if (getNB(_EAST_N_F_) != _NO_NEIGHBOUR_)
+    {
+	#pragma acc wait(26)
+        #pragma acc host_data use_device(pack_send_enf, pack_recv_enf)
+        {
+            MPI_Isend(pack_send_enf, len_1pt, MPI_DOUBLE, getNB(_EAST_N_F_), tagid_s[_EAST_N_F_], RHEA_3DCOMM, &req_s[_EAST_N_F_]);
+            MPI_Irecv(pack_recv_enf, len_1pt, MPI_DOUBLE, getNB(_EAST_N_F_), tagid_r[_EAST_N_F_], RHEA_3DCOMM, &req_r[_EAST_N_F_]);
+        }
+    }
+ 
+
+// Wait for the communications to be done
+
+    if(getNB(_WEST_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_WEST_], &stat_r[_WEST_]);
+        MPI_Wait(&req_s[_WEST_], &stat_s[_WEST_]);
+    }
+    if(getNB(_EAST_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_EAST_], &stat_r[_EAST_]);
+        MPI_Wait(&req_s[_EAST_], &stat_s[_EAST_]);
+    }
+    if(getNB(_SOUTH_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_SOUTH_], &stat_r[_SOUTH_]);
+        MPI_Wait(&req_s[_SOUTH_], &stat_s[_SOUTH_]);
+    }
+    if(getNB(_NORTH_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_NORTH_], &stat_r[_NORTH_]);
+        MPI_Wait(&req_s[_NORTH_], &stat_s[_NORTH_]);
+    }
+    if(getNB(_BACK_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_BACK_], &stat_r[_BACK_]);
+        MPI_Wait(&req_s[_BACK_], &stat_s[_BACK_]);
+    }
+    if(getNB(_FRONT_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_FRONT_], &stat_r[_FRONT_]);
+        MPI_Wait(&req_s[_FRONT_], &stat_s[_FRONT_]);
+    }
+
+//2nd level
+    if(getNB(_WEST_S_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_WEST_S_], &stat_r[_WEST_S_]);
+        MPI_Wait(&req_s[_WEST_S_], &stat_s[_WEST_S_]);
+    }
+    if(getNB(_WEST_N_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_WEST_N_], &stat_r[_WEST_N_]);
+        MPI_Wait(&req_s[_WEST_N_], &stat_s[_WEST_N_]);
+    }
+    if(getNB(_WEST_B_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_WEST_B_], &stat_r[_WEST_B_]);
+        MPI_Wait(&req_s[_WEST_B_], &stat_s[_WEST_B_]);
+    }
+    if(getNB(_WEST_F_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_WEST_F_], &stat_r[_WEST_F_]);
+        MPI_Wait(&req_s[_WEST_F_], &stat_s[_WEST_F_]);
+    }
+
+    if(getNB(_EAST_S_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_EAST_S_], &stat_r[_EAST_S_]);
+        MPI_Wait(&req_s[_EAST_S_], &stat_s[_EAST_S_]);
+    }
+    if(getNB(_EAST_N_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_EAST_N_], &stat_r[_EAST_N_]);
+        MPI_Wait(&req_s[_EAST_N_], &stat_s[_EAST_N_]);
+    }
+    if(getNB(_EAST_B_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_EAST_B_], &stat_r[_EAST_B_]);
+        MPI_Wait(&req_s[_EAST_B_], &stat_s[_EAST_B_]);
+    }
+    if(getNB(_EAST_F_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_EAST_F_], &stat_r[_EAST_F_]);
+        MPI_Wait(&req_s[_EAST_F_], &stat_s[_EAST_F_]);
+    }
+
+    if(getNB(_SOUTH_B_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_SOUTH_B_], &stat_r[_SOUTH_B_]);
+        MPI_Wait(&req_s[_SOUTH_B_], &stat_s[_SOUTH_B_]);
+    }
+    if(getNB(_SOUTH_F_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_SOUTH_F_], &stat_r[_SOUTH_F_]);
+        MPI_Wait(&req_s[_SOUTH_F_], &stat_s[_SOUTH_F_]);
+    }
+    if(getNB(_NORTH_B_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_NORTH_B_], &stat_r[_NORTH_B_]);
+        MPI_Wait(&req_s[_NORTH_B_], &stat_s[_NORTH_B_]);
+    }
+    if(getNB(_NORTH_F_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_NORTH_F_], &stat_r[_NORTH_F_]);
+        MPI_Wait(&req_s[_NORTH_F_], &stat_s[_NORTH_F_]);
+    }
+
+//3er Level
+    if(getNB(_WEST_S_B_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_WEST_S_B_], &stat_r[_WEST_S_B_]);
+        MPI_Wait(&req_s[_WEST_S_B_], &stat_s[_WEST_S_B_]);
+    }
+    if(getNB(_WEST_N_B_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_WEST_N_B_], &stat_r[_WEST_N_B_]);
+        MPI_Wait(&req_s[_WEST_N_B_], &stat_s[_WEST_N_B_]);
+    }
+    if(getNB(_WEST_S_F_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_WEST_S_F_], &stat_r[_WEST_S_F_]);
+        MPI_Wait(&req_s[_WEST_S_F_], &stat_s[_WEST_S_F_]);
+    }
+    if(getNB(_WEST_N_F_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_WEST_N_F_], &stat_r[_WEST_N_F_]);
+        MPI_Wait(&req_s[_WEST_N_F_], &stat_s[_WEST_N_F_]);
+    }
+
+    if(getNB(_EAST_S_B_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_EAST_S_B_], &stat_r[_EAST_S_B_]);
+        MPI_Wait(&req_s[_EAST_S_B_], &stat_s[_EAST_S_B_]);
+    }
+    if(getNB(_EAST_N_B_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_EAST_N_B_], &stat_r[_EAST_N_B_]);
+        MPI_Wait(&req_s[_EAST_N_B_], &stat_s[_EAST_N_B_]);
+    }
+    if(getNB(_EAST_S_F_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_EAST_S_F_], &stat_r[_EAST_S_F_]);
+        MPI_Wait(&req_s[_EAST_S_F_], &stat_s[_EAST_S_F_]);
+    }
+    if(getNB(_EAST_N_F_) != _NO_NEIGHBOUR_ ){
+        MPI_Wait(&req_r[_EAST_N_F_], &stat_r[_EAST_N_F_]);
+        MPI_Wait(&req_s[_EAST_N_F_], &stat_s[_EAST_N_F_]);
+    }
+}

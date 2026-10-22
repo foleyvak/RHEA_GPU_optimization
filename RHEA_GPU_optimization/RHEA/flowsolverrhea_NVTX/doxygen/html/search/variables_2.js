@@ -1,0 +1,20 @@
+var searchData=
+[
+  ['b1_5fk_1461',['B1_k',['../classHighPressureTransportCoefficients.html#aab4f5b01ee27139927d116e98551583e',1,'HighPressureTransportCoefficients']]],
+  ['b2_5fk_1462',['B2_k',['../classHighPressureTransportCoefficients.html#a706d1100b14a8cd3b957795c7426dc34',1,'HighPressureTransportCoefficients']]],
+  ['b3_5fk_1463',['B3_k',['../classHighPressureTransportCoefficients.html#a227c5f939a0874294c751e028e048ca0',1,'HighPressureTransportCoefficients']]],
+  ['b4_5fk_1464',['B4_k',['../classHighPressureTransportCoefficients.html#ac2712f0185d6de830c6f5ad52e9e734c',1,'HighPressureTransportCoefficients']]],
+  ['b5_5fk_1465',['B5_k',['../classHighPressureTransportCoefficients.html#a6d5a1a015694bfdc5825eddee9015809',1,'HighPressureTransportCoefficients']]],
+  ['b6_5fk_1466',['B6_k',['../classHighPressureTransportCoefficients.html#abcf26919da03ccedc297b625484cf91e',1,'HighPressureTransportCoefficients']]],
+  ['b7_5fk_1467',['B7_k',['../classHighPressureTransportCoefficients.html#aad213348552efab9de09662af9723f21',1,'HighPressureTransportCoefficients']]],
+  ['bc_1468',['bc',['../classComputationalDomain.html#a24af56291b7a1c1725086d05e335d143',1,'ComputationalDomain']]],
+  ['bocos_5fp_1469',['bocos_P',['../classFlowSolverRHEA.html#a910ba6cc875819b71007909d9b229a1e',1,'FlowSolverRHEA::bocos_P()'],['../classDistributedPointParticles.html#a4707a9edf812a0aaf1b402f9d567380e',1,'DistributedPointParticles::bocos_P()']]],
+  ['bocos_5ft_1470',['bocos_T',['../classDistributedPointParticles.html#afdb3f77c48168c62aa3389958835fcd9',1,'DistributedPointParticles::bocos_T()'],['../classFlowSolverRHEA.html#ab55d3620aaf68a1b95a33c13f920b033',1,'FlowSolverRHEA::bocos_T()']]],
+  ['bocos_5ftype_1471',['bocos_type',['../classFlowSolverRHEA.html#a07a90cb0bdc06e772943b07128854760',1,'FlowSolverRHEA::bocos_type()'],['../classDistributedPointParticles.html#ae9ad250f5e8ea3cc1e7aeb3bd4acf135',1,'DistributedPointParticles::bocos_type()']]],
+  ['bocos_5fu_1472',['bocos_u',['../classFlowSolverRHEA.html#a56ba4d8c7ffdd6ba4c2a752bebedbf46',1,'FlowSolverRHEA::bocos_u()'],['../classDistributedPointParticles.html#aee20213f0a00db0a9aee980b3bfe2ec1',1,'DistributedPointParticles::bocos_u()']]],
+  ['bocos_5fv_1473',['bocos_v',['../classFlowSolverRHEA.html#af085c08d452da11938c606a6fb8dcb30',1,'FlowSolverRHEA::bocos_v()'],['../classDistributedPointParticles.html#a5663c5ea7cdd0313955d9fd3d453a422',1,'DistributedPointParticles::bocos_v()']]],
+  ['bocos_5fw_1474',['bocos_w',['../classFlowSolverRHEA.html#a96d2ef2fea5a5b2bd50b843d9cd12b14',1,'FlowSolverRHEA::bocos_w()'],['../classDistributedPointParticles.html#a0284083501ee8a843b89f79f0ad2946d',1,'DistributedPointParticles::bocos_w()']]],
+  ['buffer_5fratio_5fparticles_1475',['buffer_ratio_particles',['../classFlowSolverRHEA.html#a14f13e7e6ea1f3d5ead1a1dac3f767e4',1,'FlowSolverRHEA']]],
+  ['buffer_5fratio_5fprts_1476',['buffer_ratio_prts',['../classDistributedPointParticles.html#af83d2098e7f0a2e62d2c0609ac2ff34b',1,'DistributedPointParticles']]],
+  ['bx_1477',['bx',['../classBrent.html#a1f5e109fb4b645a08ae5413801524091',1,'Brent']]]
+];
