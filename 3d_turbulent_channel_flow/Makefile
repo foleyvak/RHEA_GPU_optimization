@@ -9,7 +9,7 @@ CONFIG_FILE  = configuration_file.yaml
 #PROJECT_PATH = $(RHEA_PATH_OPTI)
 #SRC_DIR      = $(PROJECT_PATH)/src
 
-PROJECT_PATH = /home/reynolds/Documents/MN5/RHEA_GPU_optimization/RHEA/flowsolverrhea_NVTX_v2
+PROJECT_PATH = ../flowsolverrhea
 SRC_DIR      = $(PROJECT_PATH)/src
 
 
@@ -18,7 +18,7 @@ SRC_DIR      = $(PROJECT_PATH)/src
 # ============================================================
 
 # COOLPROP COMPILATION (for cpu)
-COOLPROP_ACTIVATED_ = 1
+COOLPROP_ACTIVATED_ = 0
 
 # NVTX PROFILING
 NVTX ?= 1
@@ -52,18 +52,18 @@ CP_INC       = -I$(CP_DIR) \
 # COMPILER
 # ============================================================
 
-CXX          = mpicxx.openmpi
-#CXX          = mpicxx
+#CXX          = mpicxx.openmpi
+CXX          = mpicxx
 
 # ============================================================
 # COMPILATION FLAGS
 # ============================================================
 
-CXXFLAGS     = -Ofast -Wall -std=c++17 -Wno-unknown-pragmas -Wno-unused-variable -I$(PROJECT_PATH)
+#CXXFLAGS     = -Ofast -Wall -std=c++17 -Wno-unknown-pragmas -Wno-unused-variable -I$(PROJECT_PATH)
 
 #CXXFLAGS     = -Ofast -Wall -std=c++17 -Wno-unused-variable -I$(PROJECT_PATH)
 
-#CXXFLAGS     = -fast -acc -gpu=cc90,maxregcount:128 -Minfo=accel -O3 -Wall -std=c++17 -I$(PROJECT_PATH)
+CXXFLAGS     = -fast -acc -gpu=cc90,maxregcount:128 -Minfo=accel -O3 -Wall -std=c++17 -I$(PROJECT_PATH)
 
 
 
